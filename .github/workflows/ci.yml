@@ -45,7 +45,11 @@ jobs:
         run: npm ci
 
       # Runs scripts/check-docs.sh, prettier --check, eslint, and markdownlint.
-      # There is deliberately no `test` or `build` step yet — neither script
-      # exists until Phase 2, and referencing them would fail this workflow.
       - name: Run check gate
         run: npm run check
+
+      # Compiles the Next.js app and type-checks it. Still no `test` step —
+      # Vitest and Playwright arrive in plan 02-02, and referencing scripts that
+      # do not exist would fail this workflow.
+      - name: Build
+        run: npm run build

@@ -13,5 +13,14 @@
     // Line length: docs use wide tables and long prose lines; Prettier owns
     // wrapping and would immediately undo any reflow markdownlint demanded.
     "MD013": false,
+
+    // Single-H1: disabled because Next.js 16 injects its own
+    // "# This is NOT the Next.js you know" block into AGENTS.md, written by
+    // node_modules/next/dist/server/lib/generate-agent-files.js on every
+    // `next dev`. Verified empirically in plan 02-01: deleting the block and
+    // running the dev server restores it, so demoting the heading is not
+    // durable and this rule is permanently unsatisfiable for that file.
+    // Boundary waiver granted during 02-01 — see 02-01-SUMMARY.md.
+    "MD025": false,
   },
 }

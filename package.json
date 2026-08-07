@@ -18,6 +18,8 @@
   "homepage": "https://github.com/dnmitev/gaspense#readme",
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
+    "dev": "next dev",
+    "build": "next build",
     "lint": "eslint .",
     "lint:md": "markdownlint-cli2",
     "format": "prettier --write .",
@@ -25,12 +27,24 @@
     "check": "bash scripts/check-docs.sh && npm run format:check && npm run lint && npm run lint:md"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "eslint": "^10.8.0",
+    "@eslint/js": "^9.39.5",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.1.2",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.0",
     "eslint-config-prettier": "^10.1.8",
     "markdownlint-cli2": "^0.23.2",
+    "postcss": "^8.5.26",
     "prettier": "^3.9.6",
+    "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.66.0"
+  },
+  "dependencies": {
+    "next": "^16.3.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   }
 }

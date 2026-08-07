@@ -1,0 +1,3 @@
+/* Tailwind v4 entry point. Theme customisation goes here via @theme when a
+   plan actually needs it, not in a JS config file. */
+@import "tailwindcss";
