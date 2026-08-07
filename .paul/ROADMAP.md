@@ -13,7 +13,7 @@ From a graduated PLANNING.md to a working personal vehicle expense tracker: firs
 ## Current Milestone
 
 **v0.1 Initial Release** (v0.1.0)
-Status: Not started
+Status: In progress
 Phases: 0 of 7 complete
 
 ## Phases
@@ -22,7 +22,7 @@ Phases: 0 of 7 complete
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
-| 0 | AI-Friendly Project Scaffolding | TBD | Not started | - |
+| 0 | AI-Friendly Project Scaffolding | 2 | Planning | - |
 | 1 | CI/CD Pipeline | TBD | Not started | - |
 | 2 | Foundations | TBD | Not started | - |
 | 3 | Reporting | TBD | Not started | - |
@@ -45,7 +45,8 @@ Phases: 0 of 7 complete
 - Lint/format config (ESLint, Prettier, EditorConfig)
 
 **Plans:**
-- [ ] TBD — defined during `/paul:plan`
+- [ ] 00-01: Agent entry-point docs (CLAUDE.md, AGENTS.md), docs/ARCHITECTURE.md, and .gitignore
+- [ ] 00-02: Minimal package.json + ESLint/Prettier/EditorConfig/markdownlint + CI-callable check script
 
 ### Phase 1: CI/CD Pipeline
 

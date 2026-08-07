@@ -11,17 +11,19 @@ source = "https://chrisai.cv/skool"
 [milestone]
 name = "v0.1 Initial Release"
 version = "0.1.0"
-status = "not_started"
+status = "in_progress"
 phases = 7
 
 [phase]
 number = 0
 name = "AI-Friendly Project Scaffolding"
-status = "not_started"
+status = "planning"
 plans_completed = 0
 
 [loop]
-position = "IDLE"
+position = "PLAN"
+plan = "00-01"
+plan_path = "phases/00-ai-friendly-scaffolding/00-01-PLAN.md"
 
 [satellite]
 groom = true
@@ -29,4 +31,4 @@ groom = true
 [stats]
 total_plans = 0
 total_phases = 0
-last_activity = "2026-08-07T12:03:36Z"
+last_activity = "2026-08-07T12:08:29Z"

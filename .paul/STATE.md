@@ -11,26 +11,26 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** Project initialized — ready for planning (v0.1 Initial Release, Phase 0: AI-Friendly Project Scaffolding)
+**Current focus:** v0.1 Initial Release, Phase 0: AI-Friendly Project Scaffolding — Planning
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 0 of 7 (AI-Friendly Project Scaffolding)
-Plan: None yet
-Status: Ready to plan
-Last activity: 2026-08-07 — PAUL initialized from graduated PLANNING.md/README.md
+Phase: 0 of 7 (AI-Friendly Project Scaffolding) — Planning
+Plan: 00-01 created, awaiting approval
+Status: PLAN created, ready for APPLY
+Last activity: 2026-08-07 — Created .paul/phases/00-ai-friendly-scaffolding/00-01-PLAN.md
 
 Progress:
 - Milestone: [░░░░░░░░░░] 0%
-- Phase: [░░░░░░░░░░] 0%
+- Phase 0: [░░░░░░░░░░] 0%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ○        ○        ○     [Ready for first PLAN]
+  ✓        ○        ○     [Plan created, awaiting approval]
 ```
 
 ## Performance Metrics
@@ -72,14 +72,19 @@ None yet — Phase 5 is expected to be blocked on research, not yet a live block
 
 ## Boundaries (Active)
 
-None yet — set when the first PLAN.md is created for Phase 0.
+From plan 00-01:
+- `README.md` (approved at graduation — link to it, don't rewrite)
+- `projects/gaspense/PLANNING.md` (ideation record, append-only)
+- `.paul/PROJECT.md`, `.paul/ROADMAP.md` (PAUL-managed)
+- `.claude/settings.json` (deliberately tracked, must stay tracked)
 
 ## Session Continuity
 
 Last session: 2026-08-07
-Stopped at: PAUL initialization complete (PROJECT.md, ROADMAP.md, STATE.md, paul.toml created from graduated PLANNING.md/README.md)
-Next action: Run `/paul:plan` to create the first plan for Phase 0 (AI-Friendly Project Scaffolding)
-Resume context: Full project brief in `.paul/PROJECT.md` and `projects/gaspense/PLANNING.md`; 7-phase roadmap already defined in `.paul/ROADMAP.md`
+Stopped at: Plan 00-01 created
+Next action: Review and approve plan, then run `/paul:apply .paul/phases/00-ai-friendly-scaffolding/00-01-PLAN.md`
+Resume file: `.paul/phases/00-ai-friendly-scaffolding/00-01-PLAN.md`
+Resume context: Phase 0 split into two plans — 00-01 (agent docs + .gitignore, this one) and 00-02 (minimal package.json + ESLint/Prettier/EditorConfig/markdownlint + CI-callable check script). Toolchain decision: minimal package.json in Phase 0, Next.js layered on in Phase 2.
 
 ---
 *STATE.md — Updated after every significant action*

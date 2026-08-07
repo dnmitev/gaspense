@@ -1,2 +1,8 @@
 # .paul/ledger.toml — Session history for cost/time attribution
 # Append-only. BASE extracts for usage analytics cross-reference.
+
+[[entry]]
+action = "plan"
+phase = 0
+plan = "00-01"
+at = "2026-08-07T12:08:29Z"
