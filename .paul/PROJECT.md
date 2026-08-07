@@ -47,15 +47,11 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 - ✓ Next.js 16 App Router app shell, building and serving, build-gated in CI — Phase 2 (02-01)
 - ✓ Test infrastructure — Vitest + Playwright (desktop and mobile), both proven failable — Phase 2 (02-02)
 - ✓ Data layer — Prisma 7 schema (5 entities), committed migrations, idempotent seed, 8 integration tests green in CI — Phase 2 (02-03)
-- ✓ Next.js 16 App Router app shell, building and serving, build-gated in CI — Phase 2 (02-01)
-- ✓ Test infrastructure — Vitest + Playwright (desktop and mobile viewports), both proven failable — Phase 2 (02-02)
-- ✓ Data layer — Prisma 7 schema (5 entities), committed migrations, idempotent seed, 8 integration tests green against Postgres in CI — Phase 2 (02-03)
 
 ### Active (In Progress)
-None — Phase 2 (Foundations) is next.
+- Phase 2: Foundations — 3 of 6 plans complete (app shell, test infra, data layer done; auth and UI remain)
 
 ### Planned (Next)
-- Phase 2: Foundations — Google OAuth, Car/Category/Expense CRUD, odometer log
 - Phase 3: Reporting — monthly/yearly cost aggregations, dashboard charts, cost-per-km
 - Phase 4: PWA & Mobile UX — installable PWA, quick-add flow, photo upload
 - Phase 5: Bulgarian Integrations — research spike, then fines/vignette checks
@@ -143,20 +139,7 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 | Prisma seed/scripts run under `tsx` | The generated client uses bundler-style extensionless imports Node's ESM loader cannot resolve | 2026-08-07 | Active |
 | Generated Prisma client to `lib/generated/prisma` | Prisma 7 defaults to `app/generated/prisma`, inside the App Router tree | 2026-08-07 | Active |
 | Reject `prisma init`'s agent-skill injection | Writes 71 files to `.agents/`, `.claude/skills/`, `.windsurf/` and edits `.gitignore`; verified non-regenerating | 2026-08-07 | Active |
-| Vitest + Playwright for unit/integration and e2e | Modern default for Next.js; both proven able to fail before being trusted | 2026-08-07 | Active |
-| e2e serves the production build, never `next dev` | `next dev` regenerates the AGENTS.md agent-rules block, dirtying the tree on every test run | 2026-08-07 | Active |
-| Vitest runs `globals: false` | Explicit typed imports; requires manual `afterEach(cleanup)` or the DOM leaks between tests | 2026-08-07 | Active |
 | Unit tests DB-free; integration tests a separate project | The fast feedback loop must not depend on a running container | 2026-08-07 | Active |
-| Local Docker Postgres (host port 5433) + CI service container | No Supabase account or secrets needed; 5432 is held by another project on this machine | 2026-08-07 | Active |
-| Prisma 7 with the `@prisma/adapter-pg` driver adapter | Prisma 7 makes an adapter mandatory; it also accepts a `pg.Pool`, the serverless-pooling lever | 2026-08-07 | Active |
-| Connection URLs in `prisma.config.ts`, not the schema | Prisma 7 removed `url`/`directUrl` from the datasource block | 2026-08-07 | Active |
-| Money as `amountCents Int`; `liters` as Float | Prisma `Decimal` returns Decimal.js, which breaks the Next server→client boundary; integer cents gives exact arithmetic and trivial `SUM()` | 2026-08-07 | Active |
-| `pricePerLiter` derived, not stored | A stored derived value can drift from its inputs | 2026-08-07 | Active |
-| Schema limited to Phase 2's five entities | Fine/Vignette shapes depend on the unresolved Phase 5 research; Attachment waits for Phase 4 | 2026-08-07 | Active |
-| Category uniqueness via raw-SQL partial indexes | Prisma cannot express them, and `@@unique([userId, name])` is defeated by Postgres treating NULLs as distinct | 2026-08-07 | Active |
-| Prisma seed/scripts run under `tsx` | The generated client uses bundler-style extensionless imports Node's ESM loader cannot resolve | 2026-08-07 | Active |
-| Generated Prisma client to `lib/generated/prisma` | Prisma 7 defaults to `app/generated/prisma`, inside the App Router tree | 2026-08-07 | Active |
-| Reject `prisma init`'s agent-skill injection | Writes 71 files to `.agents/`, `.claude/skills/`, `.windsurf/` and edits `.gitignore`; verified non-regenerating, so removal is durable | 2026-08-07 | Active |
 
 ## Success Metrics
 
@@ -191,4 +174,4 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-08-07 after Phase 1*
+*Last updated: 2026-08-07 during Phase 2*

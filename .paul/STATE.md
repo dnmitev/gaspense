@@ -11,15 +11,15 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release, Phase 2: Foundations — 3 of 6 plans complete
+**Current focus:** v0.1 Initial Release, Phase 2: Foundations — Planning 02-04
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
 Phase: 2 of 7 (Foundations) — In progress
-Plan: 02-03 complete (loop closed)
-Status: Ready for next PLAN (02-04)
-Last activity: 2026-08-07 — Closed loop 02-03; data layer live, 8 integration tests green in CI
+Plan: 02-04 created, awaiting approval (4 of 6 in this phase)
+Status: PLAN created, ready for APPLY
+Last activity: 2026-08-07 — Created 02-04-PLAN.md (isolation-critical; has a blocking checkpoint)
 
 Progress:
 - Milestone: [██░░░░░░░░] 29% (2 of 7 phases complete)
@@ -30,7 +30,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete — ready for next PLAN]
+  ✓        ○        ○     [Plan 02-04 created, awaiting approval]
 ```
 
 ## Performance Metrics
@@ -65,6 +65,8 @@ Only what constrains upcoming work. **Full log (28 entries): `.paul/PROJECT.md` 
 | CLAUDE.md and AGENTS.md always change together | One set of facts in two files |
 | Direct commits to `main`; push after every loop | No branch protection -- the pre-push hook is the only pre-landing gate |
 | Public repo -- nothing sensitive, ever | `.env.example` placeholders only; no real plates or personal data in seeds/fixtures |
+| NextAuth **v5 beta** + `@auth/prisma-adapter`, database sessions | v5 is beta but is the App Router API; sessions live in Postgres so Phase 6 gets the Google refresh token free |
+| Google OAuth credentials are the user's to create | Automated tests create sessions directly in the DB; a real login is a manual check the user performs |
 
 ### Deferred Issues
 
@@ -81,13 +83,19 @@ Only what constrains upcoming work. **Full log (28 entries): `.paul/PROJECT.md` 
 |---------|--------|-----------------|
 | Next.js owns a section of AGENTS.md | Hand-edits inside the `nextjs-agent-rules` block are silently overwritten on `next dev` | Edit only outside the markers |
 | e2e step rebuilds the app, duplicating the Build step | Slower CI runs | Accepted; optimising means touching 01-01's verified workflow structure |
+| **`@auth/prisma-adapter` peer-declares `@prisma/client >=2..>=6`, NOT >=7** | We run Prisma 7.9.1; the adapter may not work | 02-04 Task 1 retires this risk first, with a documented escalation if it fails |
+| PROJECT.md had 16 duplicated rows from a repeated UNIFY edit | Authoritative decision log was unreliable | Fixed during 02-04 planning; deduped and verified |
 
 **Resolved:** CI success metric and stale agent docs (02-02); `.env.example` and the
 `docs/ARCHITECTURE.md` schema update (02-03).
 
 ## Boundaries (Active)
 
-None -- set when 02-04's PLAN.md is created. Standing "do not break these":
+From plan 02-04 (plus the standing "do not break these"):
+
+- **No `ALTER COLUMN` or `DROP` on any existing table** — 02-04's migration must be additive only
+- **No real credentials committed** — the user supplies `AUTH_*` values in `.env` themselves
+- **No Google Drive scopes** in the OAuth consent — Phase 6 owns that
 
 - **Never run `prisma init` again** -- re-injects 71 agent-skill files and edits `.gitignore`
 - **Never run `create-next-app`** here -- clobbers README.md, .gitignore, eslint.config.mjs, scripts
@@ -105,13 +113,14 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-07 (resumed; handoff consumed and archived to `.paul/handoffs/archive/`)
-Stopped at: Plan 02-03 loop closed -- all 6 ACs pass (AC-1 adapted for Prisma 7)
-Next action: Run `/paul:plan` for 02-04 (NextAuth Google OAuth, session handling, per-user scoping helper)
-Resume file: `.paul/phases/02-foundations/02-03-SUMMARY.md`
+Stopped at: Plan 02-04 created — 3 tasks + 1 blocking human-verify checkpoint (`autonomous: false`)
+Next action: Review and approve plan, then run `/paul:apply .paul/phases/02-foundations/02-04-PLAN.md`
+Resume file: `.paul/phases/02-foundations/02-04-PLAN.md`
 Git strategy: `main` (direct commits)
 Resume context:
-- Phase 2 is 3 of 6 -- NOT complete; transition withheld again (file-count heuristic reads 3=3 as done; ROADMAP declares 6). Fourth time.
-- **02-04 is the isolation-critical plan.** No RLS backstop, so every query path needs a cross-user leakage test. `User` is already adapter-shaped, so only Account/Session/VerificationToken migrate.
+- Phase 2 is 3 of 6 -- NOT complete; the file-count heuristic has now given a false positive four times. ROADMAP is the authority.
+- **02-04's first task retires a real risk:** `@auth/prisma-adapter` does not declare Prisma 7 support. If it fails, STOP and escalate — pinning Prisma 6, hand-writing an adapter, and switching to JWT all have costs that are the user's call.
+- 02-04 is `autonomous: false` — it ends with an optional human-verify checkpoint for a real Google login, which needs credentials only the user can create.
 - Local dev needs `docker compose up -d` (Postgres on **5433**) before `npm run test:integration`.
 - **Never read an exit code through a pipe** -- this has caused a wrong conclusion three times.
 
