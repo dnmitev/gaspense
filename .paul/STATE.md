@@ -11,15 +11,15 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release, Phase 2: Foundations — Planning 02-01
+**Current focus:** v0.1 Initial Release, Phase 2: Foundations — Applying 02-01
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 2 of 7 (Foundations) — Planning
-Plan: 02-01 created, awaiting approval (1 of 6 in this phase)
-Status: PLAN created, ready for APPLY
-Last activity: 2026-08-07 — Created .paul/phases/02-foundations/02-01-PLAN.md
+Phase: 2 of 7 (Foundations) — Applying
+Plan: 02-01 executed, 3 of 3 tasks complete (AC-4 partial, waived)
+Status: APPLY complete, ready for UNIFY
+Last activity: 2026-08-07 — Executed 02-01: Next.js scaffold, ESLint 9 downgrade, build in CI
 
 Progress:
 - Milestone: [██░░░░░░░░] 29% (2 of 7 phases complete)
@@ -30,7 +30,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan 02-01 created, awaiting approval]
+  ✓        ✓        ◉     [Ready for UNIFY]
 ```
 
 ## Performance Metrics
@@ -70,6 +70,9 @@ Digest of decisions that constrain upcoming work. **Full log: `.paul/PROJECT.md`
 | Prisma as data layer | Phase 2 | Watch connection pooling on Vercel serverless |
 | Vitest + Playwright | Phase 2 | `test` and `test:e2e` scripts land in 02-02 |
 | Soft-delete cars only (`deletedAt`) | Phase 2 | Car queries must filter deleted rows; expenses/odometer hard-delete |
+| **ESLint pinned to 9, not 10** | Phase 2 (02-01) | `eslint-config-next`'s bundled plugins cap at ^9 and crash ESLint 10. Do not upgrade ESLint until they support 10 |
+| **Next.js 16 rewrites AGENTS.md** | Phase 2 (02-01) | `next dev` re-injects an H1 agent-rules block; MD025 is disabled because of it. Commit the block, never fight it |
+| Tailwind 4 is CSS-first | Phase 2 (02-01) | Theme customisation goes in `app/globals.css` via `@theme` — there is no `tailwind.config.js` |
 | `docs/ARCHITECTURE.md` is the living design doc | Phase 0 | Must be updated in Phase 2 when the real schema lands, or it misleads |
 
 ### Deferred Issues
@@ -106,8 +109,8 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-07
-Stopped at: Plan 02-01 created — Phase 2 decomposed into 6 plans
-Next action: Review and approve plan, then run `/paul:apply .paul/phases/02-foundations/02-01-PLAN.md`
+Stopped at: Plan 02-01 APPLY complete — app builds and serves, CI green with check + build
+Next action: Run `/paul:unify .paul/phases/02-foundations/02-01-PLAN.md` to close the loop
 Resume file: `.paul/phases/02-foundations/02-01-PLAN.md`
 Resume context: 02-01 scaffolds Next.js App Router + Tailwind manually (create-next-app would clobber protected files) and adds a build step to CI. Remaining: 02-02 test infra + `.env.example` + agent docs, 02-03 Prisma schema, 02-04 NextAuth, 02-05 Car slice, 02-06 Category/Expense/Odometer. Two things must be read from installed packages rather than assumed: the `eslint-config-next` flat-config entry point and the Tailwind major version's config style.
 
