@@ -11,15 +11,15 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release, Phase 2: Foundations — Planning 02-05
+**Current focus:** v0.1 Initial Release, Phase 2: Foundations — Applying 02-05
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
 Phase: 2 of 7 (Foundations) — In progress
-Plan: 02-05 created, awaiting approval (5 of 6 in this phase)
-Status: PLAN created, ready for APPLY
-Last activity: 2026-08-07 — Created 02-05-PLAN.md (first feature slice: Car CRUD)
+Plan: 02-05 executed, 3 of 3 tasks complete
+Status: APPLY complete, ready for UNIFY
+Last activity: 2026-08-07 — Executed 02-05: Car CRUD live, 79 tests green, CI green after an AUTH_URL fix
 
 Progress:
 - Milestone: [██░░░░░░░░] 29% (2 of 7 phases complete)
@@ -30,7 +30,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan 02-05 created, awaiting approval]
+  ✓        ✓        ◉     [Ready for UNIFY]
 ```
 
 ## Performance Metrics
@@ -70,6 +70,9 @@ Only what constrains upcoming work. **Full log (28 entries): `.paul/PROJECT.md` 
 | **Mutations are server actions, not REST routes** | Reads in server components, writes in actions over a scoped data layer. `docs/ARCHITECTURE.md`'s REST table was a design sketch and gets corrected in 02-05 |
 | **Hand-rolled Tailwind, no component library** | Ideation's "Tailwind + shadcn" predates any UI; adopt shadcn only when a dialog/date-picker genuinely needs it |
 | **Data-layer functions take `userId` explicitly** | They never read the session themselves — keeps them unit-testable and makes a missing filter visible at the call site |
+| **Writes use scoped `updateMany`, never findUnique-then-update** | Putting `userId` in the same WHERE clause as the id means a wrong owner affects zero rows; find-then-update is where cross-user writes leak |
+| **`AUTH_URL` is required for a production build** | Auth.js rejects every session read with UntrustedHost otherwise. Dev mode trusts localhost, so this only appears against `next start` |
+| **Verify e2e with `CI=true`** | `reuseExistingServer` can silently reuse a stale dev server, so a plain local pass proves nothing about CI |
 
 ### Deferred Issues
 
@@ -86,7 +89,8 @@ Only what constrains upcoming work. **Full log (28 entries): `.paul/PROJECT.md` 
 |---------|--------|-----------------|
 | Next.js owns a section of AGENTS.md | Hand-edits inside the `nextjs-agent-rules` block are silently overwritten on `next dev` | Edit only outside the markers |
 | e2e step rebuilds the app, duplicating the Build step | Slower CI runs | Accepted; optimising means touching 01-01's verified workflow structure |
-| Auth is wired but never exercised against real Google | A real OAuth login has not been performed; only DB-level sessions are tested | User adds `AUTH_*` to `.env` and clicks through when convenient |
+| Auth is wired but never exercised against real Google | A real OAuth login has not been performed; seeded DB sessions are what the tests use | User adds `AUTH_*` to `.env` and clicks through when convenient |
+| e2e suite asserts placeholder copy on `/` | Phase 3 turns `/` into the dashboard and will need `tests/e2e/home.spec.ts` updated | Expected, not a regression |
 
 **Resolved:** CI metric + stale agent docs (02-02); `.env.example` + ARCHITECTURE schema (02-03);
 the `@auth/prisma-adapter`/Prisma 7 worry — its peer range is open-ended, and compatibility was
@@ -116,8 +120,8 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-07 (resumed; handoff consumed and archived to `.paul/handoffs/archive/`)
-Stopped at: Plan 02-05 created — 3 tasks, 7 ACs, the first feature slice
-Next action: Review and approve plan, then run `/paul:apply .paul/phases/02-foundations/02-05-PLAN.md`
+Stopped at: Plan 02-05 APPLY complete — Car CRUD live; CI green after diagnosing an UntrustedHost failure
+Next action: Run `/paul:unify .paul/phases/02-foundations/02-05-PLAN.md` to close the loop
 Resume file: `.paul/phases/02-foundations/02-05-PLAN.md`
 Git strategy: `main` (direct commits)
 Resume context:
