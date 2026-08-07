@@ -37,36 +37,75 @@ There is no separate backend service, no cache layer, and no real-time transport
 
 ## Data Model
 
-Eight entities. Ownership flows `User → Car → {Expense, OdometerReading, Fine, Vignette, Attachment}`, with `Category` classifying expenses and `Attachment` hanging off either a car or an expense.
+**Implemented: five entities.** Three more are designed but deliberately deferred — see
+[Deferred entities](#deferred-entities) below. The authoritative source is
+[`prisma/schema.prisma`](../prisma/schema.prisma); this section describes it.
 
 ```text
 User ──< Car ──< Expense >── Category
-              ├─< OdometerReading
-              ├─< Fine
-              ├─< Vignette
-              └─< Attachment >── Expense
+              └─< OdometerReading
 ```
 
-| Entity              | Key fields                                                                                                                                                          | Relationships                                                                                             |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| **User**            | `id`, `email`, `name`, `googleId`                                                                                                                                   | has many Cars                                                                                             |
-| **Car**             | `id`, `userId`, `licensePlate`, `make`, `model`, `year`, `fuelType`, `nickname`                                                                                     | belongs to User; has many Expenses, OdometerReadings, Fines, Attachments; has one current Vignette status |
-| **Category**        | `id`, `userId` (nullable for system defaults), `name`, `type`                                                                                                       | has many Expenses                                                                                         |
-| **Expense**         | `id`, `carId`, `categoryId`, `date`, `amount` (EUR), `odometerReading`, `notes` — fuel expenses additionally carry `liters`, `pricePerLiter`, `station`, `fullTank` | belongs to Car and Category; has many Attachments                                                         |
-| **OdometerReading** | `id`, `carId`, `date`, `reading`, `source` (manual / expense)                                                                                                       | belongs to Car                                                                                            |
-| **Fine**            | `id`, `carId`, `source` (`"KAT"`), `amount`, `date`, `referenceNumber`, `status`                                                                                    | belongs to Car; populated via external check                                                              |
-| **Vignette**        | `id`, `carId`, `validFrom`, `validTo`, `checkedAt`, `status`                                                                                                        | belongs to Car; populated via external check                                                              |
-| **Attachment**      | `id`, `carId` (nullable), `expenseId` (nullable), `storagePath`, `uploadedAt`                                                                                       | belongs to either a Car or an Expense; file lives in Supabase Storage                                     |
+| Entity              | Key fields                                                                                                                                                       | Relationships                                           |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| **User**            | `id` (cuid), `email` (unique), `name?`, `emailVerified?`, `image?`, timestamps                                                                                   | has many Cars and Categories                            |
+| **Car**             | `id`, `userId`, `licensePlate`, `make?`, `model?`, `year?`, `nickname?`, `fuelType` (enum), **`deletedAt?`** (soft delete), timestamps                           | belongs to User; has many Expenses and OdometerReadings |
+| **Category**        | `id`, `userId?` (null = system default), `name`, timestamps                                                                                                      | belongs to User (optional); has many Expenses           |
+| **Expense**         | `id`, `carId`, `categoryId`, `date`, **`amountCents`** (Int), `notes?` — fuel expenses additionally carry `liters?` (Float), `station?`, `fullTank?`, timestamps | belongs to Car and Category                             |
+| **OdometerReading** | `id`, `carId`, `date`, `reading` (Int, km), `source` (enum `MANUAL` \| `EXPENSE`), timestamps                                                                    | belongs to Car                                          |
+
+**Enums:** `FuelType` (PETROL, DIESEL, LPG, ELECTRIC, HYBRID, OTHER) and
+`OdometerSource` (MANUAL, EXPENSE).
+
+**Indexes:** `Car(userId)`, `Car(deletedAt)`, `Category(userId)`, `Expense(carId)`,
+`Expense(date)`, `Expense(categoryId)`, `OdometerReading(carId)`, `OdometerReading(date)`, plus the
+two partial unique indexes described below.
 
 ### Design decisions behind this shape
 
-- **Odometer readings are a first-class log**, not derived from expenses. Fuel fill-ups are an incomplete record of mileage, and accurate L/100km — plus future service-interval reminders — needs a standalone series.
-- **`Attachment` uses nullable dual foreign keys** (`carId` / `expenseId`) rather than a polymorphic join table. With exactly two possible owners, this is the simpler shape; exactly one of the two should be set.
-- **Amounts are EUR only.** No currency column, no conversion. Deliberate scope reduction.
-- **Categories are seeded but user-editable.** Defaults: Fuel, Maintenance, Body Work, Insurance, Taxes/Fees, Fines, Vignette, Parking, Tires, Other. `Category.userId` is null for the system defaults and set for user-added ones.
-- **Only the file body lives in Storage.** The database holds `storagePath`; Supabase Storage holds the bytes.
+- **Odometer readings are a first-class log**, not derived from expenses. Fuel fill-ups are an
+  incomplete record of mileage, and accurate L/100km — plus future service-interval reminders —
+  needs a standalone series.
+- **Soft delete on Car only** (`deletedAt`). Deleting a car must never destroy its expense history,
+  so every car query must filter `deletedAt: null`. Expenses and odometer readings hard-delete;
+  they are cheap to re-enter. Integration tests assert this distinction.
+- **Money is stored as `amountCents` (integer minor units), not a decimal.** _This deviates from the
+  original design, which said `amount` (EUR)._ Prisma's `Decimal` returns Decimal.js instances that
+  do not survive the Next.js server→client boundary as numbers, forcing serialisation everywhere.
+  Integer cents gives exact arithmetic and makes Phase 3's `SUM()` reporting trivial. EUR-only makes
+  a single minor unit safe.
+- **`pricePerLiter` is not stored.** _Also a deviation from the original design._ It is
+  `amountCents / liters`, and a stored derived value can drift from its inputs — compute it where
+  displayed. `liters` is a `Float` rather than a decimal because, unlike money, no exact-cent
+  arithmetic depends on it.
+- **Categories are seeded but user-editable.** Defaults: Fuel, Maintenance, Body Work, Insurance,
+  Taxes/Fees, Fines, Vignette, Parking, Tires, Other. `Category.userId` is null for system defaults.
+- **Two partial unique indexes enforce category uniqueness**, written as raw SQL in the migration
+  because Prisma cannot express partial indexes: `name` unique `WHERE userId IS NULL` (system
+  defaults) and `(userId, name)` unique `WHERE userId IS NOT NULL` (a user's own). A plain
+  `@@unique([userId, name])` would **not** work — Postgres treats NULLs as distinct, so duplicate
+  system defaults would be permitted and `upsert` could never match them.
 
-Column types, indexes, constraints, and migrations are decided in Phase 2 when the schema is actually built — deliberately not specified here.
+### Deferred entities
+
+| Entity         | Deferred to | Why                                                                                                                                                                                    |
+| -------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Fine**       | Phase 5     | Its fields depend on what the КАТ/МВР research spike finds the service actually returns. Modelling it now would be speculation likely contradicted later.                              |
+| **Vignette**   | Phase 5     | Same reason — the vignette check has no confirmed API either.                                                                                                                          |
+| **Attachment** | Phase 4     | Arrives with car/expense photo upload. Design stands: nullable dual foreign keys (`carId`/`expenseId`), with the file body in Supabase Storage and only `storagePath` in the database. |
+
+Prisma migrations are additive, so adding these later is a normal migration rather than a rewrite.
+
+### Data layer
+
+- **Prisma 7** with the **`@prisma/adapter-pg` driver adapter** — Prisma 7 requires either a driver
+  adapter or Prisma Accelerate; the client can no longer read a connection URL from the schema.
+- **Connection URLs live in [`prisma.config.ts`](../prisma.config.ts)**, not `schema.prisma`. Prisma 7
+  removed `url` and `directUrl` from the datasource block.
+- **`lib/prisma.ts`** exports a singleton cached on `globalThis` outside production, so Next's dev
+  hot-reload does not exhaust the connection pool. The adapter also accepts a `pg.Pool`, which is the
+  lever for tuning serverless pooling when the app is deployed.
+- **Local development uses Docker Postgres** ([`docker-compose.yml`](../docker-compose.yml), host port 5433) and CI uses a service container. Supabase is the production target; nothing is wired to it yet.
 
 ---
 

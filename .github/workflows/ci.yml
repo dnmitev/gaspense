@@ -21,9 +21,32 @@ concurrency:
 
 jobs:
   check:
-    name: Lint, format, and docs gate
+    name: Lint, format, build, and test
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+
+    # Throwaway service-container credentials. These are deliberately NOT GitHub
+    # secrets: the database exists only for the duration of this job and holds
+    # nothing but test fixtures. Treating them as secrets would imply they matter.
+    env:
+      DATABASE_URL: "postgresql://gaspense:gaspense_ci@localhost:5432/gaspense_test?schema=public"
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: gaspense
+          POSTGRES_PASSWORD: gaspense_ci
+          POSTGRES_DB: gaspense_test
+        ports:
+          - 5432:5432
+        # Without a health check, steps can start before Postgres accepts
+        # connections and fail intermittently.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
       - name: Checkout
@@ -54,6 +77,15 @@ jobs:
 
       - name: Unit tests
         run: npm test
+
+      # Applies committed migrations to the service-container database. Uses
+      # `migrate deploy`, never `migrate dev` — deploy is the non-interactive,
+      # production-shaped command and will not try to generate new migrations.
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
+      - name: Integration tests
+        run: npm run test:integration
 
       # CI runners have no browsers preinstalled — omitting this is the usual
       # first failure when adding Playwright to a pipeline.

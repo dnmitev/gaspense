@@ -20,6 +20,7 @@ export default tseslint.config(
       "build/**",
       "dist/**",
       "coverage/**",
+      "lib/generated/**",
       ".paul/**",
       "projects/**",
     ],

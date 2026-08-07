@@ -1,0 +1,151 @@
+// Gaspense data model.
+//
+// Scope: Phase 2's five entities only. Fine and Vignette are deferred to Phase 5
+// (their fields depend on what the КАТ/vignette research spike finds the services
+// actually return, so modelling them now would be speculation). Attachment is
+// deferred to Phase 4 with photo upload. See docs/ARCHITECTURE.md.
+//
+// Prisma 7 note: connection URLs live in prisma.config.ts, not here — the
+// datasource block no longer accepts `url` or `directUrl`.
+
+generator client {
+  provider = "prisma-client"
+  // Deliberately NOT the default "../app/generated/prisma": `app/` is the Next.js
+  // App Router tree, and generated files there risk being treated as routes and
+  // get picked up by lint/format.
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum FuelType {
+  PETROL
+  DIESEL
+  LPG
+  ELECTRIC
+  HYBRID
+  OTHER
+}
+
+enum OdometerSource {
+  MANUAL
+  EXPENSE
+}
+
+/// Shaped to satisfy NextAuth's Prisma adapter, so plan 02-04 can wire auth
+/// without migrating this table. Account/Session/VerificationToken arrive with
+/// the adapter itself in 02-04.
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  cars       Car[]
+  categories Category[]
+}
+
+model Car {
+  id           String   @id @default(cuid())
+  userId       String
+  licensePlate String
+  make         String?
+  model        String?
+  year         Int?
+  nickname     String?
+  fuelType     FuelType @default(PETROL)
+
+  /// Soft delete. Deleting a car must never destroy its expense history, so
+  /// every car query must filter `deletedAt: null`. Expenses and odometer
+  /// readings hard-delete by contrast.
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expenses         Expense[]
+  odometerReadings OdometerReading[]
+
+  @@index([userId])
+  @@index([deletedAt])
+}
+
+model Category {
+  /// null = system default, seeded for everyone. Set = a user's own category.
+  ///
+  /// NOTE: Postgres treats NULLs as distinct in unique constraints, so a
+  /// @@unique([userId, name]) would NOT prevent duplicate system defaults. The
+  /// partial unique index enforcing that lives in the migration SQL instead.
+  id     String  @id @default(cuid())
+  userId String?
+  name   String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expenses Expense[]
+
+  @@index([userId])
+}
+
+model Expense {
+  id         String   @id @default(cuid())
+  carId      String
+  categoryId String
+  date       DateTime
+
+  /// Money as integer minor units (euro cents), never a float or Decimal.
+  /// Prisma's Decimal returns Decimal.js instances that do not survive the
+  /// Next.js server→client boundary as numbers, and integer cents gives exact
+  /// arithmetic plus trivial SUM() for Phase 3's reporting. EUR-only makes a
+  /// single minor unit safe.
+  amountCents Int
+
+  notes String?
+
+  // Fuel-specific, all optional — only set on fuel expenses.
+  //
+  // `liters` is a Float rather than Decimal: unlike money, no exact-cent
+  // arithmetic depends on it, so double precision is ample for L/100km and it
+  // avoids the Decimal.js serialisation problem.
+  //
+  // pricePerLiter is deliberately NOT stored — it is amountCents / liters, and a
+  // stored derived value can drift from its inputs. Compute it where displayed.
+  liters   Float?
+  station  String?
+  fullTank Boolean?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  car      Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@index([carId])
+  @@index([date])
+  @@index([categoryId])
+}
+
+model OdometerReading {
+  id      String         @id @default(cuid())
+  carId   String
+  date    DateTime
+  /// Kilometres.
+  reading Int
+  source  OdometerSource @default(MANUAL)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  car Car @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@index([carId])
+  @@index([date])
+}

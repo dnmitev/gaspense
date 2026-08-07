@@ -1,0 +1,29 @@
+# Local development database only. These credentials are intentionally
+# throwaway and obviously non-production — never reuse them anywhere real.
+#
+# Start:  docker compose up -d
+# Stop:   docker compose down
+# Reset:  docker compose down -v   (drops the volume, wiping all local data)
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: gaspense-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gaspense
+      POSTGRES_PASSWORD: gaspense_local_dev
+      POSTGRES_DB: gaspense_dev
+    ports:
+      # Host port 5433, not 5432: another project on this machine already
+      # binds 5432. Container-internal port is unchanged.
+      - "5433:5432"
+    volumes:
+      - gaspense_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gaspense -d gaspense_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  gaspense_pgdata:

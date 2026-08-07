@@ -17,3 +17,6 @@ out/
 build/
 dist/
 coverage/
+
+# Prisma's generated client
+lib/generated/
