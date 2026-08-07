@@ -24,7 +24,7 @@ Phases: 2 of 7 complete (29%)
 |-------|------|-------|--------|-----------|
 | 0 | AI-Friendly Project Scaffolding | 2/2 | ✅ Complete | 2026-08-07 |
 | 1 | CI/CD Pipeline | 1/1 | ✅ Complete | 2026-08-07 |
-| 2 | Foundations | 6 | Planning | - |
+| 2 | Foundations | 1/6 | In progress | - |
 | 3 | Reporting | TBD | Not started | - |
 | 4 | PWA & Mobile UX | TBD | Not started | - |
 | 5 | Bulgarian Integrations | TBD | Not started | - |
@@ -113,8 +113,8 @@ read from the packages rather than assumed.
   car must not destroy its expense history.
 
 **Plans:**
-- [ ] 02-01: Next.js App Router scaffold, eslint-config-next integration, build step in CI
-- [ ] 02-02: Vitest + Playwright, `test`/`test:e2e` scripts + CI steps, `.env.example`, agent docs
+- [x] 02-01: Next.js App Router scaffold, eslint-config-next integration, build step in CI
+- [ ] 02-02: Vitest + Playwright, `test`/`test:e2e` scripts + CI steps, `.env.example`, **fix the now-stale `dev`/`build` wording in both agent docs**
 - [ ] 02-03: Prisma schema + migrations + seeded default categories, `docs/ARCHITECTURE.md` update
 - [ ] 02-04: NextAuth Google OAuth, session handling, per-user scoping helper
 - [ ] 02-05: Car CRUD vertical slice (API + UI + tests, incl. soft delete)

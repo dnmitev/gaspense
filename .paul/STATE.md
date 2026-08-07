@@ -11,34 +11,34 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release, Phase 2: Foundations — Applying 02-01
+**Current focus:** v0.1 Initial Release, Phase 2: Foundations — 1 of 6 plans complete
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 2 of 7 (Foundations) — Applying
-Plan: 02-01 executed, 3 of 3 tasks complete (AC-4 partial, waived)
-Status: APPLY complete, ready for UNIFY
-Last activity: 2026-08-07 — Executed 02-01: Next.js scaffold, ESLint 9 downgrade, build in CI
+Phase: 2 of 7 (Foundations) — In progress
+Plan: 02-01 complete (loop closed)
+Status: Ready for next PLAN (02-02)
+Last activity: 2026-08-07 — Closed loop 02-01; app builds and serves, CI gates check + build
 
 Progress:
 - Milestone: [██░░░░░░░░] 29% (2 of 7 phases complete)
-- Phase 2: [░░░░░░░░░░] 0%
+- Phase 2: [██░░░░░░░░] 17% (1 of 6 plans)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ◉     [Ready for UNIFY]
+  ✓        ✓        ✓     [Loop complete — ready for next PLAN]
 ```
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: ~17 min
-- Total execution time: ~0.9 hours
+- Total plans completed: 4
+- Average duration: ~21 min
+- Total execution time: ~1.4 hours
 
 **By Phase:**
 
@@ -46,9 +46,10 @@ PLAN ──▶ APPLY ──▶ UNIFY
 |-------|-------|------------|----------|
 | 00-ai-friendly-scaffolding | 2/2 ✅ | ~22 min | ~11 min |
 | 01-cicd-pipeline | 1/1 ✅ | ~29 min | ~29 min |
+| 02-foundations | 1/6 | ~33 min | ~33 min |
 
-**Recent Trend:** Last 3 plans: 13, 9, 29 min. The 29 covered live CI verification
-(two real workflow runs plus a probe branch), so it is not comparable to doc-only plans.
+**Recent Trend:** Last 4 plans: 13, 9, 29, 33 min. Plans involving live external
+verification (CI runs, dev server, dependency diagnosis) cost ~3x doc-only plans.
 
 ## Accumulated Context
 
@@ -89,15 +90,15 @@ Digest of decisions that constrain upcoming work. **Full log: `.paul/PROJECT.md`
 | Concern | Impact | Resolution Path |
 |---------|--------|-----------------|
 | CI success metric is only partially achieved — lint gate only, no test/build | PROJECT.md metric reads "lint + test + build" | Phase 2 adds both scripts and the matching CI steps, completing the metric |
-| Three artefacts must change together in Phase 2 | `ci.yml` plus the "not available yet" wording in **both** CLAUDE.md and AGENTS.md; missing one leaves agents contradicting themselves | Treat as a single commit in Phase 2's plan |
+| **Agent docs are currently WRONG** — CLAUDE.md and AGENTS.md still list `npm run dev` and `npm run build` under "Not available yet", but both now exist | An agent reading them is misinformed today | **02-02's first obligation**: correct both files in one commit, alongside adding the test scripts |
+| Next.js owns a section of AGENTS.md | Hand-edits inside the `nextjs-agent-rules` block are silently overwritten on `next dev` | Edit only outside the markers |
 
 ## Boundaries (Active)
 
-From plan 02-01:
+None — set when 02-02's PLAN.md is created. Standing constraints:
 
 - **Never run `create-next-app` in this directory** — it clobbers README.md, .gitignore, eslint.config.mjs, and package.json scripts
-- `README.md`, `CLAUDE.md`, `AGENTS.md` — doc updates deferred to 02-02 so both agent files change once, together
-- `.gitignore` — already covers Next.js output; verified, no edit needed
+- Never edit inside AGENTS.md's `nextjs-agent-rules` markers — Next regenerates that block
 - CI triggers, `permissions`, and `concurrency` — verified in 01-01, not to be restructured
 - `.paul/**`, `projects/**`, `.claude/settings.json` — untouched by tooling
 - `npm run check` must stay green; the pre-push hook enforces it on every push
@@ -109,10 +110,10 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-07
-Stopped at: Plan 02-01 APPLY complete — app builds and serves, CI green with check + build
-Next action: Run `/paul:unify .paul/phases/02-foundations/02-01-PLAN.md` to close the loop
-Resume file: `.paul/phases/02-foundations/02-01-PLAN.md`
-Resume context: 02-01 scaffolds Next.js App Router + Tailwind manually (create-next-app would clobber protected files) and adds a build step to CI. Remaining: 02-02 test infra + `.env.example` + agent docs, 02-03 Prisma schema, 02-04 NextAuth, 02-05 Car slice, 02-06 Category/Expense/Odometer. Two things must be read from installed packages rather than assumed: the `eslint-config-next` flat-config entry point and the Tailwind major version's config style.
+Stopped at: Plan 02-01 loop closed — 3/3 tasks PASS, AC-4 partial by granted waiver
+Next action: Run `/paul:plan` for 02-02 (Vitest + Playwright, test CI steps, `.env.example`, **and correcting the now-stale agent docs**)
+Resume file: `.paul/phases/02-foundations/02-01-SUMMARY.md`
+Resume context: Phase 2 is 1 of 6 plans done — NOT complete, transition deliberately not run. Remaining: 02-02 test infra + docs fix, 02-03 Prisma schema + ARCHITECTURE update, 02-04 NextAuth, 02-05 Car slice, 02-06 Category/Expense/Odometer. ESLint is frozen at 9; Tailwind 4 is CSS-first; never read an exit code through a pipe.
 
 ---
 *STATE.md — Updated after every significant action*
