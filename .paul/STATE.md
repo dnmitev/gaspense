@@ -11,26 +11,26 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release, Phase 1: CI/CD Pipeline — ready to plan
+**Current focus:** v0.1 Initial Release, Phase 1: CI/CD Pipeline — applying
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 1 of 7 (CI/CD Pipeline) — Planning
-Plan: 01-01 created, awaiting approval
-Status: PLAN created, ready for APPLY
-Last activity: 2026-08-07 — Created .paul/phases/01-cicd-pipeline/01-01-PLAN.md
+Phase: 1 of 7 (CI/CD Pipeline) — Applying
+Plan: 01-01 executed, 3 of 3 tasks complete (one sub-item infeasible)
+Status: APPLY complete, ready for UNIFY
+Last activity: 2026-08-07 — Executed 01-01: CI gate proven pass+fail, pre-push hook, docs
 
 Progress:
 - Milestone: [█░░░░░░░░░] 14% (1 of 7 phases complete)
-- Phase 1: [░░░░░░░░░░] 0%
+- Phase 1: [░░░░░░░░░░] 0% (01-01 awaiting UNIFY)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan 01-01 created, awaiting approval]
+  ✓        ✓        ◉     [Ready for UNIFY]
 ```
 
 ## Performance Metrics
@@ -72,6 +72,7 @@ Digest of decisions that constrain upcoming work. **Full log: `.paul/PROJECT.md`
 | Car deletion/data retention policy undecided (hard vs soft delete) | Ideation | S | During Phase 2 planning |
 | Fines/vignette check cadence (scheduled vs manual-only) undecided | Ideation | S | After the Phase 5 research spike |
 | Licence choice unsettled — `UNLICENSED` set to avoid npm's default ISC grant on a public repo | Phase 0 (00-02) | S | User's call; any time |
+| Non-provider secret-scanning patterns not available — no UI toggle exists and the API silently ignores the field; appears to need GitHub's paid Secret Protection tier, not the free public-repo set | Phase 1 (01-01) | — | Only if the repo moves to an org with that licensing |
 
 ### Blockers/Concerns
 
@@ -97,10 +98,10 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-07
-Stopped at: Plan 01-01 created
-Next action: Review and approve plan, then run `/paul:apply .paul/phases/01-cicd-pipeline/01-01-PLAN.md`
+Stopped at: Plan 01-01 APPLY complete — CI proven to pass *and* fail, hook proven to abort a real push, docs identical in both agent files
+Next action: Run `/paul:unify .paul/phases/01-cicd-pipeline/01-01-PLAN.md` to close the loop and complete Phase 1
 Resume file: `.paul/phases/01-cicd-pipeline/01-01-PLAN.md`
-Resume context: `gh` is authenticated as dnmitev, so repo settings are reachable by API. Verified live: secret scanning + push protection already ON (public-repo default) — this phase only hardens with non-provider patterns. CI triggers on `push` to main because PR-only would never fire under direct-to-main; a version-controlled pre-push hook (`.githooks/` via `prepare`) restores the pre-landing gate. The plan proves CI *fails* on a throwaway branch so a false-green pipeline is ruled out.
+Resume context: CI = `.github/workflows/ci.yml`, `npm ci` + `npm run check` on push to main and PRs, Node 22, actions @v7. Phase 2 adds `build`/`test` steps here. Pre-push hook in `.githooks/`, auto-activated by `npm install` via `prepare`; bypass `--no-verify`. AC-4 landed 2 of 3: secret scanning + push protection enabled, non-provider patterns infeasible on this repo tier (see Deferred).
 
 ---
 *STATE.md — Updated after every significant action*
