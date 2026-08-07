@@ -11,92 +11,69 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release, Phase 2: Foundations — Applying 02-03
+**Current focus:** v0.1 Initial Release, Phase 2: Foundations — 3 of 6 plans complete
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
 Phase: 2 of 7 (Foundations) — In progress
-Plan: 02-03 executed, 3 of 3 tasks complete
-Status: APPLY complete, ready for UNIFY
-Last activity: 2026-08-07 — Executed 02-03: Prisma 7 schema, migrations, seed, DB-backed tests in CI
+Plan: 02-03 complete (loop closed)
+Status: Ready for next PLAN (02-04)
+Last activity: 2026-08-07 — Closed loop 02-03; data layer live, 8 integration tests green in CI
 
 Progress:
 - Milestone: [██░░░░░░░░] 29% (2 of 7 phases complete)
-- Phase 2: [███░░░░░░░] 33% (2 of 6 plans)
+- Phase 2: [█████░░░░░] 50% (3 of 6 plans)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ◉     [Ready for UNIFY]
+  ✓        ✓        ✓     [Loop complete — ready for next PLAN]
 ```
 
 ## Performance Metrics
 
-**Velocity:**
-- Total plans completed: 5
-- Average duration: ~20 min
-- Total execution time: ~1.6 hours
+6 plans complete, ~2.2h total, ~22 min average.
 
-**By Phase:**
+| Phase | Plans | Avg/Plan |
+|-------|-------|----------|
+| 00-ai-friendly-scaffolding | 2/2 ✅ | ~11 min |
+| 01-cicd-pipeline | 1/1 ✅ | ~29 min |
+| 02-foundations | 3/6 | ~27 min |
 
-| Phase | Plans | Total Time | Avg/Plan |
-|-------|-------|------------|----------|
-| 00-ai-friendly-scaffolding | 2/2 ✅ | ~22 min | ~11 min |
-| 01-cicd-pipeline | 1/1 ✅ | ~29 min | ~29 min |
-| 02-foundations | 2/6 | ~47 min | ~24 min |
-
-**Recent Trend:** Last 5 plans: 13, 9, 29, 33, 14 min. 02-02 was fast despite live CI
-verification because its plan needed no corrections — the first plan so far whose verify
-commands were all valid as written.
+**Trend:** 13, 9, 29, 33, 14, 35 min. Cost tracks how much *unknown third-party behaviour*
+a plan touches, not its file count.
 
 ## Accumulated Context
 
 ### Decisions
 
-Digest of decisions that constrain upcoming work. **Full log: `.paul/PROJECT.md` → Key Decisions.**
+Only what constrains upcoming work. **Full log (28 entries): `.paul/PROJECT.md` -> Key Decisions.**
 
-| Decision | Phase | Impact |
-|----------|-------|--------|
-| Next.js + Supabase (Postgres + Storage) + Vercel, Google OAuth | Ideation | Fixes the stack for all remaining phases |
-| Direct commits to `main`, no PR-per-change | Ideation | No branch/PR overhead; still push after every loop |
-| Public repo — nothing sensitive ever committed | Ideation | `.env.example` only; no real plates or personal data in fixtures |
-| npm as package manager | Phase 0 | Phase 1 CI uses `npm ci` + npm caching |
-| CLAUDE.md and AGENTS.md are edited together | Phase 0 | One set of facts in two files — always edit both in the same commit |
-| CI triggers on `push` to `main`; no branch protection | Phase 1 | The pre-push hook is the only pre-landing gate, and it is bypassable with `--no-verify` |
-| Node 22 floor (20 is EOL) | Phase 1 | Keep `engines`, CI, and any Vercel runtime aligned; Node 22 itself EOLs 2027-04-30 |
-| NextAuth kept over Supabase Auth | Phase 2 | Phase 6 needs Google refresh tokens; **isolation is app-layer, not RLS — every query path must be tested for leakage** |
-| Prisma as data layer | Phase 2 | Watch connection pooling on Vercel serverless |
-| Vitest + Playwright | Phase 2 | Both wired and proven failable in 02-02; e2e specs assert placeholder copy that 02-05/02-06 will replace |
-| Soft-delete cars only (`deletedAt`) | Phase 2 | Car queries must filter deleted rows; expenses/odometer hard-delete |
-| **ESLint pinned to 9, not 10** | Phase 2 (02-01) | `eslint-config-next`'s bundled plugins cap at ^9 and crash ESLint 10. Do not upgrade ESLint until they support 10 |
-| **Next.js 16 rewrites AGENTS.md** | Phase 2 (02-01) | `next dev` re-injects an H1 agent-rules block; MD025 is disabled because of it. Commit the block, never fight it |
-| Tailwind 4 is CSS-first | Phase 2 (02-01) | Theme customisation goes in `app/globals.css` via `@theme` — there is no `tailwind.config.js` |
-| **e2e serves the production build, never `next dev`** | Phase 2 (02-02) | Verified: `next build` does not touch AGENTS.md but `next dev` regenerates it, which would dirty the tree on every test run |
-| **Local Docker Postgres for dev + CI service container** | Phase 2 (02-03) | No Supabase account or secrets needed; `.env.example` documents the production pooled/direct URL split |
-| **Money stored as `amountCents Int`** | Phase 2 (02-03) | Prisma `Decimal` returns Decimal.js, which breaks the Next server→client boundary. Exact arithmetic, trivial SUM for Phase 3 |
-| **`pricePerLiter` derived, not stored** | Phase 2 (02-03) | Storing a derived value invites the two disagreeing — compute where displayed |
-| **Schema is Phase 2's five entities only** | Phase 2 (02-03) | Fine/Vignette shapes depend on the unresolved Phase 5 research; Attachment waits for Phase 4 |
-| **Unit tests stay DB-free; integration tests are separate** | Phase 2 (02-03) | `npm test` must pass with Docker stopped; `npm run test:integration` needs Postgres |
-| **Prisma 7: URLs live in `prisma.config.ts`** | Phase 2 (02-03) | The datasource block rejects `url` and `directUrl` outright |
-| **Prisma 7 requires a driver adapter** | Phase 2 (02-03) | `new PrismaClient()` does not compile without one. `@prisma/adapter-pg` accepts a `pg.Pool` — this is the serverless-pooling lever |
-| **Seed and Prisma scripts run under `tsx`** | Phase 2 (02-03) | The generated client uses bundler-style extensionless imports Node's ESM loader cannot resolve |
-| **Category uniqueness is raw-SQL partial indexes** | Phase 2 (02-03) | Prisma cannot express them, and `@@unique([userId, name])` fails because Postgres treats NULLs as distinct |
-| **Local Postgres on host port 5433** | Phase 2 (02-03) | Another project on this machine holds 5432; it was left running |
-| **Reject `prisma init`'s agent-skill injection** | Phase 2 (02-03) | It writes 71 files to `.agents/`, `.claude/skills/`, `.windsurf/` and edits `.gitignore`. Verified non-regenerating, so removed |
-| **Vitest runs `globals: false`** | Phase 2 (02-02) | Testing Library's auto-cleanup does NOT register; it is wired by hand in `tests/unit/setup.ts`. Removing it causes cross-test DOM leaks |
-| `docs/ARCHITECTURE.md` is the living design doc | Phase 0 | Must be updated in Phase 2 when the real schema lands, or it misleads |
+| Decision | Impact on what comes next |
+|----------|---------------------------|
+| Isolation is app-layer, not RLS | **02-04/05/06: every query path needs a test proving one user cannot read another's rows.** No database backstop exists |
+| Money is `amountCents Int` | Every UI and report must divide by 100 to display, multiply on input. One missed conversion is a 100x error |
+| Soft-delete cars only (`deletedAt`) | Every car query must filter `deletedAt: null`; expenses/odometer hard-delete |
+| Schema is 5 entities | Phase 4 adds Attachment; Phase 5 adds Fine/Vignette after the research spike |
+| `User` is already NextAuth-adapter-shaped | 02-04 adds only Account/Session/VerificationToken -- no `User` migration |
+| Prisma 7: adapter mandatory, URLs in `prisma.config.ts` | Never `new PrismaClient()` bare; never put `url`/`directUrl` in the schema |
+| Prisma scripts run under `tsx` | The generated client's imports are bundler-style and extensionless |
+| Unit tests DB-free; integration separate | `npm test` must keep passing with Docker stopped |
+| CLAUDE.md and AGENTS.md always change together | One set of facts in two files |
+| Direct commits to `main`; push after every loop | No branch protection -- the pre-push hook is the only pre-landing gate |
+| Public repo -- nothing sensitive, ever | `.env.example` placeholders only; no real plates or personal data in seeds/fixtures |
 
 ### Deferred Issues
 
 | Issue | Origin | Effort | Revisit |
 |-------|--------|--------|---------|
-| Bulgarian fines/vignette lookup mechanism unconfirmed | Ideation | M | Before Phase 5 — run `/paul:discover` |
-| Fines/vignette check cadence (scheduled vs manual-only) undecided | Ideation | S | After the Phase 5 research spike |
-| Licence choice unsettled — `UNLICENSED` set to avoid npm's default ISC grant on a public repo | Phase 0 (00-02) | S | User's call; any time |
-| Non-provider secret-scanning patterns not available — no UI toggle exists and the API silently ignores the field; appears to need GitHub's paid Secret Protection tier, not the free public-repo set | Phase 1 (01-01) | — | Only if the repo moves to an org with that licensing |
+| Bulgarian fines/vignette lookup mechanism unconfirmed | Ideation | M | Before Phase 5 — `/paul:discover` |
+| Fines/vignette check cadence undecided | Ideation | S | After the Phase 5 spike |
+| Licence unsettled — `UNLICENSED` avoids npm's default ISC grant on a public repo | Phase 0 | S | User's call, any time |
+| Non-provider secret-scanning patterns unavailable — needs GitHub's paid Secret Protection tier | Phase 1 | — | Only under org licensing |
 
 ### Blockers/Concerns
 
@@ -105,22 +82,21 @@ Digest of decisions that constrain upcoming work. **Full log: `.paul/PROJECT.md`
 | Next.js owns a section of AGENTS.md | Hand-edits inside the `nextjs-agent-rules` block are silently overwritten on `next dev` | Edit only outside the markers |
 | e2e step rebuilds the app, duplicating the Build step | Slower CI runs | Accepted; optimising means touching 01-01's verified workflow structure |
 
-**Resolved by 02-02:** the CI success metric (lint + test + build now all run and pass) and the
-stale agent docs (both corrected in one commit).
+**Resolved:** CI success metric and stale agent docs (02-02); `.env.example` and the
+`docs/ARCHITECTURE.md` schema update (02-03).
 
 ## Boundaries (Active)
 
-From plan 02-03:
+None -- set when 02-04's PLAN.md is created. Standing "do not break these":
 
-- **Never edit inside AGENTS.md's `nextjs-agent-rules` markers** — Next regenerates that block
-- **Never run `create-next-app` in this directory** — it clobbers README.md, .gitignore, eslint.config.mjs, and package.json scripts
-- ESLint stays on 9 — `eslint-config-next`'s bundled plugins crash on 10
-- **Keep `afterEach(cleanup)` in `tests/unit/setup.ts`** — it looks like boilerplate but prevents cross-test DOM leaks
-- CI triggers, `permissions`, and `concurrency` — verified in 01-01, not to be restructured
-- `.paul/**`, `projects/**`, `.claude/settings.json` — untouched by tooling
-- `npm run check` must stay green; the pre-push hook enforces it on every push
-- `tests/e2e/**` and `playwright.config.ts` — untouched by 02-03; the existing suite must keep passing
-- No NextAuth Account/Session tables in 02-03 — they belong to 02-04 with the adapter
+- **Never run `prisma init` again** -- re-injects 71 agent-skill files and edits `.gitignore`
+- **Never run `create-next-app`** here -- clobbers README.md, .gitignore, eslint.config.mjs, scripts
+- **Never edit inside AGENTS.md's `nextjs-agent-rules` markers** -- Next regenerates that block
+- **Keep `afterEach(cleanup)` in `tests/unit/setup.ts`** -- looks like boilerplate, prevents DOM leaks
+- ESLint stays on 9 -- `eslint-config-next`'s plugins crash on 10
+- CI triggers, `permissions`, `concurrency` -- verified in 01-01, not to be restructured
+- `.paul/**`, `projects/**`, `.claude/settings.json` -- untouched by tooling
+- `npm run check` must stay green; the pre-push hook enforces it
 
 ### Git State
 
@@ -129,15 +105,15 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-07 (resumed; handoff consumed and archived to `.paul/handoffs/archive/`)
-Stopped at: Plan 02-03 APPLY complete — CI green across check/build/unit/migrate/integration/e2e
-Next action: Run `/paul:unify .paul/phases/02-foundations/02-03-PLAN.md` to close the loop
-Resume file: `.paul/phases/02-foundations/02-03-PLAN.md`
+Stopped at: Plan 02-03 loop closed -- all 6 ACs pass (AC-1 adapted for Prisma 7)
+Next action: Run `/paul:plan` for 02-04 (NextAuth Google OAuth, session handling, per-user scoping helper)
+Resume file: `.paul/phases/02-foundations/02-03-SUMMARY.md`
 Git strategy: `main` (direct commits)
 Resume context:
-- Phase 2 is 2 of 6 plans done — NOT complete; transition deliberately withheld (the PLAN/SUMMARY count heuristic reads 2=2 as done; ROADMAP declares 6).
-- 02-03 gotcha built into the plan: Postgres treats NULLs as distinct in unique constraints, so `@@unique([userId, name])` will NOT stop duplicate system-default categories. The seed needs a partial index or an explicit guard.
-- Test harness matters most for 02-04: isolation is app-layer with no RLS backstop, so every query path needs a leakage test.
-- Standing traps: never read an exit code through a pipe; ESLint frozen at 9; don't delete `afterEach(cleanup)`; don't edit inside the `nextjs-agent-rules` markers.
+- Phase 2 is 3 of 6 -- NOT complete; transition withheld again (file-count heuristic reads 3=3 as done; ROADMAP declares 6). Fourth time.
+- **02-04 is the isolation-critical plan.** No RLS backstop, so every query path needs a cross-user leakage test. `User` is already adapter-shaped, so only Account/Session/VerificationToken migrate.
+- Local dev needs `docker compose up -d` (Postgres on **5433**) before `npm run test:integration`.
+- **Never read an exit code through a pipe** -- this has caused a wrong conclusion three times.
 
 ---
 *STATE.md — Updated after every significant action*
