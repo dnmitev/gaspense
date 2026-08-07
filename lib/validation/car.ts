@@ -18,11 +18,11 @@ export const carInputSchema = z.object({
    * Deliberately NOT format-validated.
    *
    * The owner may add a car registered anywhere, and plate formats vary wildly
-   * ("CB 1234 AB", "AB-123-CD", "7ABC123"). A regex guessing the Bulgarian
+   * ("XX 0000 XX", "XX-000-XX", "0XXX000"). A regex guessing the Bulgarian
    * pattern would reject valid input, which is a worse failure than accepting a
    * typo the user can see and fix.
    *
-   * Uppercased so "cb1234ab" and "CB1234AB" do not become two different cars.
+   * Uppercased so "xx0000xx" and "XX0000XX" do not become two different cars.
    */
   licensePlate: z
     .string()

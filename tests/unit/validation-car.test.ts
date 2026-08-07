@@ -8,20 +8,20 @@ describe("licence plate", () => {
   // reason: all are real registration formats, and a pattern guessing the
   // Bulgarian shape would reject most of them.
   it.each([
-    ["Bulgarian with spaces", "CB 1234 AB"],
-    ["Bulgarian compact", "CB1234AB"],
-    ["Dutch style", "AB-123-CD"],
-    ["US style", "7ABC123"],
-    ["German style", "M AB 1234"],
-    ["short vanity", "GAS"],
+    ["Bulgarian with spaces", "XX 0000 XX"],
+    ["Bulgarian compact", "XX0000XX"],
+    ["Dutch style", "XX-000-XX"],
+    ["US style", "0XXX000"],
+    ["German style", "X XX 0000"],
+    ["short vanity", "XXX"],
   ])("accepts a %s plate", (_label, plate) => {
     const result = carInputSchema.safeParse({ ...valid, licensePlate: plate });
     expect(result.success).toBe(true);
   });
 
   it("uppercases the plate so casing does not create duplicates", () => {
-    const result = carInputSchema.parse({ ...valid, licensePlate: " cb1234ab " });
-    expect(result.licensePlate).toBe("CB1234AB");
+    const result = carInputSchema.parse({ ...valid, licensePlate: " xx0000xx " });
+    expect(result.licensePlate).toBe("XX0000XX");
   });
 
   it("rejects a blank plate", () => {
