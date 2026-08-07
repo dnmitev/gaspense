@@ -16,21 +16,21 @@ See: .paul/PROJECT.md (updated 2026-08-07)
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 0 of 7 (AI-Friendly Project Scaffolding) — Planning
-Plan: 00-02 created, awaiting approval
-Status: PLAN created, ready for APPLY
-Last activity: 2026-08-07 — Created .paul/phases/00-ai-friendly-scaffolding/00-02-PLAN.md
+Phase: 0 of 7 (AI-Friendly Project Scaffolding) — Applying
+Plan: 00-02 executed, 3 of 3 tasks complete
+Status: APPLY complete, ready for UNIFY
+Last activity: 2026-08-07 — Executed 00-02: npm toolchain, lint/format configs, `npm run check` gate
 
 Progress:
 - Milestone: [░░░░░░░░░░] 0% (0 of 7 phases complete)
-- Phase 0: [█████░░░░░] 50% (1 of 2 plans complete)
+- Phase 0: [█████░░░░░] 50% (1 of 2 plans closed; 00-02 awaiting UNIFY)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan 00-02 created, awaiting approval]
+  ✓        ✓        ◉     [Ready for UNIFY]
 ```
 
 ## Performance Metrics
@@ -89,10 +89,10 @@ From plan 00-02:
 ## Session Continuity
 
 Last session: 2026-08-07
-Stopped at: Plan 00-02 created
-Next action: Review and approve plan, then run `/paul:apply .paul/phases/00-ai-friendly-scaffolding/00-02-PLAN.md`
+Stopped at: Plan 00-02 APPLY complete — 3/3 tasks PASS, all 4 ACs pass, `npm run check` green
+Next action: Run `/paul:unify .paul/phases/00-ai-friendly-scaffolding/00-02-PLAN.md` to close the loop and write 00-02-SUMMARY.md
 Resume file: `.paul/phases/00-ai-friendly-scaffolding/00-02-PLAN.md`
-Resume context: 00-02 completes Phase 0 — npm toolchain (npm chosen), typescript-eslint base (extend with eslint-config-next in Phase 2), Prettier as formatter of record, markdownlint for structure, and `npm run check` as the single gate Phase 1's CI invokes. Deliberately no test framework or runtime deps yet.
+Resume context: `npm run check` is the gate Phase 1's GitHub Actions will invoke — it runs check-docs.sh, format:check, lint, lint:md. Only MD013 needed disabling (verified empirically; Prettier's table style satisfies MD060). Closing 00-02 completes Phase 0 and should trigger the phase transition.
 
 ---
 *STATE.md — Updated after every significant action*

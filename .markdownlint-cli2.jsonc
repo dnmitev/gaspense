@@ -1,0 +1,17 @@
+{
+  // Structural rules only. Prettier is the formatter of record for markdown.
+  //
+  // Rule overlap was resolved empirically (plan 00-02, Task 2) rather than by
+  // guessing a disable-list: Prettier's own output was run through markdownlint
+  // to see which rules it actually fights. Result — Prettier's padded-pipe table
+  // style satisfies MD060, and it fixes MD022 itself, so both stay enabled.
+  // MD013 is the only genuine conflict.
+  "globs": ["README.md", "CLAUDE.md", "AGENTS.md", "docs/**/*.md"],
+  "ignores": ["node_modules/**", ".paul/**", "projects/**"],
+  "config": {
+    "default": true,
+    // Line length: docs use wide tables and long prose lines; Prettier owns
+    // wrapping and would immediately undo any reflow markdownlint demanded.
+    "MD013": false,
+  },
+}

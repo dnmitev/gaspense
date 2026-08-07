@@ -21,7 +21,7 @@ status = "in_progress"
 plans_completed = 1
 
 [loop]
-position = "PLAN"
+position = "APPLY"
 plan = "00-02"
 plan_path = "phases/00-ai-friendly-scaffolding/00-02-PLAN.md"
 
@@ -31,4 +31,4 @@ groom = true
 [stats]
 total_plans = 1
 total_phases = 0
-last_activity = "2026-08-07T12:29:29Z"
+last_activity = "2026-08-07T12:36:58Z"

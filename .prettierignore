@@ -1,0 +1,19 @@
+# PAUL-managed state — reformatting these would fight the framework's templates
+.paul/
+
+# Claude Code config — settings.json is a protected boundary; settings.local.json is per-user
+.claude/
+
+# Append-only ideation record, boundary-protected
+projects/
+
+# Dependencies and machine-generated
+node_modules/
+package-lock.json
+
+# Build output
+.next/
+out/
+build/
+dist/
+coverage/

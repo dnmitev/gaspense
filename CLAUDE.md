@@ -14,15 +14,15 @@ It is a personal project shared with trusted friends and family, each with their
 
 ## Stack
 
-| Layer | Choice |
-|-------|--------|
-| Frontend | Next.js (React), TypeScript, installable PWA |
-| Backend | Next.js API routes |
-| Database | PostgreSQL via Supabase |
-| File storage | Supabase Storage (car and expense photos) |
-| Auth | Google OAuth via NextAuth |
-| Deployment | Vercel (app) + Supabase (DB + Storage) |
-| CI | GitHub Actions |
+| Layer        | Choice                                       |
+| ------------ | -------------------------------------------- |
+| Frontend     | Next.js (React), TypeScript, installable PWA |
+| Backend      | Next.js API routes                           |
+| Database     | PostgreSQL via Supabase                      |
+| File storage | Supabase Storage (car and expense photos)    |
+| Auth         | Google OAuth via NextAuth                    |
+| Deployment   | Vercel (app) + Supabase (DB + Storage)       |
+| CI           | GitHub Actions                               |
 
 ## ⚠️ This Repository Is Public
 
@@ -35,24 +35,32 @@ It is a personal project shared with trusted friends and family, each with their
 
 ## Commands
 
-**The Node toolchain does not exist yet.** There is no `package.json` in this repo at time of writing — it is created in plan `00-02` (lint/format tooling) and extended with Next.js in Phase 2.
+Run `npm install` once, then these all work:
 
-Do not run or suggest `npm` scripts until `package.json` exists. Check first:
+| Purpose                  | Command                |
+| ------------------------ | ---------------------- |
+| **All gates (this one)** | **`npm run check`**    |
+| Lint code                | `npm run lint`         |
+| Lint markdown            | `npm run lint:md`      |
+| Format                   | `npm run format`       |
+| Check formatting         | `npm run format:check` |
 
-```bash
-test -f package.json && echo "toolchain present" || echo "no toolchain yet"
-```
+`npm run check` is the gate CI runs: it verifies the agent docs exist, then runs
+`format:check`, `lint`, and `lint:md`. Run it before committing.
 
-Once the toolchain lands, these are the intended commands (verify they exist in `package.json` before relying on them):
+**Not available yet** — these arrive in Phase 2 with Next.js, so do not run or suggest them:
 
-| Purpose | Planned command |
-|---------|-----------------|
-| Dev server | `npm run dev` |
-| Production build | `npm run build` |
-| Lint | `npm run lint` |
-| Format | `npm run format` |
-| Unit + integration tests | `npm test` |
-| End-to-end tests | `npm run test:e2e` |
+| Purpose                  | Command            | Arrives |
+| ------------------------ | ------------------ | ------- |
+| Dev server               | `npm run dev`      | Phase 2 |
+| Production build         | `npm run build`    | Phase 2 |
+| Unit + integration tests | `npm test`         | Phase 2 |
+| End-to-end tests         | `npm run test:e2e` | Phase 2 |
+
+There is deliberately no `test` script yet — a no-op passing one would give CI a false green.
+
+Only lint/format tooling is installed; there are no runtime dependencies. Next.js, React,
+Supabase, and NextAuth all arrive in Phase 2.
 
 ## Conventions
 
@@ -77,15 +85,15 @@ Do not claim a task is done without running its verification and reading the out
 
 ## Where Things Live
 
-| Path | Contents |
-|------|----------|
-| [README.md](README.md) | Human-facing project brief |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Data model, API surface, phase roadmap |
-| [projects/gaspense/PLANNING.md](projects/gaspense/PLANNING.md) | Full ideation record and rationale |
-| `.paul/PROJECT.md` | Requirements, constraints, key decisions |
-| `.paul/ROADMAP.md` | Phase structure — **authority on phase status** |
-| `.paul/STATE.md` | Current position, deferred issues, active boundaries |
-| `.paul/phases/` | Per-phase plans and summaries |
+| Path                                                           | Contents                                             |
+| -------------------------------------------------------------- | ---------------------------------------------------- |
+| [README.md](README.md)                                         | Human-facing project brief                           |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)                   | Data model, API surface, phase roadmap               |
+| [projects/gaspense/PLANNING.md](projects/gaspense/PLANNING.md) | Full ideation record and rationale                   |
+| `.paul/PROJECT.md`                                             | Requirements, constraints, key decisions             |
+| `.paul/ROADMAP.md`                                             | Phase structure — **authority on phase status**      |
+| `.paul/STATE.md`                                               | Current position, deferred issues, active boundaries |
+| `.paul/phases/`                                                | Per-phase plans and summaries                        |
 
 This project is managed with the PAUL framework: work proceeds in `PLAN → APPLY → UNIFY` loops. Check `.paul/STATE.md` for the current position before starting anything.
 

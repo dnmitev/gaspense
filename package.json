@@ -1,0 +1,35 @@
+{
+  "name": "gaspense",
+  "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "description": "Mobile-first PWA for tracking personal vehicle expenses with cost reporting and Google Drive export.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dnmitev/gaspense.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dnmitev/gaspense/issues"
+  },
+  "homepage": "https://github.com/dnmitev/gaspense#readme",
+  "scripts": {
+    "lint": "eslint .",
+    "lint:md": "markdownlint-cli2",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "bash scripts/check-docs.sh && npm run format:check && npm run lint && npm run lint:md"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "markdownlint-cli2": "^0.23.2",
+    "prettier": "^3.9.6",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.66.0"
+  }
+}
