@@ -62,6 +62,23 @@ There is deliberately no `test` script yet — a no-op passing one would give CI
 Only lint/format tooling is installed; there are no runtime dependencies. Next.js, React,
 Supabase, and NextAuth all arrive in Phase 2.
 
+## CI and Quality Gates
+
+- **CI runs `npm run check`** on every push to `main` and on every PR to `main`, via
+  `.github/workflows/ci.yml`. It installs with `npm ci` on Node 22.
+- **A pre-push hook runs the same gate locally**, so failures are caught before anything reaches
+  GitHub (`.githooks/pre-push`). It activates automatically on `npm install` via the `prepare`
+  script — a fresh clone needs no manual `git config`.
+- **Deliberate bypass:** `git push --no-verify`. Use it sparingly; CI still catches the problem
+  afterwards.
+- **There is no branch protection.** Direct pushes to `main` are authorised, which is exactly why
+  the local hook exists — CI alone reports _after_ code has already landed.
+- **Secret scanning and push protection are active.** GitHub itself rejects a push containing a
+  recognised secret. Treat that as a safety net, not a strategy: never write a real credential to
+  a file in the first place.
+- **No `test` or `build` step in CI yet.** Those scripts arrive in Phase 2; the workflow gains
+  steps for them at that point.
+
 ## Code Conventions
 
 - **TypeScript throughout.** No plain-JS source files.
