@@ -1,0 +1,47 @@
+name: CI
+
+# The `push` trigger is the one that matters: this project commits directly to
+# `main` and does not open a PR per change, so a pull_request-only workflow
+# would never fire. The pull_request trigger covers the occasional PR.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Least privilege. The default GITHUB_TOKEN carries write scopes this job does
+# not need, and this is a public repository.
+permissions:
+  contents: read
+
+# Supersede in-flight runs for the same ref rather than queueing them.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, format, and docs gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          # Pinned to the floor declared in package.json `engines`, so CI tests
+          # the oldest supported runtime rather than only the newest.
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Runs scripts/check-docs.sh, prettier --check, eslint, and markdownlint.
+      # There is deliberately no `test` or `build` step yet — neither script
+      # exists until Phase 2, and referencing them would fail this workflow.
+      - name: Run check gate
+        run: npm run check
