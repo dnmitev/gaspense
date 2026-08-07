@@ -146,3 +146,8 @@ Every phase ships with unit + integration + automation (e2e) tests, per the proj
 
 - Fuelio, CarDiary, CarSpending — prior art
 - Full ideation history: [`projects/gaspense/PLANNING.md`](projects/gaspense/PLANNING.md)
+
+
+##   deliberately    unformatted   probe   heading
+
+This commit exists only to prove CI fails. It is deleted immediately.
