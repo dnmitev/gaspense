@@ -40,44 +40,45 @@ Run `npm install` once, then these all work:
 | Purpose                  | Command                |
 | ------------------------ | ---------------------- |
 | **All gates (this one)** | **`npm run check`**    |
+| Dev server               | `npm run dev`          |
+| Production build         | `npm run build`        |
+| Serve production build   | `npm start`            |
+| Unit + integration tests | `npm test`             |
+| End-to-end tests         | `npm run test:e2e`     |
 | Lint code                | `npm run lint`         |
 | Lint markdown            | `npm run lint:md`      |
 | Format                   | `npm run format`       |
 | Check formatting         | `npm run format:check` |
 
-`npm run check` is the gate CI runs: it verifies the agent docs exist, then runs
-`format:check`, `lint`, and `lint:md`. Run it before committing.
+`npm run check` is the docs + style gate: it verifies the agent docs exist, then runs
+`format:check`, `lint`, and `lint:md`. Run it before committing — the pre-push hook runs it anyway.
 
-**Not available yet** — these arrive in Phase 2 with Next.js, so do not run or suggest them:
-
-| Purpose                  | Command            | Arrives |
-| ------------------------ | ------------------ | ------- |
-| Dev server               | `npm run dev`      | Phase 2 |
-| Production build         | `npm run build`    | Phase 2 |
-| Unit + integration tests | `npm test`         | Phase 2 |
-| End-to-end tests         | `npm run test:e2e` | Phase 2 |
-
-There is deliberately no `test` script yet — a no-op passing one would give CI a false green.
-
-Only lint/format tooling is installed; there are no runtime dependencies. Next.js, React,
-Supabase, and NextAuth all arrive in Phase 2.
+Runtime dependencies are Next.js and React. Supabase and NextAuth arrive in later Phase 2 plans
+(02-03 and 02-04); there is no database or auth yet.
 
 ## CI and Quality Gates
 
-- **CI runs `npm run check`** on every push to `main` and on every PR to `main`, via
-  `.github/workflows/ci.yml`. It installs with `npm ci` on Node 22.
-- **A pre-push hook runs the same gate locally**, so failures are caught before anything reaches
-  GitHub (`.githooks/pre-push`). It activates automatically on `npm install` via the `prepare`
-  script — a fresh clone needs no manual `git config`.
+- **CI runs `npm run check`, `npm run build`, `npm test`, and `npm run test:e2e`** on every push to
+  `main` and on every PR to `main`, via `.github/workflows/ci.yml`. It installs with `npm ci` on
+  Node 22 and installs Chromium for Playwright.
+- **A pre-push hook runs the check gate locally**, so lint/format failures are caught before
+  anything reaches GitHub (`.githooks/pre-push`). It activates automatically on `npm install` via
+  the `prepare` script — a fresh clone needs no manual `git config`. Note it runs `check` only, not
+  the test suites.
 - **Deliberate bypass:** `git push --no-verify`. Use it sparingly; CI still catches the problem
   afterwards.
 - **There is no branch protection.** Direct pushes to `main` are authorised, which is exactly why
   the local hook exists — CI alone reports _after_ code has already landed.
+- **e2e runs against the production build, never `next dev`.** Playwright's `webServer` runs
+  `npm run build && npm start`. This is deliberate: `next dev` regenerates the
+  `nextjs-agent-rules` block in `AGENTS.md`, which would leave the working tree dirty after every
+  test run.
+- **Unit tests use Vitest with `globals: false`**, so Testing Library's cleanup is wired manually in
+  `tests/unit/setup.ts`. Without it each test's DOM leaks into the next and queries start matching
+  elements from earlier tests.
 - **Secret scanning and push protection are active.** GitHub itself rejects a push containing a
-  recognised secret. Treat that as a safety net, not a strategy: never write a real credential to
-  a file in the first place.
-- **No `test` or `build` step in CI yet.** Those scripts arrive in Phase 2; the workflow gains
-  steps for them at that point.
+  recognised secret. Treat that as a safety net, not a strategy: never write a real credential to a
+  file in the first place.
 
 ## Conventions
 

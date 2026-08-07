@@ -48,8 +48,20 @@ jobs:
       - name: Run check gate
         run: npm run check
 
-      # Compiles the Next.js app and type-checks it. Still no `test` step —
-      # Vitest and Playwright arrive in plan 02-02, and referencing scripts that
-      # do not exist would fail this workflow.
+      # Compiles the Next.js app and type-checks it.
       - name: Build
         run: npm run build
+
+      - name: Unit tests
+        run: npm test
+
+      # CI runners have no browsers preinstalled — omitting this is the usual
+      # first failure when adding Playwright to a pipeline.
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      # Playwright's webServer runs `npm run build && npm start`, so this step
+      # rebuilds. The duplication with the Build step above is accepted for now
+      # rather than restructuring the workflow verified in plan 01-01.
+      - name: E2E tests
+        run: npm run test:e2e
