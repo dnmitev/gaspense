@@ -6,7 +6,7 @@
   "description": "Mobile-first PWA for tracking personal vehicle expenses with cost reporting and Google Drive export.",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "repository": {
     "type": "git",
