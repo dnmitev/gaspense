@@ -16,10 +16,10 @@ See: .paul/PROJECT.md (updated 2026-08-07)
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 1 of 7 (CI/CD Pipeline)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-08-07 — Phase 0 complete, transitioned to Phase 1
+Phase: 1 of 7 (CI/CD Pipeline) — Planning
+Plan: 01-01 created, awaiting approval
+Status: PLAN created, ready for APPLY
+Last activity: 2026-08-07 — Created .paul/phases/01-cicd-pipeline/01-01-PLAN.md
 
 Progress:
 - Milestone: [█░░░░░░░░░] 14% (1 of 7 phases complete)
@@ -30,7 +30,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ○        ○        ○     [Ready for first PLAN of Phase 1]
+  ✓        ○        ○     [Plan 01-01 created, awaiting approval]
 ```
 
 ## Performance Metrics
@@ -77,14 +77,17 @@ Digest of decisions that constrain upcoming work. **Full log: `.paul/PROJECT.md`
 
 | Concern | Impact | Resolution Path |
 |---------|--------|-----------------|
-| Phase 1's declared scope names tests + build, which do not exist until Phase 2 | A CI workflow written against them fails immediately | Phase 1 wires `npm ci` + `npm run check` only; add `build`/`test` steps in Phase 2 |
+| Phase 1's declared scope names tests + build, which do not exist until Phase 2 | A CI workflow written against them fails immediately | Plan 01-01 wires `npm ci` + `npm run check` only; add `build`/`test` steps in Phase 2 |
+| PROJECT.md's CI success metric reads "lint + test + build pass on every PR" | Only the lint half is achievable in Phase 1 | Mark partially achieved at Phase 1 transition; fully achieved in Phase 2 |
 
 ## Boundaries (Active)
 
-None — set when Phase 1's first PLAN.md is created. Standing constraints:
+From plan 01-01:
 
 - `.paul/**` and `projects/**` — excluded from all formatters/linters; never reformatted by tooling
 - `.claude/settings.json` — deliberately tracked, must stay tracked and unmodified
+- `.gitignore`, `scripts/check-docs.sh`, and the lint configs — settled in Phase 0; consumed here, not retuned
+- `main` must never receive the deliberate CI-failure probe commit
 - `npm run check` must stay green; run it before every commit
 
 ### Git State
@@ -94,10 +97,10 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-07
-Stopped at: **Phase 0 complete** — both plans closed, transition executed (PROJECT.md evolved, ROADMAP marked ✅)
-Next action: Run `/paul:plan` for Phase 1 (CI/CD Pipeline)
-Resume file: `.paul/ROADMAP.md`
-Resume context: Phase 1 wires GitHub Actions to `npm ci` + `npm run check` and enables secret scanning + push protection. Critically, there is no `test` or `build` script yet — the workflow must pass with `check` alone and gain those steps in Phase 2. `scripts/check-docs.sh` is dependency-free and cwd-independent, so CI can call it directly.
+Stopped at: Plan 01-01 created
+Next action: Review and approve plan, then run `/paul:apply .paul/phases/01-cicd-pipeline/01-01-PLAN.md`
+Resume file: `.paul/phases/01-cicd-pipeline/01-01-PLAN.md`
+Resume context: `gh` is authenticated as dnmitev, so repo settings are reachable by API. Verified live: secret scanning + push protection already ON (public-repo default) — this phase only hardens with non-provider patterns. CI triggers on `push` to main because PR-only would never fire under direct-to-main; a version-controlled pre-push hook (`.githooks/` via `prepare`) restores the pre-landing gate. The plan proves CI *fails* on a throwaway branch so a false-green pipeline is ruled out.
 
 ---
 *STATE.md — Updated after every significant action*

@@ -23,7 +23,7 @@ Phases: 1 of 7 complete (14%)
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
 | 0 | AI-Friendly Project Scaffolding | 2/2 | ✅ Complete | 2026-08-07 |
-| 1 | CI/CD Pipeline | TBD | Not started | - |
+| 1 | CI/CD Pipeline | 1 | Planning | - |
 | 2 | Foundations | TBD | Not started | - |
 | 3 | Reporting | TBD | Not started | - |
 | 4 | PWA & Mobile UX | TBD | Not started | - |
@@ -59,16 +59,25 @@ Phases: 1 of 7 complete (14%)
 **Research:** Unlikely (standard GitHub Actions patterns)
 
 **Scope:**
-- GitHub Actions workflow running `npm ci` + `npm run check` on every PR
-- GitHub secret scanning + push protection enabled
+- GitHub Actions workflow running `npm ci` + `npm run check` on pushes to `main` **and** PRs
+- Version-controlled pre-push hook enforcing the same gate locally
+- Secret scanning hardened with non-provider patterns
 
 **⚠️ Carried from Phase 0:** there is deliberately no `test` script and no build until Phase 2.
 The workflow must pass with what exists today (`npm run check` only) and gain `build`/`test`
 steps when Phase 2 lands — a workflow written against tests that do not exist will fail on
 day one.
 
+**Verified against the live repo during planning:**
+- Secret scanning and push protection were **already enabled** (GitHub's default for public
+  repos), so this phase hardens rather than enables them.
+- A `pull_request`-only trigger would never fire, because this project commits directly to
+  `main`. Hence the `push` trigger, and hence the local pre-push hook — CI alone reports
+  after the fact and cannot prevent a bad commit landing.
+- No branch protection: required status checks would block the authorised direct-to-main flow.
+
 **Plans:**
-- [ ] TBD — defined during `/paul:plan`
+- [ ] 01-01: CI workflow, version-controlled pre-push hook, secret-scanning hardening, docs
 
 ### Phase 2: Foundations
 
