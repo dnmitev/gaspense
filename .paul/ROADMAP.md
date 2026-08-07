@@ -114,8 +114,8 @@ read from the packages rather than assumed.
 
 **Plans:**
 - [x] 02-01: Next.js App Router scaffold, eslint-config-next integration, build step in CI
-- [ ] 02-02: Vitest + Playwright, `test`/`test:e2e` scripts + CI steps, `.env.example`, **fix the now-stale `dev`/`build` wording in both agent docs**
-- [ ] 02-03: Prisma schema + migrations + seeded default categories, `docs/ARCHITECTURE.md` update
+- [ ] 02-02: Vitest + Playwright, `test`/`test:e2e`/`start` scripts + CI steps, **fix the now-stale `dev`/`build` wording in both agent docs**
+- [ ] 02-03: Prisma schema + migrations + seeded default categories, `.env.example`, `docs/ARCHITECTURE.md` update
 - [ ] 02-04: NextAuth Google OAuth, session handling, per-user scoping helper
 - [ ] 02-05: Car CRUD vertical slice (API + UI + tests, incl. soft delete)
 - [ ] 02-06: Category, Expense, and Odometer CRUD vertical slice
