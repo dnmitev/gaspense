@@ -46,6 +46,11 @@ export default defineConfig({
     env: {
       DATABASE_URL: process.env.DATABASE_URL ?? "",
       AUTH_SECRET: process.env.AUTH_SECRET ?? "e2e-only-throwaway-secret-not-real",
+      // Required. `next start` runs in production mode, where Auth.js refuses to
+      // infer the host and fails every session read with UntrustedHost. Dev mode
+      // trusts localhost automatically, which is why this only shows up against a
+      // production build. Narrower than setting trustHost: true globally.
+      AUTH_URL: BASE_URL,
     },
     reuseExistingServer: !process.env.CI,
     // A production build runs first, so allow well beyond the default 60s.
