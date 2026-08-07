@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/dnmitev/gaspense#readme",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks || true",
     "lint": "eslint .",
     "lint:md": "markdownlint-cli2",
     "format": "prettier --write .",

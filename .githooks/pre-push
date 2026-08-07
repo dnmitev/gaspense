@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+#
+# Runs the same gate as CI before anything reaches GitHub.
+#
+# Why this exists: this project commits directly to `main`, so CI reports
+# problems only *after* they land. This hook restores the catch-it-first
+# property a PR-based flow would provide.
+#
+# Activated by `npm install` via the `prepare` script, which sets
+# core.hooksPath to this directory. Bypass deliberately with:
+#     git push --no-verify
+
+set -euo pipefail
+
+if [[ ! -d node_modules ]]; then
+  echo "pre-push: node_modules is missing — run 'npm install' first." >&2
+  echo "pre-push: to push without checking, use: git push --no-verify" >&2
+  exit 1
+fi
+
+echo "pre-push: running 'npm run check'..."
+
+if ! npm run check --silent; then
+  echo "" >&2
+  echo "pre-push: check gate FAILED — push aborted." >&2
+  echo "pre-push: fix the problems above, or bypass deliberately with:" >&2
+  echo "pre-push:     git push --no-verify" >&2
+  exit 1
+fi
+
+echo "pre-push: check gate passed."
