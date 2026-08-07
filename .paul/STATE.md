@@ -109,11 +109,16 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 
 ## Session Continuity
 
-Last session: 2026-08-07
-Stopped at: Plan 02-01 loop closed — 3/3 tasks PASS, AC-4 partial by granted waiver
-Next action: Run `/paul:plan` for 02-02 (Vitest + Playwright, test CI steps, `.env.example`, **and correcting the now-stale agent docs**)
-Resume file: `.paul/phases/02-foundations/02-01-SUMMARY.md`
-Resume context: Phase 2 is 1 of 6 plans done — NOT complete, transition deliberately not run. Remaining: 02-02 test infra + docs fix, 02-03 Prisma schema + ARCHITECTURE update, 02-04 NextAuth, 02-05 Car slice, 02-06 Category/Expense/Odometer. ESLint is frozen at 9; Tailwind 4 is CSS-first; never read an exit code through a pipe.
+Last session: 2026-08-07 (**PAUSED** at a clean stopping point — nothing in progress)
+Stopped at: Plan 02-01 loop closed and pushed. Working tree clean, `4ae4744` in sync with origin, CI green, gate green.
+Next action: Run `/paul:plan` for 02-02 — **first obligation is fixing the stale agent docs**, then Vitest + Playwright, `test`/`test:e2e` scripts + CI steps, `.env.example`
+Resume file: `.paul/HANDOFF-2026-08-07.md` (full zero-context briefing)
+Git strategy: `main` (direct commits; no feature branch, no WIP commit needed — tree was clean)
+Resume context:
+- Phase 2 is 1 of 6 plans done — **NOT complete**; the transition was deliberately withheld because PAUL's PLAN/SUMMARY file-count heuristic gives a false positive here. ROADMAP is the authority.
+- `CLAUDE.md`/`AGENTS.md` currently claim `npm run dev` and `npm run build` are "not available yet" — both exist. Fix both files in one commit.
+- Standing traps: never read an exit code through a pipe; ESLint frozen at 9 (eslint-config-next plugins crash 10); Next 16 regenerates the `nextjs-agent-rules` block in AGENTS.md; never run `create-next-app` here; Tailwind 4 is CSS-first.
+- Remaining plans: 02-02 test infra + docs fix, 02-03 Prisma schema + ARCHITECTURE update, 02-04 NextAuth, 02-05 Car slice, 02-06 Category/Expense/Odometer.
 
 ---
 *STATE.md — Updated after every significant action*
