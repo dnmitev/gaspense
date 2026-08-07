@@ -30,7 +30,7 @@ This is dogfooding — built by and for someone who wants this exact tool to exi
 | Deployment | Vercel (app) + Supabase (DB + Storage) | Zero-maintenance cloud free tiers, works from anywhere immediately, no server to patch |
 
 ### Research Needed
-- Confirm the actual (undocumented) endpoints/mechanism behind the Bulgarian traffic police (КАТ/МВР) fines lookup and the vignette-validity check — no official public REST API is confirmed to exist. Run `/paul:discover` before Phase 4 to establish what's actually callable, its auth/rate-limit behavior, and a fallback plan if nothing stable is found.
+- Confirm the actual (undocumented) endpoints/mechanism behind the Bulgarian traffic police (КАТ/МВР) fines lookup and the vignette-validity check — no official public REST API is confirmed to exist. Run `/paul:discover` before Phase 5 to establish what's actually callable, its auth/rate-limit behavior, and a fallback plan if nothing stable is found.
 
 ---
 
@@ -105,6 +105,7 @@ Vercel for the app (preview deployments per PR, production on main), Supabase fo
 - **OWASP concerns:** Access control (ensure userId scoping can't be bypassed via ID enumeration), SSRF-adjacent risk on the fines/vignette external calls (validate/allowlist target hosts once confirmed), secure handling of OAuth tokens.
 - **Secrets management:** Google OAuth client secret, Supabase service keys — stored as Vercel/Supabase environment variables, never committed.
 - **Rate limiting:** Applied to `/api/fines/check` and `/api/vignette/check` specifically — these hit external government services and must not be hammered or triggered in tight loops.
+- **Public repo hygiene:** This is a public repository — nothing sensitive is ever committed. Concretely: only `.env.example` (with placeholder values) is tracked, all `.env*` files are gitignored; GitHub secret scanning + push protection enabled on the repo; no real license plates, personal data, or account identifiers in seed data, test fixtures, or example screenshots; real Google OAuth/Supabase credentials exist only as environment variables in Vercel/Supabase/GitHub Actions secrets, never in code or commit history.
 
 ---
 
@@ -150,27 +151,32 @@ Mobile-first, installable PWA; desktop usable but not the primary target.
 - **Testable:** CI step that fails the build if `CLAUDE.md`/`AGENTS.md`/`docs/ARCHITECTURE.md` are missing, and that runs markdownlint + the ESLint/Prettier config against themselves
 - **Outcome:** Any AI coding agent (Claude Code, Cursor, Copilot, etc.) or human contributor opening the repo has full project context and style rules without re-deriving them or being re-explained per session
 
-### Phase 1: Foundations
+### Phase 1: CI/CD Pipeline
+- **Build:** GitHub Actions workflow running lint + unit/integration tests + build on every PR; GitHub secret scanning and push protection enabled on the repo (public repo — any leaked key must be caught before merge, not after)
+- **Testable:** A deliberately failing test/lint change in a throwaway PR confirms the workflow blocks merge; a dummy fake-looking secret confirms push protection triggers
+- **Outcome:** Every subsequent phase's code is automatically linted, tested, and build-checked before it can reach `main`, and the repo is protected against accidental secret leaks from day one
+
+### Phase 2: Foundations
 - **Build:** Google OAuth login, Car CRUD, Category CRUD (with seeded defaults), Expense CRUD, Odometer log
 - **Testable:** Unit tests on validation/model logic, integration tests on CRUD API routes, e2e smoke test for "add car → add expense"
 - **Outcome:** A user can log in, add a car, and record expenses against categories
 
-### Phase 2: Reporting
+### Phase 3: Reporting
 - **Build:** Monthly/yearly fuel and category cost aggregations, dashboard charts, cost-per-km calculation
 - **Testable:** Unit tests on aggregation logic, integration tests on `/api/reports`, e2e test viewing the dashboard with seeded data
 - **Outcome:** A user can see fuel cost per month/year and cost breakdown by category
 
-### Phase 3: PWA & Mobile UX
+### Phase 4: PWA & Mobile UX
 - **Build:** Installable PWA manifest/service worker, fast quick-add expense flow, responsive polish, car/expense photo upload (Attachments + Supabase Storage)
 - **Testable:** Lighthouse PWA audit, e2e test for install + offline-tolerant quick-add, upload/retrieve photo integration test
 - **Outcome:** App installs on a phone home screen and adding an expense (with an optional photo) takes seconds
 
-### Phase 4: Bulgarian Integrations
+### Phase 5: Bulgarian Integrations
 - **Build:** Research spike (`/paul:discover`) to confirm callable fines/vignette mechanisms, then implement `/api/fines/check` and `/api/vignette/check` with rate limiting
 - **Testable:** Contract/integration tests against mocked external responses, manual verification against the real service, rate-limit behavior test
 - **Outcome:** A user can check whether a car has outstanding fines or a valid vignette from within the app
 
-### Phase 5: Google Drive Export
+### Phase 6: Google Drive Export
 - **Build:** Google Drive OAuth consent (reusing login provider), export/backup of expense data to Drive
 - **Testable:** Integration test with mocked Drive API, e2e test for the export flow end-to-end
 - **Outcome:** A user can export their data to their own Google Drive on demand
@@ -183,20 +189,21 @@ Mobile-first, installable PWA; desktop usable but not the primary target.
 
 | Skill | When It Fires | Purpose |
 |-------|--------------|---------|
-| ui-ux-pro-max | Frontend/PWA phases (1, 3) | Design system, responsive/PWA component quality |
-| /paul:discover | Before Phase 4 | Research the actual fines/vignette lookup mechanism before committing to an implementation |
+| ui-ux-pro-max | Frontend/PWA phases (2, 4) | Design system, responsive/PWA component quality |
+| /paul:discover | Before Phase 5 | Research the actual fines/vignette lookup mechanism before committing to an implementation |
 | /paul:audit | End of each milestone | Architecture review |
-| AEGIS | Post-build, and especially after Phase 4/5 | Security/quality audit — OWASP issues around auth, external API calls, OAuth token handling |
+| AEGIS | Post-build, and especially after Phase 5/6 | Security/quality audit — OWASP issues around auth, external API calls, OAuth token handling |
 
 ### Quality Gates
 
 | Gate | Threshold | When |
 |------|-----------|------|
 | Docs/lint presence | CLAUDE.md, AGENTS.md, docs/ARCHITECTURE.md exist; markdownlint + ESLint/Prettier pass | Phase 0, and every phase thereafter (docs/config must stay in sync) |
+| CI pipeline green | Lint + test + build pass on every PR; secret scanning/push protection active | Phase 1 onward — gates every merge to `main` |
 | Test coverage | Unit + integration + automation (e2e) for every phase | each phase, per user's explicit requirement |
-| Security scan | pass | each phase, especially auth (1) and integrations (4, 5) |
-| Accessibility | WCAG AA | frontend phases (1, 2, 3) |
-| Performance | PWA installable, Lighthouse PWA score high | Phase 3 and final milestone |
+| Security scan | pass | each phase, especially auth (2) and integrations (5, 6) |
+| Accessibility | WCAG AA | frontend phases (2, 3, 4) |
+| Performance | PWA installable, Lighthouse PWA score high | Phase 4 and final milestone |
 
 ---
 
@@ -209,14 +216,17 @@ Mobile-first, installable PWA; desktop usable but not the primary target.
 5. **EUR only, no multi-currency**: simplifies all reporting and storage — no conversion logic needed.
 6. **Odometer as a first-class log**: tracked independently of expenses (not just inferred from fuel fill-ups) to support accurate efficiency calculations and future service-interval features.
 7. **Attachments modeled with nullable dual foreign keys (carId/expenseId)**: simplest shape to support photos on both cars and expenses without a separate polymorphic join table.
-8. **Bulgarian government integrations deferred to Phase 4 with an explicit research spike**: no confirmed public API exists for either the fines lookup or vignette check — implementation is deferred until `/paul:discover` establishes what's actually callable.
+8. **Bulgarian government integrations deferred to Phase 5 with an explicit research spike**: no confirmed public API exists for either the fines lookup or vignette check — implementation is deferred until `/paul:discover` establishes what's actually callable.
 9. **AI-friendly scaffolding as Phase 0, before any app code**: `CLAUDE.md`, `AGENTS.md`, `docs/ARCHITECTURE.md`, and lint/format config are established first so every subsequent phase — and any AI agent working on it — has full project context and consistent code style from the start, rather than retrofitting docs after the fact.
+10. **CI/CD as Phase 1, before Foundations**: GitHub Actions (lint + test + build on every PR) and secret scanning/push protection are set up before any feature code exists, so every phase from Foundations onward is automatically checked and the public repo is protected against leaked secrets from day one.
+11. **Direct commits to `main` for this project**: the user has explicitly authorized pushing straight to `main` rather than going through PR review for every change, given this is a low-risk personal project. Revisit if collaborators join.
+12. **Public repo, no sensitive data ever committed**: real credentials live only in environment variables (Vercel/Supabase/GitHub Actions secrets); `.env.example` is the only tracked env file; no real license plates or personal data appear in seed data, fixtures, or screenshots.
 
 ---
 
 ## Open Questions
 
-1. What is the actual callable mechanism (endpoint, required identifiers, auth) for the Bulgarian traffic police fines lookup and the vignette validity check? Needs a research spike before Phase 4.
+1. What is the actual callable mechanism (endpoint, required identifiers, auth) for the Bulgarian traffic police fines lookup and the vignette validity check? Needs a research spike before Phase 5.
 2. Should fines/vignette checks run automatically on a schedule (e.g. daily) or only on manual user trigger? Deferred until the research spike clarifies rate limits and terms of use.
 3. Any car deletion/data retention policy — hard delete vs soft delete for cars and their expense history?
 
@@ -225,7 +235,7 @@ Mobile-first, installable PWA; desktop usable but not the primary target.
 ## Next Actions
 
 - [ ] Run `/seed launch gaspense` (or `/seed graduate gaspense` then `/paul:init`) to move into managed build
-- [ ] Kick off `/paul:discover` research spike on Bulgarian fines/vignette integrations early, in parallel with Phase 1-3 build, so Phase 4 isn't blocked
+- [ ] Kick off `/paul:discover` research spike on Bulgarian fines/vignette integrations early, in parallel with Phase 1-4 build, so Phase 5 isn't blocked
 
 ---
 
