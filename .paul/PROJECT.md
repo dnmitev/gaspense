@@ -20,7 +20,7 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 |-----------|-------|
 | Type | Application |
 | Version | 0.0.0 |
-| Status | Prototype (ideation complete, no code yet) |
+| Status | Prototype — Phase 0 complete (docs + tooling in place, no application code yet) |
 | Last Updated | 2026-08-07 |
 
 **Production URLs:** none yet.
@@ -37,14 +37,16 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 - Attach photos to cars and expenses
 
 ### Validated (Shipped)
-None yet.
+- ✓ Agent-readable project context — `CLAUDE.md`, `AGENTS.md`, `docs/ARCHITECTURE.md` — Phase 0
+- ✓ Public-repo secret protection — `.gitignore` verified against a real `.env`, `node_modules`, and `.key` files — Phase 0
+- ✓ Lint/format toolchain — ESLint (typescript-eslint base), Prettier, EditorConfig, markdownlint — Phase 0
+- ✓ `npm run check` — single CI-callable gate for docs presence + formatting + lint, proven to fail by name on a missing doc — Phase 0
 
 ### Active (In Progress)
-None yet.
+None — Phase 1 (CI/CD Pipeline) is next.
 
 ### Planned (Next)
-- Phase 0: AI-Friendly Project Scaffolding — CLAUDE.md, AGENTS.md, docs/ARCHITECTURE.md, lint/format config
-- Phase 1: CI/CD Pipeline — GitHub Actions lint/test/build gate, secret scanning
+- Phase 1: CI/CD Pipeline — GitHub Actions running `npm run check` on every PR, secret scanning
 - Phase 2: Foundations — Google OAuth, Car/Category/Expense CRUD, odometer log
 - Phase 3: Reporting — monthly/yearly cost aggregations, dashboard charts, cost-per-km
 - Phase 4: PWA & Mobile UX — installable PWA, quick-add flow, photo upload
@@ -106,12 +108,19 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 | CI/CD as Phase 1, before Foundations | Every later phase is automatically checked from the start | 2026-08-07 | Active |
 | Direct commits to `main` | Explicitly authorized for this low-risk personal project | 2026-08-07 | Active |
 | Public repo, no sensitive data ever committed | Real credentials live only in environment variables | 2026-08-07 | Active |
+| `.gitignore` scopes `.claude/` to `worktrees/` only | `.claude/settings.json` is deliberately tracked; ignoring `.claude/` wholesale would untrack a committed file | 2026-08-07 | Active |
+| CLAUDE.md and AGENTS.md are always edited together | Two files carrying one set of facts diverge silently if edited separately | 2026-08-07 | Active |
+| npm as package manager | Already installed, Vercel's default, simplest CI caching | 2026-08-07 | Active |
+| typescript-eslint base in Phase 0; `eslint-config-next` in Phase 2 | Lint rules must exist before the first application code is written | 2026-08-07 | Active |
+| Prettier is formatter of record; markdownlint owns structure | Overlap tested empirically — only MD013 genuinely conflicts | 2026-08-07 | Active |
+| No `test` script until Phase 2 | A no-op passing test script would give CI a false green | 2026-08-07 | Active |
+| `license: UNLICENSED` + `private: true` | Avoids npm's default ISC grant on a public repo; real licence choice still open | 2026-08-07 | Active |
 
 ## Success Metrics
 
 | Metric | Target | Current | Status |
 |--------|--------|---------|--------|
-| Docs/lint presence | CLAUDE.md, AGENTS.md, docs/ARCHITECTURE.md exist; markdownlint + ESLint/Prettier pass | - | Not started |
+| Docs/lint presence | CLAUDE.md, AGENTS.md, docs/ARCHITECTURE.md exist; markdownlint + ESLint/Prettier pass | `npm run check` green | **Achieved** (Phase 0) |
 | CI pipeline green | Lint + test + build pass on every PR; secret scanning active | - | Not started |
 | Test coverage | Unit + integration + automation (e2e) tests for every phase | - | Not started |
 | Security scan | Pass, every phase | - | Not started |
@@ -140,4 +149,4 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-08-07*
+*Last updated: 2026-08-07 after Phase 0*

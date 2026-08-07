@@ -14,7 +14,7 @@ From a graduated PLANNING.md to a working personal vehicle expense tracker: firs
 
 **v0.1 Initial Release** (v0.1.0)
 Status: In progress
-Phases: 0 of 7 complete
+Phases: 1 of 7 complete (14%)
 
 ## Phases
 
@@ -22,7 +22,7 @@ Phases: 0 of 7 complete
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
-| 0 | AI-Friendly Project Scaffolding | 1/2 | In progress | - |
+| 0 | AI-Friendly Project Scaffolding | 2/2 | ✅ Complete | 2026-08-07 |
 | 1 | CI/CD Pipeline | TBD | Not started | - |
 | 2 | Foundations | TBD | Not started | - |
 | 3 | Reporting | TBD | Not started | - |
@@ -48,7 +48,9 @@ Phases: 0 of 7 complete
 
 **Plans:**
 - [x] 00-01: Agent entry-point docs (CLAUDE.md, AGENTS.md), docs/ARCHITECTURE.md, and .gitignore
-- [ ] 00-02: Minimal package.json + ESLint/Prettier/EditorConfig/markdownlint + CI-callable check script
+- [x] 00-02: Minimal package.json + ESLint/Prettier/EditorConfig/markdownlint + CI-callable check script
+
+**Completed 2026-08-07.** Delivers `npm run check` — the gate Phase 1 wires into GitHub Actions.
 
 ### Phase 1: CI/CD Pipeline
 
@@ -57,8 +59,13 @@ Phases: 0 of 7 complete
 **Research:** Unlikely (standard GitHub Actions patterns)
 
 **Scope:**
-- GitHub Actions workflow: lint + unit/integration tests + build on every PR
+- GitHub Actions workflow running `npm ci` + `npm run check` on every PR
 - GitHub secret scanning + push protection enabled
+
+**⚠️ Carried from Phase 0:** there is deliberately no `test` script and no build until Phase 2.
+The workflow must pass with what exists today (`npm run check` only) and gain `build`/`test`
+steps when Phase 2 lands — a workflow written against tests that do not exist will fail on
+day one.
 
 **Plans:**
 - [ ] TBD — defined during `/paul:plan`
