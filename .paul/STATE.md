@@ -11,15 +11,15 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release, Phase 2: Foundations — Planning 02-04
+**Current focus:** v0.1 Initial Release, Phase 2: Foundations — Applying 02-04
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
 Phase: 2 of 7 (Foundations) — In progress
-Plan: 02-04 created, awaiting approval (4 of 6 in this phase)
-Status: PLAN created, ready for APPLY
-Last activity: 2026-08-07 — Created 02-04-PLAN.md (isolation-critical; has a blocking checkpoint)
+Plan: 02-04 executed, 3 tasks + checkpoint resolved
+Status: APPLY complete, ready for UNIFY
+Last activity: 2026-08-07 — Executed 02-04: NextAuth v5, session helper, isolation proven (30 tests)
 
 Progress:
 - Milestone: [██░░░░░░░░] 29% (2 of 7 phases complete)
@@ -30,7 +30,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan 02-04 created, awaiting approval]
+  ✓        ✓        ◉     [Ready for UNIFY]
 ```
 
 ## Performance Metrics
@@ -67,6 +67,7 @@ Only what constrains upcoming work. **Full log (28 entries): `.paul/PROJECT.md` 
 | Public repo -- nothing sensitive, ever | `.env.example` placeholders only; no real plates or personal data in seeds/fixtures |
 | NextAuth **v5 beta** + `@auth/prisma-adapter`, database sessions | v5 is beta but is the App Router API; sessions live in Postgres so Phase 6 gets the Google refresh token free |
 | Google OAuth credentials are the user's to create | Automated tests create sessions directly in the DB; a real login is a manual check the user performs |
+| **`lib/session.ts` is the only way to learn the caller** | `requireUserId()` throws rather than returning falsy — Prisma reads `undefined` in `where` as "no filter", so a nullable helper would leak every user's rows |
 
 ### Deferred Issues
 
@@ -83,19 +84,19 @@ Only what constrains upcoming work. **Full log (28 entries): `.paul/PROJECT.md` 
 |---------|--------|-----------------|
 | Next.js owns a section of AGENTS.md | Hand-edits inside the `nextjs-agent-rules` block are silently overwritten on `next dev` | Edit only outside the markers |
 | e2e step rebuilds the app, duplicating the Build step | Slower CI runs | Accepted; optimising means touching 01-01's verified workflow structure |
-| **`@auth/prisma-adapter` peer-declares `@prisma/client >=2..>=6`, NOT >=7** | We run Prisma 7.9.1; the adapter may not work | 02-04 Task 1 retires this risk first, with a documented escalation if it fails |
-| PROJECT.md had 16 duplicated rows from a repeated UNIFY edit | Authoritative decision log was unreliable | Fixed during 02-04 planning; deduped and verified |
+| Auth is wired but never exercised against real Google | A real OAuth login has not been performed; only DB-level sessions are tested | User adds `AUTH_*` to `.env` and clicks through when convenient |
 
-**Resolved:** CI success metric and stale agent docs (02-02); `.env.example` and the
-`docs/ARCHITECTURE.md` schema update (02-03).
+**Resolved:** CI metric + stale agent docs (02-02); `.env.example` + ARCHITECTURE schema (02-03);
+the `@auth/prisma-adapter`/Prisma 7 worry — its peer range is open-ended, and compatibility was
+verified functionally (02-04); PROJECT.md duplication (02-04 planning).
 
 ## Boundaries (Active)
 
-From plan 02-04 (plus the standing "do not break these"):
+Standing "do not break these":
 
-- **No `ALTER COLUMN` or `DROP` on any existing table** — 02-04's migration must be additive only
-- **No real credentials committed** — the user supplies `AUTH_*` values in `.env` themselves
-- **No Google Drive scopes** in the OAuth consent — Phase 6 owns that
+- **All data paths go through `lib/session.ts`** — never build a `where` from a nullable user id
+- **No Google Drive scopes** in the OAuth consent until Phase 6
+- **No real credentials committed** — `AUTH_*` real values live only in `.env`
 
 - **Never run `prisma init` again** -- re-injects 71 agent-skill files and edits `.gitignore`
 - **Never run `create-next-app`** here -- clobbers README.md, .gitignore, eslint.config.mjs, scripts
@@ -113,8 +114,8 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-07 (resumed; handoff consumed and archived to `.paul/handoffs/archive/`)
-Stopped at: Plan 02-04 created — 3 tasks + 1 blocking human-verify checkpoint (`autonomous: false`)
-Next action: Review and approve plan, then run `/paul:apply .paul/phases/02-foundations/02-04-PLAN.md`
+Stopped at: Plan 02-04 APPLY complete — checkpoint approved on automated criteria; CI green
+Next action: Run `/paul:unify .paul/phases/02-foundations/02-04-PLAN.md` to close the loop
 Resume file: `.paul/phases/02-foundations/02-04-PLAN.md`
 Git strategy: `main` (direct commits)
 Resume context:
