@@ -11,15 +11,15 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release, Phase 2: Foundations — Planning 02-03
+**Current focus:** v0.1 Initial Release, Phase 2: Foundations — Applying 02-03
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
 Phase: 2 of 7 (Foundations) — In progress
-Plan: 02-03 created, awaiting approval (3 of 6 in this phase)
-Status: PLAN created, ready for APPLY
-Last activity: 2026-08-07 — Created .paul/phases/02-foundations/02-03-PLAN.md
+Plan: 02-03 executed, 3 of 3 tasks complete
+Status: APPLY complete, ready for UNIFY
+Last activity: 2026-08-07 — Executed 02-03: Prisma 7 schema, migrations, seed, DB-backed tests in CI
 
 Progress:
 - Milestone: [██░░░░░░░░] 29% (2 of 7 phases complete)
@@ -30,7 +30,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan 02-03 created, awaiting approval]
+  ✓        ✓        ◉     [Ready for UNIFY]
 ```
 
 ## Performance Metrics
@@ -80,6 +80,12 @@ Digest of decisions that constrain upcoming work. **Full log: `.paul/PROJECT.md`
 | **`pricePerLiter` derived, not stored** | Phase 2 (02-03) | Storing a derived value invites the two disagreeing — compute where displayed |
 | **Schema is Phase 2's five entities only** | Phase 2 (02-03) | Fine/Vignette shapes depend on the unresolved Phase 5 research; Attachment waits for Phase 4 |
 | **Unit tests stay DB-free; integration tests are separate** | Phase 2 (02-03) | `npm test` must pass with Docker stopped; `npm run test:integration` needs Postgres |
+| **Prisma 7: URLs live in `prisma.config.ts`** | Phase 2 (02-03) | The datasource block rejects `url` and `directUrl` outright |
+| **Prisma 7 requires a driver adapter** | Phase 2 (02-03) | `new PrismaClient()` does not compile without one. `@prisma/adapter-pg` accepts a `pg.Pool` — this is the serverless-pooling lever |
+| **Seed and Prisma scripts run under `tsx`** | Phase 2 (02-03) | The generated client uses bundler-style extensionless imports Node's ESM loader cannot resolve |
+| **Category uniqueness is raw-SQL partial indexes** | Phase 2 (02-03) | Prisma cannot express them, and `@@unique([userId, name])` fails because Postgres treats NULLs as distinct |
+| **Local Postgres on host port 5433** | Phase 2 (02-03) | Another project on this machine holds 5432; it was left running |
+| **Reject `prisma init`'s agent-skill injection** | Phase 2 (02-03) | It writes 71 files to `.agents/`, `.claude/skills/`, `.windsurf/` and edits `.gitignore`. Verified non-regenerating, so removed |
 | **Vitest runs `globals: false`** | Phase 2 (02-02) | Testing Library's auto-cleanup does NOT register; it is wired by hand in `tests/unit/setup.ts`. Removing it causes cross-test DOM leaks |
 | `docs/ARCHITECTURE.md` is the living design doc | Phase 0 | Must be updated in Phase 2 when the real schema lands, or it misleads |
 
@@ -123,8 +129,8 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-07 (resumed; handoff consumed and archived to `.paul/handoffs/archive/`)
-Stopped at: Plan 02-03 created — the largest plan so far (schema, migrations, seed, DB-backed tests, CI Postgres, ARCHITECTURE)
-Next action: Review and approve plan, then run `/paul:apply .paul/phases/02-foundations/02-03-PLAN.md`
+Stopped at: Plan 02-03 APPLY complete — CI green across check/build/unit/migrate/integration/e2e
+Next action: Run `/paul:unify .paul/phases/02-foundations/02-03-PLAN.md` to close the loop
 Resume file: `.paul/phases/02-foundations/02-03-PLAN.md`
 Git strategy: `main` (direct commits)
 Resume context:
