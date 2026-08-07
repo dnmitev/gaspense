@@ -6,7 +6,7 @@
 **Type:** Application
 **Stack:** Next.js (TypeScript) + Supabase (Postgres + Storage) + Vercel
 **Skill Loadout:** PAUL (required), AEGIS (recommended), ui-ux-pro-max (recommended)
-**Quality Gates:** unit + integration + automation tests per phase, security scan, accessibility, performance
+**Quality Gates:** docs/lint presence, unit + integration + automation tests per phase, security scan, accessibility, performance
 
 ---
 
@@ -145,6 +145,11 @@ Mobile-first, installable PWA; desktop usable but not the primary target.
 
 ## Phase Breakdown
 
+### Phase 0: AI-Friendly Project Scaffolding
+- **Build:** `CLAUDE.md` (stack, conventions, test/build commands, where PLANNING.md and PAUL state live), `AGENTS.md` (same core context in the open agents.md cross-tool standard, for Cursor/Aider/Copilot/etc.), `docs/ARCHITECTURE.md` (living summary of data model, API surface, and phase roadmap, kept in sync as the app evolves), lint/format config (ESLint, Prettier, EditorConfig) so AI-generated code conforms to a consistent style from the first commit
+- **Testable:** CI step that fails the build if `CLAUDE.md`/`AGENTS.md`/`docs/ARCHITECTURE.md` are missing, and that runs markdownlint + the ESLint/Prettier config against themselves
+- **Outcome:** Any AI coding agent (Claude Code, Cursor, Copilot, etc.) or human contributor opening the repo has full project context and style rules without re-deriving them or being re-explained per session
+
 ### Phase 1: Foundations
 - **Build:** Google OAuth login, Car CRUD, Category CRUD (with seeded defaults), Expense CRUD, Odometer log
 - **Testable:** Unit tests on validation/model logic, integration tests on CRUD API routes, e2e smoke test for "add car → add expense"
@@ -187,6 +192,7 @@ Mobile-first, installable PWA; desktop usable but not the primary target.
 
 | Gate | Threshold | When |
 |------|-----------|------|
+| Docs/lint presence | CLAUDE.md, AGENTS.md, docs/ARCHITECTURE.md exist; markdownlint + ESLint/Prettier pass | Phase 0, and every phase thereafter (docs/config must stay in sync) |
 | Test coverage | Unit + integration + automation (e2e) for every phase | each phase, per user's explicit requirement |
 | Security scan | pass | each phase, especially auth (1) and integrations (4, 5) |
 | Accessibility | WCAG AA | frontend phases (1, 2, 3) |
@@ -204,6 +210,7 @@ Mobile-first, installable PWA; desktop usable but not the primary target.
 6. **Odometer as a first-class log**: tracked independently of expenses (not just inferred from fuel fill-ups) to support accurate efficiency calculations and future service-interval features.
 7. **Attachments modeled with nullable dual foreign keys (carId/expenseId)**: simplest shape to support photos on both cars and expenses without a separate polymorphic join table.
 8. **Bulgarian government integrations deferred to Phase 4 with an explicit research spike**: no confirmed public API exists for either the fines lookup or vignette check — implementation is deferred until `/paul:discover` establishes what's actually callable.
+9. **AI-friendly scaffolding as Phase 0, before any app code**: `CLAUDE.md`, `AGENTS.md`, `docs/ARCHITECTURE.md`, and lint/format config are established first so every subsequent phase — and any AI agent working on it — has full project context and consistent code style from the start, rather than retrofitting docs after the fact.
 
 ---
 
