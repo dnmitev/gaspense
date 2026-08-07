@@ -11,15 +11,15 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release, Phase 2: Foundations — 2 of 6 plans complete
+**Current focus:** v0.1 Initial Release, Phase 2: Foundations — Planning 02-03
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
 Phase: 2 of 7 (Foundations) — In progress
-Plan: 02-02 complete (loop closed)
-Status: Ready for next PLAN (02-03)
-Last activity: 2026-08-07 — Closed loop 02-02; full CI gate green (check/build/unit/e2e)
+Plan: 02-03 created, awaiting approval (3 of 6 in this phase)
+Status: PLAN created, ready for APPLY
+Last activity: 2026-08-07 — Created .paul/phases/02-foundations/02-03-PLAN.md
 
 Progress:
 - Milestone: [██░░░░░░░░] 29% (2 of 7 phases complete)
@@ -30,7 +30,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete — ready for next PLAN]
+  ✓        ○        ○     [Plan 02-03 created, awaiting approval]
 ```
 
 ## Performance Metrics
@@ -75,7 +75,11 @@ Digest of decisions that constrain upcoming work. **Full log: `.paul/PROJECT.md`
 | **Next.js 16 rewrites AGENTS.md** | Phase 2 (02-01) | `next dev` re-injects an H1 agent-rules block; MD025 is disabled because of it. Commit the block, never fight it |
 | Tailwind 4 is CSS-first | Phase 2 (02-01) | Theme customisation goes in `app/globals.css` via `@theme` — there is no `tailwind.config.js` |
 | **e2e serves the production build, never `next dev`** | Phase 2 (02-02) | Verified: `next build` does not touch AGENTS.md but `next dev` regenerates it, which would dirty the tree on every test run |
-| `.env.example` deferred to 02-03 | Phase 2 (02-02) | Writing it before `DATABASE_URL` exists would document unused variables |
+| **Local Docker Postgres for dev + CI service container** | Phase 2 (02-03) | No Supabase account or secrets needed; `.env.example` documents the production pooled/direct URL split |
+| **Money stored as `amountCents Int`** | Phase 2 (02-03) | Prisma `Decimal` returns Decimal.js, which breaks the Next server→client boundary. Exact arithmetic, trivial SUM for Phase 3 |
+| **`pricePerLiter` derived, not stored** | Phase 2 (02-03) | Storing a derived value invites the two disagreeing — compute where displayed |
+| **Schema is Phase 2's five entities only** | Phase 2 (02-03) | Fine/Vignette shapes depend on the unresolved Phase 5 research; Attachment waits for Phase 4 |
+| **Unit tests stay DB-free; integration tests are separate** | Phase 2 (02-03) | `npm test` must pass with Docker stopped; `npm run test:integration` needs Postgres |
 | **Vitest runs `globals: false`** | Phase 2 (02-02) | Testing Library's auto-cleanup does NOT register; it is wired by hand in `tests/unit/setup.ts`. Removing it causes cross-test DOM leaks |
 | `docs/ARCHITECTURE.md` is the living design doc | Phase 0 | Must be updated in Phase 2 when the real schema lands, or it misleads |
 
@@ -100,7 +104,7 @@ stale agent docs (both corrected in one commit).
 
 ## Boundaries (Active)
 
-None — set when 02-03's PLAN.md is created. Standing constraints:
+From plan 02-03:
 
 - **Never edit inside AGENTS.md's `nextjs-agent-rules` markers** — Next regenerates that block
 - **Never run `create-next-app` in this directory** — it clobbers README.md, .gitignore, eslint.config.mjs, and package.json scripts
@@ -109,6 +113,8 @@ None — set when 02-03's PLAN.md is created. Standing constraints:
 - CI triggers, `permissions`, and `concurrency` — verified in 01-01, not to be restructured
 - `.paul/**`, `projects/**`, `.claude/settings.json` — untouched by tooling
 - `npm run check` must stay green; the pre-push hook enforces it on every push
+- `tests/e2e/**` and `playwright.config.ts` — untouched by 02-03; the existing suite must keep passing
+- No NextAuth Account/Session tables in 02-03 — they belong to 02-04 with the adapter
 
 ### Git State
 
@@ -117,15 +123,15 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-07 (resumed; handoff consumed and archived to `.paul/handoffs/archive/`)
-Stopped at: Plan 02-02 loop closed — all 5 ACs passed, no waivers; full CI gate green
-Next action: Run `/paul:plan` for 02-03 (Prisma schema + migrations + seeded default categories, `.env.example`, `docs/ARCHITECTURE.md` schema update)
-Resume file: `.paul/phases/02-foundations/02-02-SUMMARY.md`
+Stopped at: Plan 02-03 created — the largest plan so far (schema, migrations, seed, DB-backed tests, CI Postgres, ARCHITECTURE)
+Next action: Review and approve plan, then run `/paul:apply .paul/phases/02-foundations/02-03-PLAN.md`
+Resume file: `.paul/phases/02-foundations/02-03-PLAN.md`
 Git strategy: `main` (direct commits)
 Resume context:
 - Phase 2 is 2 of 6 plans done — NOT complete; transition deliberately withheld (the PLAN/SUMMARY count heuristic reads 2=2 as done; ROADMAP declares 6).
-- 02-03 owes: Prisma schema for the Phase 2 entities with `deletedAt` on Car only, migrations, seeded default categories, `.env.example` (`DATABASE_URL` finally real), and the `docs/ARCHITECTURE.md` schema update. Watch Prisma connection pooling on Vercel serverless.
-- Test harness is ready, which matters most for 02-04: isolation is app-layer with no RLS backstop, so every query path needs a leakage test.
-- Standing traps: never read an exit code through a pipe; ESLint frozen at 9; don't delete `afterEach(cleanup)`.
+- 02-03 gotcha built into the plan: Postgres treats NULLs as distinct in unique constraints, so `@@unique([userId, name])` will NOT stop duplicate system-default categories. The seed needs a partial index or an explicit guard.
+- Test harness matters most for 02-04: isolation is app-layer with no RLS backstop, so every query path needs a leakage test.
+- Standing traps: never read an exit code through a pipe; ESLint frozen at 9; don't delete `afterEach(cleanup)`; don't edit inside the `nextjs-agent-rules` markers.
 
 ---
 *STATE.md — Updated after every significant action*
