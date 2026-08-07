@@ -20,7 +20,7 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 |-----------|-------|
 | Type | Application |
 | Version | 0.0.0 |
-| Status | Prototype — Phases 0-1 complete; Phase 2 at 3 of 6 (app shell, test infra, and data layer in place; no auth or UI yet) |
+| Status | Prototype — Phases 0-1 complete; Phase 2 at 4 of 6 (app shell, test infra, data layer, and auth in place; no feature UI yet) |
 | Last Updated | 2026-08-07 |
 
 **Production URLs:** none yet.
@@ -50,7 +50,7 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 - ✓ Authentication — NextAuth v5 + Google OAuth, database sessions, and per-user isolation proven by test (30 tests total) — Phase 2 (02-04)
 
 ### Active (In Progress)
-- Phase 2: Foundations — 3 of 6 plans complete (app shell, test infra, data layer done; auth and UI remain)
+- Phase 2: Foundations — 4 of 6 plans complete (app shell, test infra, data layer, auth done; Car and Expense UI remain)
 
 ### Planned (Next)
 - Phase 3: Reporting — monthly/yearly cost aggregations, dashboard charts, cost-per-km
@@ -145,7 +145,6 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 | Omit the WebAuthn `Authenticator` model | The adapter only touches it in WebAuthn methods, unreachable with Google-only sign-in | 2026-08-07 | Active |
 | Per-page auth checks, not middleware | Next 16 middleware plus NextAuth beta adds moving parts for no gain; per-page checks are testable | 2026-08-07 | Active |
 | No Google Drive scopes until Phase 6 | Keeps the consent screen honest about what the app currently does | 2026-08-07 | Active |
-| Unit tests DB-free; integration tests a separate project | The fast feedback loop must not depend on a running container | 2026-08-07 | Active |
 
 ## Success Metrics
 
