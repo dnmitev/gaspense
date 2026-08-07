@@ -11,26 +11,26 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release, Phase 0: AI-Friendly Project Scaffolding — Planning
+**Current focus:** v0.1 Initial Release, Phase 0: AI-Friendly Project Scaffolding — Planning 00-02
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 0 of 7 (AI-Friendly Project Scaffolding) — In progress
-Plan: 00-01 complete (loop closed)
-Status: Ready for next PLAN (00-02)
-Last activity: 2026-08-07 — Closed loop 00-01; summary written, .gitignore hardened
+Phase: 0 of 7 (AI-Friendly Project Scaffolding) — Planning
+Plan: 00-02 created, awaiting approval
+Status: PLAN created, ready for APPLY
+Last activity: 2026-08-07 — Created .paul/phases/00-ai-friendly-scaffolding/00-02-PLAN.md
 
 Progress:
 - Milestone: [░░░░░░░░░░] 0% (0 of 7 phases complete)
-- Phase 0: [█████░░░░░] 50% (1 of 2 plans)
+- Phase 0: [█████░░░░░] 50% (1 of 2 plans complete)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete — ready for next PLAN]
+  ✓        ○        ○     [Plan 00-02 created, awaiting approval]
 ```
 
 ## Performance Metrics
@@ -60,6 +60,10 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | 2026-08-07: `.gitignore` scopes `.claude/` to `worktrees/` only | Phase 0 (00-01) | `.claude/settings.json` stays tracked — never ignore `.claude/` wholesale |
 | 2026-08-07: Agent docs cross-reference rather than duplicate | Phase 0 (00-01) | Data model lives in `docs/ARCHITECTURE.md`; other docs link to it. Update it in Phase 2 when the real schema lands |
 | 2026-08-07: CLAUDE.md and AGENTS.md must be edited together | Phase 0 (00-01) | Two files, one set of facts — editing one alone silently diverges agent guidance |
+| 2026-08-07: npm as package manager | Phase 0 (00-02) | Fixes the lockfile and every later command; Phase 1 CI caching and Vercel detection assume npm |
+| 2026-08-07: typescript-eslint base now, `eslint-config-next` in Phase 2 | Phase 0 (00-02) | Lint rules exist before any code is written; Phase 2 appends the Next preset rather than restructuring |
+| 2026-08-07: Prettier is formatter of record; markdownlint owns structure only | Phase 0 (00-02) | Overlapping markdownlint rules (MD013 etc.) disabled so the two tools cannot fight |
+| 2026-08-07: No `test` script until Phase 2 | Phase 0 (00-02) | A no-op passing test script would give Phase 1 CI a false green |
 
 ### Deferred Issues
 
@@ -75,18 +79,20 @@ None yet — Phase 5 is expected to be blocked on research, not yet a live block
 
 ## Boundaries (Active)
 
-None — set when the next PLAN.md is created. Carry forward into 00-02:
-- `.claude/settings.json` must stay tracked (never ignore `.claude/` wholesale)
-- `README.md` and `projects/gaspense/PLANNING.md` remain off-limits for rewrites
+From plan 00-02:
+- `.paul/**` — PAUL-managed; excluded from Prettier/markdownlint, never reformatted by tooling
+- `projects/gaspense/PLANNING.md` — boundary-protected append-only record; excluded from linting
+- `.claude/settings.json` — deliberately tracked, must stay tracked and unmodified
+- `.gitignore` — finalized in 00-01, not re-scoped here
+- Substance of CLAUDE.md / AGENTS.md / docs/ARCHITECTURE.md — formatting edits and the commands-table update only
 
 ## Session Continuity
 
 Last session: 2026-08-07
-Stopped at: Plan 00-01 loop closed — 3/3 tasks PASS, all 4 ACs pass, summary written
-Next action: Run `/paul:plan` to create plan 00-02 (minimal `package.json` + ESLint/Prettier/EditorConfig/markdownlint + CI-callable docs/lint check script)
-Resume file: `.paul/phases/00-ai-friendly-scaffolding/00-01-SUMMARY.md`
-Resume context: Phase 0 is 1 of 2 plans done — it is NOT complete and the phase transition has deliberately not been run. 00-02 delivers the lint/format half plus the check script Phase 1's GitHub Actions will invoke. Toolchain decision already made: minimal `package.json` with lint/format devDependencies only; Next.js is layered on in Phase 2.
-Resume context: Phase 0 split into two plans — 00-01 (agent docs + .gitignore, this one) and 00-02 (minimal package.json + ESLint/Prettier/EditorConfig/markdownlint + CI-callable check script). Toolchain decision: minimal package.json in Phase 0, Next.js layered on in Phase 2.
+Stopped at: Plan 00-02 created
+Next action: Review and approve plan, then run `/paul:apply .paul/phases/00-ai-friendly-scaffolding/00-02-PLAN.md`
+Resume file: `.paul/phases/00-ai-friendly-scaffolding/00-02-PLAN.md`
+Resume context: 00-02 completes Phase 0 — npm toolchain (npm chosen), typescript-eslint base (extend with eslint-config-next in Phase 2), Prettier as formatter of record, markdownlint for structure, and `npm run check` as the single gate Phase 1's CI invokes. Deliberately no test framework or runtime deps yet.
 
 ---
 *STATE.md — Updated after every significant action*

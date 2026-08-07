@@ -42,7 +42,9 @@ Phases: 0 of 7 complete
 - `CLAUDE.md` — stack, conventions, test/build commands, where PLANNING.md/PAUL state live
 - `AGENTS.md` — same core context in the open agents.md cross-tool standard
 - `docs/ARCHITECTURE.md` — living summary of data model, API surface, phase roadmap
-- Lint/format config (ESLint, Prettier, EditorConfig)
+- `.gitignore` — public-repo secret and artifact protection
+- Lint/format config (ESLint, Prettier, EditorConfig, markdownlint)
+- `npm run check` — CI-callable gate for docs presence + style, consumed by Phase 1
 
 **Plans:**
 - [x] 00-01: Agent entry-point docs (CLAUDE.md, AGENTS.md), docs/ARCHITECTURE.md, and .gitignore
