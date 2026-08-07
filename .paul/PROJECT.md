@@ -129,7 +129,7 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 | Metric | Target | Current | Status |
 |--------|--------|---------|--------|
 | Docs/lint presence | CLAUDE.md, AGENTS.md, docs/ARCHITECTURE.md exist; markdownlint + ESLint/Prettier pass | `npm run check` green | **Achieved** (Phase 0) |
-| CI pipeline green | Lint + test + build pass on every push/PR; secret scanning active | Lint gate green and proven to fail; secret scanning + push protection active. Test/build absent until Phase 2 | **Partially achieved** (Phase 1) |
+| CI pipeline green | Lint + test + build pass on every push/PR; secret scanning active | All four run green: check, build, unit (Vitest), e2e (Playwright). Secret scanning + push protection active | **Achieved** (Phase 2, plan 02-02) |
 | Test coverage | Unit + integration + automation (e2e) tests for every phase | - | Not started |
 | Security scan | Pass, every phase | - | Not started |
 | Accessibility | WCAG AA on frontend phases | - | Not started |

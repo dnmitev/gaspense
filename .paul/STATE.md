@@ -11,15 +11,15 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release, Phase 2: Foundations — Planning 02-02
+**Current focus:** v0.1 Initial Release, Phase 2: Foundations — Applying 02-02
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
 Phase: 2 of 7 (Foundations) — In progress
-Plan: 02-02 created, awaiting approval (2 of 6 in this phase)
-Status: PLAN created, ready for APPLY
-Last activity: 2026-08-07 — Created .paul/phases/02-foundations/02-02-PLAN.md
+Plan: 02-02 executed, 3 of 3 tasks complete
+Status: APPLY complete, ready for UNIFY
+Last activity: 2026-08-07 — Executed 02-02: Vitest + Playwright, CI test steps, agent docs corrected
 
 Progress:
 - Milestone: [██░░░░░░░░] 29% (2 of 7 phases complete)
@@ -30,7 +30,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan 02-02 created, awaiting approval]
+  ✓        ✓        ◉     [Ready for UNIFY]
 ```
 
 ## Performance Metrics
@@ -76,6 +76,7 @@ Digest of decisions that constrain upcoming work. **Full log: `.paul/PROJECT.md`
 | Tailwind 4 is CSS-first | Phase 2 (02-01) | Theme customisation goes in `app/globals.css` via `@theme` — there is no `tailwind.config.js` |
 | **e2e serves the production build, never `next dev`** | Phase 2 (02-02) | Verified: `next build` does not touch AGENTS.md but `next dev` regenerates it, which would dirty the tree on every test run |
 | `.env.example` deferred to 02-03 | Phase 2 (02-02) | Writing it before `DATABASE_URL` exists would document unused variables |
+| **Vitest runs `globals: false`** | Phase 2 (02-02) | Testing Library's auto-cleanup does NOT register; it is wired by hand in `tests/unit/setup.ts`. Removing it causes cross-test DOM leaks |
 | `docs/ARCHITECTURE.md` is the living design doc | Phase 0 | Must be updated in Phase 2 when the real schema lands, or it misleads |
 
 ### Deferred Issues
@@ -91,9 +92,11 @@ Digest of decisions that constrain upcoming work. **Full log: `.paul/PROJECT.md`
 
 | Concern | Impact | Resolution Path |
 |---------|--------|-----------------|
-| CI success metric is only partially achieved — lint gate only, no test/build | PROJECT.md metric reads "lint + test + build" | Phase 2 adds both scripts and the matching CI steps, completing the metric |
-| **Agent docs are currently WRONG** — CLAUDE.md and AGENTS.md still list `npm run dev` and `npm run build` under "Not available yet", but both now exist | An agent reading them is misinformed today | **02-02's first obligation**: correct both files in one commit, alongside adding the test scripts |
 | Next.js owns a section of AGENTS.md | Hand-edits inside the `nextjs-agent-rules` block are silently overwritten on `next dev` | Edit only outside the markers |
+| e2e step rebuilds the app, duplicating the Build step | Slower CI runs | Accepted; optimising means touching 01-01's verified workflow structure |
+
+**Resolved by 02-02:** the CI success metric (lint + test + build now all run and pass) and the
+stale agent docs (both corrected in one commit).
 
 ## Boundaries (Active)
 
@@ -115,8 +118,8 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-07 (resumed; handoff consumed and archived to `.paul/handoffs/archive/`)
-Stopped at: Plan 02-02 created
-Next action: Review and approve plan, then run `/paul:apply .paul/phases/02-foundations/02-02-PLAN.md`
+Stopped at: Plan 02-02 APPLY complete — both runners proven failable, CI green across check/build/unit/e2e
+Next action: Run `/paul:unify .paul/phases/02-foundations/02-02-PLAN.md` to close the loop
 Resume file: `.paul/phases/02-foundations/02-02-PLAN.md`
 Git strategy: `main` (direct commits)
 Resume context:
