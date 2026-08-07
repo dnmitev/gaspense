@@ -1,0 +1,32 @@
+name = "gaspense"
+version = "0.0.0"
+status = "active"
+path = "."
+tags = []
+
+[paul]
+version = "1.4"
+source = "https://chrisai.cv/skool"
+
+[milestone]
+name = "v0.1 Initial Release"
+version = "0.1.0"
+status = "not_started"
+phases = 7
+
+[phase]
+number = 0
+name = "AI-Friendly Project Scaffolding"
+status = "not_started"
+plans_completed = 0
+
+[loop]
+position = "IDLE"
+
+[satellite]
+groom = true
+
+[stats]
+total_plans = 0
+total_phases = 0
+last_activity = "2026-08-07T12:03:36Z"
