@@ -14,7 +14,7 @@ From a graduated PLANNING.md to a working personal vehicle expense tracker: firs
 
 **v0.1 Initial Release** (v0.1.0)
 Status: In progress
-Phases: 1 of 7 complete (14%)
+Phases: 2 of 7 complete (29%)
 
 ## Phases
 
@@ -23,7 +23,7 @@ Phases: 1 of 7 complete (14%)
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
 | 0 | AI-Friendly Project Scaffolding | 2/2 | ✅ Complete | 2026-08-07 |
-| 1 | CI/CD Pipeline | 1 | Planning | - |
+| 1 | CI/CD Pipeline | 1/1 | ✅ Complete | 2026-08-07 |
 | 2 | Foundations | TBD | Not started | - |
 | 3 | Reporting | TBD | Not started | - |
 | 4 | PWA & Mobile UX | TBD | Not started | - |
@@ -61,7 +61,8 @@ Phases: 1 of 7 complete (14%)
 **Scope:**
 - GitHub Actions workflow running `npm ci` + `npm run check` on pushes to `main` **and** PRs
 - Version-controlled pre-push hook enforcing the same gate locally
-- Secret scanning hardened with non-provider patterns
+- Secret scanning + push protection verified active (hardening with non-provider patterns
+  proved infeasible — see completion note below)
 
 **⚠️ Carried from Phase 0:** there is deliberately no `test` script and no build until Phase 2.
 The workflow must pass with what exists today (`npm run check` only) and gain `build`/`test`
@@ -77,7 +78,15 @@ day one.
 - No branch protection: required status checks would block the authorised direct-to-main flow.
 
 **Plans:**
-- [ ] 01-01: CI workflow, version-controlled pre-push hook, secret-scanning hardening, docs
+- [x] 01-01: CI workflow, version-controlled pre-push hook, secret-scanning verification, docs
+
+**Completed 2026-08-07.** CI proven to both pass and fail. Non-provider secret-scanning
+patterns turned out to be infeasible on a personal-account public repo (paid Secret
+Protection tier only) — recorded as out of scope rather than skipped.
+
+**⚠️ For Phase 2:** add `build` and `test` steps to the existing `.github/workflows/ci.yml`
+and update the "not available yet" wording in *both* CLAUDE.md and AGENTS.md in the same
+commit. Missing one leaves agents with contradictory instructions.
 
 ### Phase 2: Foundations
 

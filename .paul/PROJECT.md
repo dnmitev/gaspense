@@ -20,7 +20,7 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 |-----------|-------|
 | Type | Application |
 | Version | 0.0.0 |
-| Status | Prototype — Phase 0 complete (docs + tooling in place, no application code yet) |
+| Status | Prototype — Phases 0-1 complete (docs, tooling, and CI in place; no application code yet) |
 | Last Updated | 2026-08-07 |
 
 **Production URLs:** none yet.
@@ -41,12 +41,14 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 - ✓ Public-repo secret protection — `.gitignore` verified against a real `.env`, `node_modules`, and `.key` files — Phase 0
 - ✓ Lint/format toolchain — ESLint (typescript-eslint base), Prettier, EditorConfig, markdownlint — Phase 0
 - ✓ `npm run check` — single CI-callable gate for docs presence + formatting + lint, proven to fail by name on a missing doc — Phase 0
+- ✓ CI pipeline — GitHub Actions running `npm ci` + `npm run check` on pushes to `main` and PRs, proven to both pass and fail — Phase 1
+- ✓ Pre-push hook — version-controlled in `.githooks/`, self-installing via `npm install`, aborts a real push when the gate fails — Phase 1
+- ✓ Secret scanning + push protection verified active on the public repo — Phase 1
 
 ### Active (In Progress)
-None — Phase 1 (CI/CD Pipeline) is next.
+None — Phase 2 (Foundations) is next.
 
 ### Planned (Next)
-- Phase 1: CI/CD Pipeline — GitHub Actions running `npm run check` on every PR, secret scanning
 - Phase 2: Foundations — Google OAuth, Car/Category/Expense CRUD, odometer log
 - Phase 3: Reporting — monthly/yearly cost aggregations, dashboard charts, cost-per-km
 - Phase 4: PWA & Mobile UX — installable PWA, quick-add flow, photo upload
@@ -58,6 +60,8 @@ None — Phase 1 (CI/CD Pipeline) is next.
 - Shared/household accounts — each person has a separate account and dataset
 - Public/multi-tenant SaaS features — this is a personal tool, not a product
 - Real-time dashboards/live updates — not needed for a personal logging app
+- Branch protection / required status checks — would block the authorised direct-to-`main` workflow; the local pre-push hook covers the gap instead
+- Non-provider secret-scanning patterns — not offered for a personal-account public repo; requires GitHub's paid Secret Protection tier
 
 ## Target Users
 
@@ -115,13 +119,17 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 | Prettier is formatter of record; markdownlint owns structure | Overlap tested empirically — only MD013 genuinely conflicts | 2026-08-07 | Active |
 | No `test` script until Phase 2 | A no-op passing test script would give CI a false green | 2026-08-07 | Active |
 | `license: UNLICENSED` + `private: true` | Avoids npm's default ISC grant on a public repo; real licence choice still open | 2026-08-07 | Active |
+| CI triggers on `push` to `main`, not PR-only | This project commits directly to `main`; a PR-only workflow would never fire | 2026-08-07 | Active |
+| Node 22 floor (raised from 20) | Node 20 reached EOL 2026-04-30; CI must not validate an unsupported runtime | 2026-08-07 | Active |
+| No branch protection | Required checks would block the authorised direct-push flow; the pre-push hook is the pre-landing gate | 2026-08-07 | Active |
+| Git hooks tracked in `.githooks/`, activated by `prepare` | `.git/hooks/` is not version-controlled; a fresh clone must need no manual setup | 2026-08-07 | Active |
 
 ## Success Metrics
 
 | Metric | Target | Current | Status |
 |--------|--------|---------|--------|
 | Docs/lint presence | CLAUDE.md, AGENTS.md, docs/ARCHITECTURE.md exist; markdownlint + ESLint/Prettier pass | `npm run check` green | **Achieved** (Phase 0) |
-| CI pipeline green | Lint + test + build pass on every PR; secret scanning active | - | Not started |
+| CI pipeline green | Lint + test + build pass on every push/PR; secret scanning active | Lint gate green and proven to fail; secret scanning + push protection active. Test/build absent until Phase 2 | **Partially achieved** (Phase 1) |
 | Test coverage | Unit + integration + automation (e2e) tests for every phase | - | Not started |
 | Security scan | Pass, every phase | - | Not started |
 | Accessibility | WCAG AA on frontend phases | - | Not started |
@@ -149,4 +157,4 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-08-07 after Phase 0*
+*Last updated: 2026-08-07 after Phase 1*

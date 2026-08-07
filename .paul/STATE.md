@@ -11,42 +11,44 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release, Phase 1: CI/CD Pipeline — applying
+**Current focus:** v0.1 Initial Release, Phase 2: Foundations — ready to plan
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 1 of 7 (CI/CD Pipeline) — Applying
-Plan: 01-01 executed, 3 of 3 tasks complete (one sub-item infeasible)
-Status: APPLY complete, ready for UNIFY
-Last activity: 2026-08-07 — Executed 01-01: CI gate proven pass+fail, pre-push hook, docs
+Phase: 2 of 7 (Foundations)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-08-07 — Phase 1 complete, transitioned to Phase 2
 
 Progress:
-- Milestone: [█░░░░░░░░░] 14% (1 of 7 phases complete)
-- Phase 1: [░░░░░░░░░░] 0% (01-01 awaiting UNIFY)
+- Milestone: [██░░░░░░░░] 29% (2 of 7 phases complete)
+- Phase 2: [░░░░░░░░░░] 0%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ◉     [Ready for UNIFY]
+  ○        ○        ○     [Ready for first PLAN of Phase 2]
 ```
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: ~11 min
-- Total execution time: ~0.4 hours
+- Total plans completed: 3
+- Average duration: ~17 min
+- Total execution time: ~0.9 hours
 
 **By Phase:**
 
 | Phase | Plans | Total Time | Avg/Plan |
 |-------|-------|------------|----------|
 | 00-ai-friendly-scaffolding | 2/2 ✅ | ~22 min | ~11 min |
+| 01-cicd-pipeline | 1/1 ✅ | ~29 min | ~29 min |
 
-**Recent Trend:** Last 2 plans: 13 min, 9 min. Trend: improving.
+**Recent Trend:** Last 3 plans: 13, 9, 29 min. The 29 covered live CI verification
+(two real workflow runs plus a probe branch), so it is not comparable to doc-only plans.
 
 ## Accumulated Context
 
@@ -60,8 +62,10 @@ Digest of decisions that constrain upcoming work. **Full log: `.paul/PROJECT.md`
 | Direct commits to `main`, no PR-per-change | Ideation | No branch/PR overhead; still push after every loop |
 | Public repo — nothing sensitive ever committed | Ideation | `.env.example` only; no real plates or personal data in fixtures |
 | npm as package manager | Phase 0 | Phase 1 CI uses `npm ci` + npm caching |
-| No `test`/`build` script until Phase 2 | Phase 0 | **Phase 1 CI must run `npm run check` only, or it fails on day one** |
+| No `test`/`build` script yet | Phase 0 | **Phase 2 must add both scripts AND the matching CI steps** |
 | CLAUDE.md and AGENTS.md are edited together | Phase 0 | Phase 2 must move `dev`/`build`/`test` out of "not available yet" in both files, same commit |
+| CI triggers on `push` to `main`; no branch protection | Phase 1 | The pre-push hook is the only pre-landing gate, and it is bypassable with `--no-verify` |
+| Node 22 floor (20 is EOL) | Phase 1 | Keep `engines`, CI, and any Vercel runtime aligned; Node 22 itself EOLs 2027-04-30 |
 | `docs/ARCHITECTURE.md` is the living design doc | Phase 0 | Must be updated in Phase 2 when the real schema lands, or it misleads |
 
 ### Deferred Issues
@@ -78,18 +82,16 @@ Digest of decisions that constrain upcoming work. **Full log: `.paul/PROJECT.md`
 
 | Concern | Impact | Resolution Path |
 |---------|--------|-----------------|
-| Phase 1's declared scope names tests + build, which do not exist until Phase 2 | A CI workflow written against them fails immediately | Plan 01-01 wires `npm ci` + `npm run check` only; add `build`/`test` steps in Phase 2 |
-| PROJECT.md's CI success metric reads "lint + test + build pass on every PR" | Only the lint half is achievable in Phase 1 | Mark partially achieved at Phase 1 transition; fully achieved in Phase 2 |
+| CI success metric is only partially achieved — lint gate only, no test/build | PROJECT.md metric reads "lint + test + build" | Phase 2 adds both scripts and the matching CI steps, completing the metric |
+| Three artefacts must change together in Phase 2 | `ci.yml` plus the "not available yet" wording in **both** CLAUDE.md and AGENTS.md; missing one leaves agents contradicting themselves | Treat as a single commit in Phase 2's plan |
 
 ## Boundaries (Active)
 
-From plan 01-01:
+None — set when Phase 2's first PLAN.md is created. Standing constraints:
 
 - `.paul/**` and `projects/**` — excluded from all formatters/linters; never reformatted by tooling
 - `.claude/settings.json` — deliberately tracked, must stay tracked and unmodified
-- `.gitignore`, `scripts/check-docs.sh`, and the lint configs — settled in Phase 0; consumed here, not retuned
-- `main` must never receive the deliberate CI-failure probe commit
-- `npm run check` must stay green; run it before every commit
+- `npm run check` must stay green; the pre-push hook enforces it on every push
 
 ### Git State
 
@@ -98,10 +100,10 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-07
-Stopped at: Plan 01-01 APPLY complete — CI proven to pass *and* fail, hook proven to abort a real push, docs identical in both agent files
-Next action: Run `/paul:unify .paul/phases/01-cicd-pipeline/01-01-PLAN.md` to close the loop and complete Phase 1
-Resume file: `.paul/phases/01-cicd-pipeline/01-01-PLAN.md`
-Resume context: CI = `.github/workflows/ci.yml`, `npm ci` + `npm run check` on push to main and PRs, Node 22, actions @v7. Phase 2 adds `build`/`test` steps here. Pre-push hook in `.githooks/`, auto-activated by `npm install` via `prepare`; bypass `--no-verify`. AC-4 landed 2 of 3: secret scanning + push protection enabled, non-provider patterns infeasible on this repo tier (see Deferred).
+Stopped at: **Phase 1 complete** — plan closed, transition executed (PROJECT.md evolved, ROADMAP marked ✅)
+Next action: Run `/paul:plan` for Phase 2 (Foundations)
+Resume file: `.paul/ROADMAP.md`
+Resume context: Phase 2 is the first phase with application code — Next.js + Supabase + NextAuth (Google OAuth), Car/Category/Expense CRUD, and the odometer log. It must also add `build`/`test` scripts plus matching CI steps, add `eslint-config-next` to the existing flat config, create `.env.example`, update `docs/ARCHITECTURE.md` with the real schema, and settle the deferred hard-vs-soft-delete question. Expect several plans — likely a vertical slice per entity rather than layer-by-layer.
 
 ---
 *STATE.md — Updated after every significant action*
