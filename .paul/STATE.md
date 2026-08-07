@@ -16,13 +16,13 @@ See: .paul/PROJECT.md (updated 2026-08-07)
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 0 of 7 (AI-Friendly Project Scaffolding) — Applying
-Plan: 00-01 executed, 3 of 3 tasks complete
-Status: APPLY complete, ready for UNIFY
-Last activity: 2026-08-07 — Executed 00-01: CLAUDE.md, AGENTS.md, docs/ARCHITECTURE.md, .gitignore
+Phase: 0 of 7 (AI-Friendly Project Scaffolding) — In progress
+Plan: 00-01 complete (loop closed)
+Status: Ready for next PLAN (00-02)
+Last activity: 2026-08-07 — Closed loop 00-01; summary written, .gitignore hardened
 
 Progress:
-- Milestone: [░░░░░░░░░░] 0%
+- Milestone: [░░░░░░░░░░] 0% (0 of 7 phases complete)
 - Phase 0: [█████░░░░░] 50% (1 of 2 plans)
 
 ## Loop Position
@@ -30,23 +30,23 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ◉     [Ready for UNIFY]
+  ✓        ✓        ✓     [Loop complete — ready for next PLAN]
 ```
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: 0 hours
+- Total plans completed: 1
+- Average duration: ~13 min
+- Total execution time: ~0.2 hours
 
 **By Phase:**
 
 | Phase | Plans | Total Time | Avg/Plan |
 |-------|-------|------------|----------|
-| 00-ai-friendly-scaffolding | 0/0 | - | - |
+| 00-ai-friendly-scaffolding | 1/2 | ~13 min | ~13 min |
 
-**Recent Trend:** No plans completed yet.
+**Recent Trend:** Last 1 plan: 13 min. Trend: baseline established.
 
 ## Accumulated Context
 
@@ -57,6 +57,9 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | Next.js + Supabase (Postgres + Storage) + Vercel stack, Google OAuth | Pre-Phase 0 (ideation) | Fixes the stack for all subsequent phases |
 | Direct commits to `main`, no PR-per-change | Pre-Phase 0 (ideation) | Build phases commit straight to `main`; no branch/PR overhead |
 | Public repo — nothing sensitive ever committed | Pre-Phase 0 (ideation) | Every phase must respect `.env.example`-only + secret scanning discipline |
+| 2026-08-07: `.gitignore` scopes `.claude/` to `worktrees/` only | Phase 0 (00-01) | `.claude/settings.json` stays tracked — never ignore `.claude/` wholesale |
+| 2026-08-07: Agent docs cross-reference rather than duplicate | Phase 0 (00-01) | Data model lives in `docs/ARCHITECTURE.md`; other docs link to it. Update it in Phase 2 when the real schema lands |
+| 2026-08-07: CLAUDE.md and AGENTS.md must be edited together | Phase 0 (00-01) | Two files, one set of facts — editing one alone silently diverges agent guidance |
 
 ### Deferred Issues
 
@@ -72,18 +75,17 @@ None yet — Phase 5 is expected to be blocked on research, not yet a live block
 
 ## Boundaries (Active)
 
-From plan 00-01:
-- `README.md` (approved at graduation — link to it, don't rewrite)
-- `projects/gaspense/PLANNING.md` (ideation record, append-only)
-- `.paul/PROJECT.md`, `.paul/ROADMAP.md` (PAUL-managed)
-- `.claude/settings.json` (deliberately tracked, must stay tracked)
+None — set when the next PLAN.md is created. Carry forward into 00-02:
+- `.claude/settings.json` must stay tracked (never ignore `.claude/` wholesale)
+- `README.md` and `projects/gaspense/PLANNING.md` remain off-limits for rewrites
 
 ## Session Continuity
 
 Last session: 2026-08-07
-Stopped at: Plan 00-01 APPLY complete — 3 of 3 tasks PASS, no deviations, no concerns
-Next action: Run `/paul:unify .paul/phases/00-ai-friendly-scaffolding/00-01-PLAN.md` to close the loop and write 00-01-SUMMARY.md
-Resume file: `.paul/phases/00-ai-friendly-scaffolding/00-01-PLAN.md`
+Stopped at: Plan 00-01 loop closed — 3/3 tasks PASS, all 4 ACs pass, summary written
+Next action: Run `/paul:plan` to create plan 00-02 (minimal `package.json` + ESLint/Prettier/EditorConfig/markdownlint + CI-callable docs/lint check script)
+Resume file: `.paul/phases/00-ai-friendly-scaffolding/00-01-SUMMARY.md`
+Resume context: Phase 0 is 1 of 2 plans done — it is NOT complete and the phase transition has deliberately not been run. 00-02 delivers the lint/format half plus the check script Phase 1's GitHub Actions will invoke. Toolchain decision already made: minimal `package.json` with lint/format devDependencies only; Next.js is layered on in Phase 2.
 Resume context: Phase 0 split into two plans — 00-01 (agent docs + .gitignore, this one) and 00-02 (minimal package.json + ESLint/Prettier/EditorConfig/markdownlint + CI-callable check script). Toolchain decision: minimal package.json in Phase 0, Next.js layered on in Phase 2.
 
 ---

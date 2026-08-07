@@ -12,3 +12,9 @@ action = "apply"
 phase = 0
 plan = "00-01"
 at = "2026-08-07T12:20:00Z"
+
+[[entry]]
+action = "unify"
+phase = 0
+plan = "00-01"
+at = "2026-08-07T12:21:43Z"

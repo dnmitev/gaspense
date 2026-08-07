@@ -17,7 +17,6 @@
 # Stray credential files
 *.pem
 *.key
-!**/public/**/*.key
 secrets.json
 service-account*.json
 

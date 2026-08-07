@@ -22,7 +22,7 @@ Phases: 0 of 7 complete
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
-| 0 | AI-Friendly Project Scaffolding | 2 | Planning | - |
+| 0 | AI-Friendly Project Scaffolding | 1/2 | In progress | - |
 | 1 | CI/CD Pipeline | TBD | Not started | - |
 | 2 | Foundations | TBD | Not started | - |
 | 3 | Reporting | TBD | Not started | - |
@@ -45,7 +45,7 @@ Phases: 0 of 7 complete
 - Lint/format config (ESLint, Prettier, EditorConfig)
 
 **Plans:**
-- [ ] 00-01: Agent entry-point docs (CLAUDE.md, AGENTS.md), docs/ARCHITECTURE.md, and .gitignore
+- [x] 00-01: Agent entry-point docs (CLAUDE.md, AGENTS.md), docs/ARCHITECTURE.md, and .gitignore
 - [ ] 00-02: Minimal package.json + ESLint/Prettier/EditorConfig/markdownlint + CI-callable check script
 
 ### Phase 1: CI/CD Pipeline

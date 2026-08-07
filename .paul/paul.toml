@@ -18,17 +18,15 @@ phases = 7
 number = 0
 name = "AI-Friendly Project Scaffolding"
 status = "in_progress"
-plans_completed = 0
+plans_completed = 1
 
 [loop]
-position = "APPLY"
-plan = "00-01"
-plan_path = "phases/00-ai-friendly-scaffolding/00-01-PLAN.md"
+position = "IDLE"
 
 [satellite]
 groom = true
 
 [stats]
-total_plans = 0
+total_plans = 1
 total_phases = 0
-last_activity = "2026-08-07T12:20:00Z"
+last_activity = "2026-08-07T12:21:43Z"
