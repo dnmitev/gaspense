@@ -24,7 +24,7 @@ Phases: 2 of 7 complete (29%)
 |-------|------|-------|--------|-----------|
 | 0 | AI-Friendly Project Scaffolding | 2/2 | ✅ Complete | 2026-08-07 |
 | 1 | CI/CD Pipeline | 1/1 | ✅ Complete | 2026-08-07 |
-| 2 | Foundations | TBD | Not started | - |
+| 2 | Foundations | 6 | Planning | - |
 | 3 | Reporting | TBD | Not started | - |
 | 4 | PWA & Mobile UX | TBD | Not started | - |
 | 5 | Bulgarian Integrations | TBD | Not started | - |
@@ -92,15 +92,33 @@ commit. Missing one leaves agents with contradictory instructions.
 
 **Goal:** A user can log in, add a car, and record expenses against categories.
 **Depends on:** Phase 1 (CI must be in place before feature code lands)
-**Research:** Unlikely (NextAuth + Supabase CRUD are well-established patterns)
+**Research:** Unlikely (NextAuth + Prisma CRUD are well-established patterns), but the
+`eslint-config-next` flat-config entry point and the installed Tailwind major version must be
+read from the packages rather than assumed.
 
 **Scope:**
-- Google OAuth login (NextAuth)
-- Car CRUD, Category CRUD (seeded defaults), Expense CRUD
-- Odometer log
+- Next.js App Router app + Tailwind, coexisting with the Phase 0 lint setup
+- Test infrastructure (Vitest + Playwright) and the `build`/`test` CI steps Phase 1 deferred
+- Prisma schema, migrations, and seeded default categories
+- Google OAuth login (NextAuth) with per-user data isolation
+- Car CRUD (soft delete), Category CRUD, Expense CRUD, Odometer log
+
+**Decisions settled at planning time:**
+- **NextAuth kept** over Supabase Auth — Phase 6's Drive export needs control of Google OAuth
+  scopes and refresh tokens, which Supabase Auth does not manage. Cost: per-user isolation is
+  enforced in the data layer, not by Postgres RLS, so every query path must be tested for it.
+- **Prisma** as the data layer. Needs deliberate connection-pooling care on Vercel serverless.
+- **Vitest + Playwright** for unit/integration and e2e.
+- **Soft-delete cars only** (`deletedAt`); expenses and odometer readings hard-delete. Deleting a
+  car must not destroy its expense history.
 
 **Plans:**
-- [ ] TBD — defined during `/paul:plan`
+- [ ] 02-01: Next.js App Router scaffold, eslint-config-next integration, build step in CI
+- [ ] 02-02: Vitest + Playwright, `test`/`test:e2e` scripts + CI steps, `.env.example`, agent docs
+- [ ] 02-03: Prisma schema + migrations + seeded default categories, `docs/ARCHITECTURE.md` update
+- [ ] 02-04: NextAuth Google OAuth, session handling, per-user scoping helper
+- [ ] 02-05: Car CRUD vertical slice (API + UI + tests, incl. soft delete)
+- [ ] 02-06: Category, Expense, and Odometer CRUD vertical slice
 
 ### Phase 3: Reporting
 

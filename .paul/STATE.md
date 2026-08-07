@@ -11,15 +11,15 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release, Phase 2: Foundations — ready to plan
+**Current focus:** v0.1 Initial Release, Phase 2: Foundations — Planning 02-01
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 2 of 7 (Foundations)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-08-07 — Phase 1 complete, transitioned to Phase 2
+Phase: 2 of 7 (Foundations) — Planning
+Plan: 02-01 created, awaiting approval (1 of 6 in this phase)
+Status: PLAN created, ready for APPLY
+Last activity: 2026-08-07 — Created .paul/phases/02-foundations/02-01-PLAN.md
 
 Progress:
 - Milestone: [██░░░░░░░░] 29% (2 of 7 phases complete)
@@ -30,7 +30,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ○        ○        ○     [Ready for first PLAN of Phase 2]
+  ✓        ○        ○     [Plan 02-01 created, awaiting approval]
 ```
 
 ## Performance Metrics
@@ -66,6 +66,10 @@ Digest of decisions that constrain upcoming work. **Full log: `.paul/PROJECT.md`
 | CLAUDE.md and AGENTS.md are edited together | Phase 0 | Phase 2 must move `dev`/`build`/`test` out of "not available yet" in both files, same commit |
 | CI triggers on `push` to `main`; no branch protection | Phase 1 | The pre-push hook is the only pre-landing gate, and it is bypassable with `--no-verify` |
 | Node 22 floor (20 is EOL) | Phase 1 | Keep `engines`, CI, and any Vercel runtime aligned; Node 22 itself EOLs 2027-04-30 |
+| NextAuth kept over Supabase Auth | Phase 2 | Phase 6 needs Google refresh tokens; **isolation is app-layer, not RLS — every query path must be tested for leakage** |
+| Prisma as data layer | Phase 2 | Watch connection pooling on Vercel serverless |
+| Vitest + Playwright | Phase 2 | `test` and `test:e2e` scripts land in 02-02 |
+| Soft-delete cars only (`deletedAt`) | Phase 2 | Car queries must filter deleted rows; expenses/odometer hard-delete |
 | `docs/ARCHITECTURE.md` is the living design doc | Phase 0 | Must be updated in Phase 2 when the real schema lands, or it misleads |
 
 ### Deferred Issues
@@ -73,7 +77,6 @@ Digest of decisions that constrain upcoming work. **Full log: `.paul/PROJECT.md`
 | Issue | Origin | Effort | Revisit |
 |-------|--------|--------|---------|
 | Bulgarian fines/vignette lookup mechanism unconfirmed | Ideation | M | Before Phase 5 — run `/paul:discover` |
-| Car deletion/data retention policy undecided (hard vs soft delete) | Ideation | S | During Phase 2 planning |
 | Fines/vignette check cadence (scheduled vs manual-only) undecided | Ideation | S | After the Phase 5 research spike |
 | Licence choice unsettled — `UNLICENSED` set to avoid npm's default ISC grant on a public repo | Phase 0 (00-02) | S | User's call; any time |
 | Non-provider secret-scanning patterns not available — no UI toggle exists and the API silently ignores the field; appears to need GitHub's paid Secret Protection tier, not the free public-repo set | Phase 1 (01-01) | — | Only if the repo moves to an org with that licensing |
@@ -87,10 +90,13 @@ Digest of decisions that constrain upcoming work. **Full log: `.paul/PROJECT.md`
 
 ## Boundaries (Active)
 
-None — set when Phase 2's first PLAN.md is created. Standing constraints:
+From plan 02-01:
 
-- `.paul/**` and `projects/**` — excluded from all formatters/linters; never reformatted by tooling
-- `.claude/settings.json` — deliberately tracked, must stay tracked and unmodified
+- **Never run `create-next-app` in this directory** — it clobbers README.md, .gitignore, eslint.config.mjs, and package.json scripts
+- `README.md`, `CLAUDE.md`, `AGENTS.md` — doc updates deferred to 02-02 so both agent files change once, together
+- `.gitignore` — already covers Next.js output; verified, no edit needed
+- CI triggers, `permissions`, and `concurrency` — verified in 01-01, not to be restructured
+- `.paul/**`, `projects/**`, `.claude/settings.json` — untouched by tooling
 - `npm run check` must stay green; the pre-push hook enforces it on every push
 
 ### Git State
@@ -100,10 +106,10 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-07
-Stopped at: **Phase 1 complete** — plan closed, transition executed (PROJECT.md evolved, ROADMAP marked ✅)
-Next action: Run `/paul:plan` for Phase 2 (Foundations)
-Resume file: `.paul/ROADMAP.md`
-Resume context: Phase 2 is the first phase with application code — Next.js + Supabase + NextAuth (Google OAuth), Car/Category/Expense CRUD, and the odometer log. It must also add `build`/`test` scripts plus matching CI steps, add `eslint-config-next` to the existing flat config, create `.env.example`, update `docs/ARCHITECTURE.md` with the real schema, and settle the deferred hard-vs-soft-delete question. Expect several plans — likely a vertical slice per entity rather than layer-by-layer.
+Stopped at: Plan 02-01 created — Phase 2 decomposed into 6 plans
+Next action: Review and approve plan, then run `/paul:apply .paul/phases/02-foundations/02-01-PLAN.md`
+Resume file: `.paul/phases/02-foundations/02-01-PLAN.md`
+Resume context: 02-01 scaffolds Next.js App Router + Tailwind manually (create-next-app would clobber protected files) and adds a build step to CI. Remaining: 02-02 test infra + `.env.example` + agent docs, 02-03 Prisma schema, 02-04 NextAuth, 02-05 Car slice, 02-06 Category/Expense/Odometer. Two things must be read from installed packages rather than assumed: the `eslint-config-next` flat-config entry point and the Tailwind major version's config style.
 
 ---
 *STATE.md — Updated after every significant action*

@@ -17,11 +17,13 @@ phases = 7
 [phase]
 number = 2
 name = "Foundations"
-status = "not_started"
+status = "planning"
 plans_completed = 0
 
 [loop]
-position = "IDLE"
+position = "PLAN"
+plan = "02-01"
+plan_path = "phases/02-foundations/02-01-PLAN.md"
 
 [satellite]
 groom = true
@@ -29,4 +31,4 @@ groom = true
 [stats]
 total_plans = 3
 total_phases = 2
-last_activity = "2026-08-07T13:24:47Z"
+last_activity = "2026-08-07T14:11:32Z"
