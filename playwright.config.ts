@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 3000;
@@ -39,6 +40,13 @@ export default defineConfig({
     // side effect.
     command: "npm run build && npm start",
     url: BASE_URL,
+    // The server needs the database and a session secret. AUTH_SECRET only has
+    // to exist for NextAuth to boot; this value is deliberately throwaway and
+    // is never used against a real provider.
+    env: {
+      DATABASE_URL: process.env.DATABASE_URL ?? "",
+      AUTH_SECRET: process.env.AUTH_SECRET ?? "e2e-only-throwaway-secret-not-real",
+    },
     reuseExistingServer: !process.env.CI,
     // A production build runs first, so allow well beyond the default 60s.
     timeout: 180_000,

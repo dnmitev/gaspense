@@ -129,40 +129,66 @@ Prisma migrations are additive, so adding these later is a normal migration rath
 
 ---
 
-## API Surface
+## Data Access and API Surface
 
-REST via Next.js API routes. Auth is NextAuth with the Google provider and a JWT session.
+Application data is read in **server components** and written through **server actions** over a
+scoped data layer. There is no REST API for the app's own entities, because the app is its only
+client.
 
-**Every route is scoped by the authenticated `userId`, and this is enforced in application code
-with no database backstop.** The project uses NextAuth rather than Supabase Auth, so there is no
-Postgres Row Level Security underneath: a query that omits its `userId` filter returns every user's
-rows.
+> **Superseded:** earlier versions of this document listed nine REST route groups (`/api/cars`,
+> `/api/expenses`, and so on). That was a design-time sketch written before any UI existed; it was
+> never built. Server actions replaced it in plan 02-05. The genuinely-HTTP endpoints are listed
+> below.
 
-Two consequences that every data path must respect:
+### How a data path is built
+
+```text
+page / form  →  server action        →  lib/<entity>.ts        →  Prisma
+                requireUserId()         takes userId as its
+                validates with Zod      first argument
+```
 
 - **`lib/session.ts` is the only way to learn who is asking.** `requireUserId()` either returns a
-  real id or throws — it can never return `null` or `undefined`. That matters because Prisma treats
-  `undefined` in a `where` clause as _"no condition"_ rather than _"match nothing"_, so a nullable
-  helper would silently turn a scoped query into an unscoped one.
-- **Isolation is covered by tests, not intention.** `tests/integration/isolation.test.ts` proves that
-  cross-user read, update, and soft-delete all fail, asserting the victim's row is unchanged
-  afterwards. Those tests encode the scoped query pattern so removing a `userId` filter breaks them.
+  real id or throws — never `null` or `undefined`. That matters because Prisma treats `undefined` in
+  a `where` clause as _"no condition"_ rather than _"match nothing"_, so a nullable helper would
+  silently turn a scoped query into an unscoped one.
+- **Data-layer functions take `userId` explicitly** and never read the session themselves. The
+  scoping is therefore visible at the call site, and the functions stay unit-testable without
+  mocking auth.
+- **Writes to existing rows use a scoped `updateMany`**, never `findUnique`-then-`update`. Putting
+  the `userId` in the same WHERE clause as the id means a mismatched owner affects zero rows in one
+  statement; the find-then-update shape is where cross-user writes leak in, because the second call
+  addresses the row by id alone.
+- **Server action return values must be plain serialisable objects** — they cross the
+  server/client boundary, so no `Error` or Zod error instances.
 
-| Route group          | Methods                  | Auth     | Purpose                                                 |
-| -------------------- | ------------------------ | -------- | ------------------------------------------------------- |
-| `/api/cars`          | GET, POST, PATCH, DELETE | required | Car CRUD                                                |
-| `/api/expenses`      | GET, POST, PATCH, DELETE | required | Expense CRUD, filterable by car / category / date       |
-| `/api/categories`    | GET, POST, PATCH, DELETE | required | Category CRUD (system defaults + user-added)            |
-| `/api/odometer`      | GET, POST                | required | Odometer log per car                                    |
-| `/api/reports`       | GET                      | required | Aggregations: cost per month/year, per category, per km |
-| `/api/fines`         | GET, POST `/check`       | required | Stored fines, plus trigger an external КАТ lookup       |
-| `/api/vignette`      | GET, POST `/check`       | required | Stored vignette status, plus trigger an external check  |
-| `/api/attachments`   | POST, DELETE             | required | Upload / delete car and expense photos                  |
-| `/api/export/gdrive` | POST                     | required | Trigger an export/backup to the user's Google Drive     |
+### Isolation
 
-- **No public endpoints.** This is a private, authenticated app end to end.
-- **`/api/fines/check` and `/api/vignette/check` are rate-limited.** They call external government services; unthrottled or looped calls are unacceptable.
-- Input is validated with a schema validator (Zod) at every boundary — amounts, dates, and license plate format especially.
+**Every data path is scoped by the authenticated `userId`, enforced in application code with no
+database backstop.** This project uses NextAuth rather than Supabase Auth, so there is no Postgres
+Row Level Security underneath: a query that omits its `userId` filter returns every user's rows.
+
+Isolation is therefore covered by tests, not intention.
+`tests/integration/isolation.test.ts` and `tests/integration/cars.test.ts` prove that cross-user
+read, update, and soft-delete all fail — each asserting the victim's row is unchanged afterwards,
+not merely that the call returned nothing. **Every new scoped helper gets a matching leakage test.**
+
+### HTTP endpoints
+
+| Route                     | Purpose                                                   | Status                  |
+| ------------------------- | --------------------------------------------------------- | ----------------------- |
+| `/api/auth/[...nextauth]` | NextAuth handlers (Google sign-in, session, callbacks)    | **Built** (02-04)       |
+| `/api/fines/check`        | Trigger an external КАТ fines lookup, rate-limited        | Phase 5, research-gated |
+| `/api/vignette/check`     | Trigger an external vignette validity check, rate-limited | Phase 5, research-gated |
+| `/api/export/gdrive`      | Trigger an export/backup to the user's Google Drive       | Phase 6                 |
+
+These are endpoints rather than actions because each triggers an outbound call to a third party, not
+a CRUD write. There are no public endpoints — the app is authenticated end to end.
+
+### Auth
+
+NextAuth v5 with the Google provider and **database sessions** (a `Session` row means a live login,
+which makes sessions revocable). Input is validated with Zod at every action boundary.
 
 ---
 
