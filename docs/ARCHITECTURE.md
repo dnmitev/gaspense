@@ -86,6 +86,26 @@ two partial unique indexes described below.
   `@@unique([userId, name])` would **not** work — Postgres treats NULLs as distinct, so duplicate
   system defaults would be permitted and `upsert` could never match them.
 
+### Authentication tables (adapter-owned)
+
+Written and read by NextAuth's Prisma adapter — do not hand-edit their field names, which are
+snake_case because the adapter stores OAuth response fields verbatim.
+
+| Entity                | Purpose                                                                                                |
+| --------------------- | ------------------------------------------------------------------------------------------------------ |
+| **Account**           | One row per linked OAuth provider. **`refresh_token` here is what Phase 6's Drive export depends on.** |
+| **Session**           | Database session strategy — a row means a live login, which is what makes sessions revocable.          |
+| **VerificationToken** | Unused with Google-only sign-in, but required by the adapter's interface.                              |
+
+`User` gained only Prisma-level relation fields (`accounts`, `sessions`); the migration adding these
+tables altered no existing column.
+
+**`@auth/prisma-adapter` and Prisma 7:** the adapter's peer range reads
+`@prisma/client >=2.26.0 || >=3 || …`, which looks like an enumeration of majors but is open-ended,
+so 7.x satisfies it. Compatibility was nonetheless verified functionally in
+`tests/integration/adapter.test.ts`, which exercises `createUser`, `linkAccount`, `createSession`,
+`getSessionAndUser`, and cascade deletion against the real database.
+
 ### Deferred entities
 
 | Entity         | Deferred to | Why                                                                                                                                                                                    |
@@ -113,7 +133,20 @@ Prisma migrations are additive, so adding these later is a normal migration rath
 
 REST via Next.js API routes. Auth is NextAuth with the Google provider and a JWT session.
 
-**Every route is scoped by the authenticated `userId`.** A user must only ever be able to read or write their own cars, expenses, and attachments — there are no cross-user reads, and no endpoint accepts a caller-supplied user identifier to widen the scope.
+**Every route is scoped by the authenticated `userId`, and this is enforced in application code
+with no database backstop.** The project uses NextAuth rather than Supabase Auth, so there is no
+Postgres Row Level Security underneath: a query that omits its `userId` filter returns every user's
+rows.
+
+Two consequences that every data path must respect:
+
+- **`lib/session.ts` is the only way to learn who is asking.** `requireUserId()` either returns a
+  real id or throws — it can never return `null` or `undefined`. That matters because Prisma treats
+  `undefined` in a `where` clause as _"no condition"_ rather than _"match nothing"_, so a nullable
+  helper would silently turn a scoped query into an unscoped one.
+- **Isolation is covered by tests, not intention.** `tests/integration/isolation.test.ts` proves that
+  cross-user read, update, and soft-delete all fail, asserting the victim's row is unchanged
+  afterwards. Those tests encode the scoped query pattern so removing a `userId` filter breaks them.
 
 | Route group          | Methods                  | Auth     | Purpose                                                 |
 | -------------------- | ------------------------ | -------- | ------------------------------------------------------- |
