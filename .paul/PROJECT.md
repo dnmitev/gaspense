@@ -47,6 +47,7 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 - ✓ Next.js 16 App Router app shell, building and serving, build-gated in CI — Phase 2 (02-01)
 - ✓ Test infrastructure — Vitest + Playwright (desktop and mobile), both proven failable — Phase 2 (02-02)
 - ✓ Data layer — Prisma 7 schema (5 entities), committed migrations, idempotent seed, 8 integration tests green in CI — Phase 2 (02-03)
+- ✓ Authentication — NextAuth v5 + Google OAuth, database sessions, and per-user isolation proven by test (30 tests total) — Phase 2 (02-04)
 
 ### Active (In Progress)
 - Phase 2: Foundations — 3 of 6 plans complete (app shell, test infra, data layer done; auth and UI remain)
@@ -139,6 +140,11 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 | Prisma seed/scripts run under `tsx` | The generated client uses bundler-style extensionless imports Node's ESM loader cannot resolve | 2026-08-07 | Active |
 | Generated Prisma client to `lib/generated/prisma` | Prisma 7 defaults to `app/generated/prisma`, inside the App Router tree | 2026-08-07 | Active |
 | Reject `prisma init`'s agent-skill injection | Writes 71 files to `.agents/`, `.claude/skills/`, `.windsurf/` and edits `.gitignore`; verified non-regenerating | 2026-08-07 | Active |
+| `requireUserId()` throws rather than returning null | Prisma reads `undefined` in a `where` clause as "no filter", so a nullable helper would silently query every user's rows | 2026-08-07 | Active |
+| Database sessions over JWT | Revocable, and the adapter persists `Account.refresh_token` that Phase 6's Drive export needs | 2026-08-07 | Active |
+| Omit the WebAuthn `Authenticator` model | The adapter only touches it in WebAuthn methods, unreachable with Google-only sign-in | 2026-08-07 | Active |
+| Per-page auth checks, not middleware | Next 16 middleware plus NextAuth beta adds moving parts for no gain; per-page checks are testable | 2026-08-07 | Active |
+| No Google Drive scopes until Phase 6 | Keeps the consent screen honest about what the app currently does | 2026-08-07 | Active |
 | Unit tests DB-free; integration tests a separate project | The fast feedback loop must not depend on a running container | 2026-08-07 | Active |
 
 ## Success Metrics
