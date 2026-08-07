@@ -16,21 +16,21 @@ See: .paul/PROJECT.md (updated 2026-08-07)
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 0 of 7 (AI-Friendly Project Scaffolding) — Planning
-Plan: 00-01 created, awaiting approval
-Status: PLAN created, ready for APPLY
-Last activity: 2026-08-07 — Created .paul/phases/00-ai-friendly-scaffolding/00-01-PLAN.md
+Phase: 0 of 7 (AI-Friendly Project Scaffolding) — Applying
+Plan: 00-01 executed, 3 of 3 tasks complete
+Status: APPLY complete, ready for UNIFY
+Last activity: 2026-08-07 — Executed 00-01: CLAUDE.md, AGENTS.md, docs/ARCHITECTURE.md, .gitignore
 
 Progress:
 - Milestone: [░░░░░░░░░░] 0%
-- Phase 0: [░░░░░░░░░░] 0%
+- Phase 0: [█████░░░░░] 50% (1 of 2 plans)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan created, awaiting approval]
+  ✓        ✓        ◉     [Ready for UNIFY]
 ```
 
 ## Performance Metrics
@@ -81,8 +81,8 @@ From plan 00-01:
 ## Session Continuity
 
 Last session: 2026-08-07
-Stopped at: Plan 00-01 created
-Next action: Review and approve plan, then run `/paul:apply .paul/phases/00-ai-friendly-scaffolding/00-01-PLAN.md`
+Stopped at: Plan 00-01 APPLY complete — 3 of 3 tasks PASS, no deviations, no concerns
+Next action: Run `/paul:unify .paul/phases/00-ai-friendly-scaffolding/00-01-PLAN.md` to close the loop and write 00-01-SUMMARY.md
 Resume file: `.paul/phases/00-ai-friendly-scaffolding/00-01-PLAN.md`
 Resume context: Phase 0 split into two plans — 00-01 (agent docs + .gitignore, this one) and 00-02 (minimal package.json + ESLint/Prettier/EditorConfig/markdownlint + CI-callable check script). Toolchain decision: minimal package.json in Phase 0, Next.js layered on in Phase 2.
 

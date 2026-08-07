@@ -1,0 +1,94 @@
+# CLAUDE.md
+
+Operating instructions for Claude Code working in this repository. Read this before making changes.
+
+For the human-facing project brief see [README.md](README.md). For the design reference (data model, API surface) see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## What This Is
+
+Gaspense is a mobile-first PWA for tracking personal vehicle expenses — fuel, maintenance, taxes, body work, fines, and vignette validity — with real cost reporting (monthly/yearly, by category, cost-per-km) and Google Drive export.
+
+**Core value:** track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
+
+It is a personal project shared with trusted friends and family, each with their own account. It is not for sale and not a multi-tenant SaaS.
+
+## Stack
+
+| Layer | Choice |
+|-------|--------|
+| Frontend | Next.js (React), TypeScript, installable PWA |
+| Backend | Next.js API routes |
+| Database | PostgreSQL via Supabase |
+| File storage | Supabase Storage (car and expense photos) |
+| Auth | Google OAuth via NextAuth |
+| Deployment | Vercel (app) + Supabase (DB + Storage) |
+| CI | GitHub Actions |
+
+## ⚠️ This Repository Is Public
+
+`github.com/dnmitev/gaspense` is a **public** repo. Nothing sensitive is ever committed.
+
+- **Never commit secrets or real credentials.** Google OAuth client secrets, Supabase service keys, and `NEXTAUTH_SECRET` live only in Vercel / Supabase / GitHub Actions environment variables.
+- **Only `.env.example` is tracked.** Every other `.env*` file is gitignored.
+- **Never commit personal data.** No real license plates, real names, real addresses, or real expense records in seed data, test fixtures, screenshots, or example values. Use obviously-fake placeholders.
+- If you are about to write a value that looks like a real key, token, or plate — stop and use a placeholder.
+
+## Commands
+
+**The Node toolchain does not exist yet.** There is no `package.json` in this repo at time of writing — it is created in plan `00-02` (lint/format tooling) and extended with Next.js in Phase 2.
+
+Do not run or suggest `npm` scripts until `package.json` exists. Check first:
+
+```bash
+test -f package.json && echo "toolchain present" || echo "no toolchain yet"
+```
+
+Once the toolchain lands, these are the intended commands (verify they exist in `package.json` before relying on them):
+
+| Purpose | Planned command |
+|---------|-----------------|
+| Dev server | `npm run dev` |
+| Production build | `npm run build` |
+| Lint | `npm run lint` |
+| Format | `npm run format` |
+| Unit + integration tests | `npm test` |
+| End-to-end tests | `npm run test:e2e` |
+
+## Conventions
+
+- **TypeScript throughout.** No plain-JS source files.
+- **Mobile-first.** Design and test the small viewport first; desktop is secondary.
+- **Amounts are EUR only.** No multi-currency conversion logic — this is a deliberate decision, not an oversight.
+- **Every API route is scoped by the authenticated `userId`.** Users must only ever see their own cars, expenses, and attachments. Never expose a query that can be widened by passing someone else's ID.
+- **Validate at every API boundary** with a schema validator (Zod) — especially amounts, dates, and license plate format.
+- **Rate-limit the external check routes** (`/api/fines/check`, `/api/vignette/check`). They call external government services and must not be hammered.
+
+## Testing
+
+Every phase ships with **unit + integration + automation (e2e)** tests. This is an explicit project requirement, not a nice-to-have — a phase is not complete without them.
+
+Do not claim a task is done without running its verification and reading the output.
+
+## Git Workflow
+
+- **Direct commits to `main` are authorized** for this project. No PR-per-change requirement, no feature branches needed.
+- Commit as `dnmitev <dnmitev@gmail.com>` (set locally in this repo — verify with `git config user.email`).
+- Do not commit generated output, dependencies, or local tooling artifacts; `.gitignore` covers them.
+
+## Where Things Live
+
+| Path | Contents |
+|------|----------|
+| [README.md](README.md) | Human-facing project brief |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Data model, API surface, phase roadmap |
+| [projects/gaspense/PLANNING.md](projects/gaspense/PLANNING.md) | Full ideation record and rationale |
+| `.paul/PROJECT.md` | Requirements, constraints, key decisions |
+| `.paul/ROADMAP.md` | Phase structure — **authority on phase status** |
+| `.paul/STATE.md` | Current position, deferred issues, active boundaries |
+| `.paul/phases/` | Per-phase plans and summaries |
+
+This project is managed with the PAUL framework: work proceeds in `PLAN → APPLY → UNIFY` loops. Check `.paul/STATE.md` for the current position before starting anything.
+
+## Known Unknowns
+
+The Bulgarian traffic police (КАТ/МВР) fines lookup and the vignette validity check have **no confirmed public API**. Phase 5 is gated on a research spike. Do not invent endpoint URLs or request shapes for these services — if you need them and they are not yet documented in `docs/ARCHITECTURE.md`, say so instead of guessing.
