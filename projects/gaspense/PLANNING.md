@@ -245,4 +245,10 @@ Mobile-first, installable PWA; desktop usable but not the primary target.
 
 ---
 
+**Graduated:** 2026-08-07
+**Location:** repo root (`/`) — this repo IS the gaspense app; the standard nested `apps/gaspense/` convention was skipped since it would have created a redundant nested git repo
+**README:** `README.md`
+
+---
+
 *Last updated: 2026-08-07*
