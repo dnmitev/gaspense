@@ -46,13 +46,13 @@ User ──< Car ──< Expense >── Category
               └─< OdometerReading
 ```
 
-| Entity              | Key fields                                                                                                                                                       | Relationships                                           |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| **User**            | `id` (cuid), `email` (unique), `name?`, `emailVerified?`, `image?`, timestamps                                                                                   | has many Cars and Categories                            |
-| **Car**             | `id`, `userId`, `licensePlate`, `make?`, `model?`, `year?`, `nickname?`, `fuelType` (enum), **`deletedAt?`** (soft delete), timestamps                           | belongs to User; has many Expenses and OdometerReadings |
-| **Category**        | `id`, `userId?` (null = system default), `name`, timestamps                                                                                                      | belongs to User (optional); has many Expenses           |
-| **Expense**         | `id`, `carId`, `categoryId`, `date`, **`amountCents`** (Int), `notes?` — fuel expenses additionally carry `liters?` (Float), `station?`, `fullTank?`, timestamps | belongs to Car and Category                             |
-| **OdometerReading** | `id`, `carId`, `date`, `reading` (Int, km), `source` (enum `MANUAL` \| `EXPENSE`), timestamps                                                                    | belongs to Car                                          |
+| Entity              | Key fields                                                                                                                                                       | Relationships                                                  |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| **User**            | `id` (cuid), `email` (unique), `name?`, `emailVerified?`, `image?`, timestamps                                                                                   | has many Cars and Categories                                   |
+| **Car**             | `id`, `userId`, `licensePlate`, `make?`, `model?`, `year?`, `nickname?`, `fuelType` (enum), **`deletedAt?`** (soft delete), timestamps                           | belongs to User; has many Expenses and OdometerReadings        |
+| **Category**        | `id`, `userId?` (null = system default), `name`, timestamps                                                                                                      | belongs to User (optional); has many Expenses                  |
+| **Expense**         | `id`, `carId`, `categoryId`, `date`, **`amountCents`** (Int), `notes?` — fuel expenses additionally carry `liters?` (Float), `station?`, `fullTank?`, timestamps | belongs to Car and Category                                    |
+| **OdometerReading** | `id`, `carId`, `date`, `reading` (Int, km), `source` (enum `MANUAL` \| `EXPENSE`), **`expenseId?`** (unique, cascade), timestamps                                | belongs to Car; optionally to the Expense it was captured with |
 
 **Enums:** `FuelType` (PETROL, DIESEL, LPG, ELECTRIC, HYBRID, OTHER) and
 `OdometerSource` (MANUAL, EXPENSE).
@@ -66,6 +66,13 @@ two partial unique indexes described below.
 - **Odometer readings are a first-class log**, not derived from expenses. Fuel fill-ups are an
   incomplete record of mileage, and accurate L/100km — plus future service-interval reminders —
   needs a standalone series.
+- **A reading may point at the expense it was captured with** (`OdometerReading.expenseId`,
+  nullable and unique, `ON DELETE CASCADE`). The `source: EXPENSE` enum value records only that a
+  reading came from _some_ fill-up, which is not enough to keep the pair consistent: matching back
+  on `(carId, date)` is ambiguous — two fill-ups in one day is ordinary — and editing an expense's
+  date would orphan its reading. The cascade matters because a reading must never outlive the
+  fill-up it claims to measure; a stale one would silently corrupt the consumption series computed
+  from consecutive full-tank readings.
 - **Soft delete on Car only** (`deletedAt`). Deleting a car must never destroy its expense history,
   so every car query must filter `deletedAt: null`. Expenses and odometer readings hard-delete;
   they are cheap to re-enter. Integration tests assert this distinction.
@@ -137,8 +144,8 @@ client.
 
 > **Superseded:** earlier versions of this document listed nine REST route groups (`/api/cars`,
 > `/api/expenses`, and so on). That was a design-time sketch written before any UI existed; it was
-> never built. Server actions replaced it in plan 02-05, and `/api/expenses` likewise in 02-06.
-> The genuinely-HTTP endpoints are listed below.
+> never built. Server actions replaced it in plan 02-05, `/api/expenses` in 02-06, and
+> `/api/categories` and `/api/odometer` in 02-07. The genuinely-HTTP endpoints are listed below.
 
 ### How a data path is built
 
@@ -185,9 +192,26 @@ before touching `lib/expenses.ts`:
   codebase where scoping is a check rather than a filter, and therefore the one place it can be
   forgotten. Without it, a forged `carId` in a form post attaches an expense to a stranger's car.
 
-`Category.userId` is nullable, where `null` means a shared system default. Reads use
-`OR: [{ userId }, { userId: null }]`; a system row must never become writable, since editing one
-would change it for every user.
+#### Categories: one table, two sets of rows
+
+`Category.userId` is nullable, where `null` means a shared system default seeded for everyone.
+
+**Reads span both sets** (`OR: [{ userId }, { userId: null }]`). **Writes never do.** Every write
+filters `where: { id, userId }` with a real user id, which cannot match a row whose `userId` is
+NULL — so a system category is unreachable through the ordinary code path. There is deliberately no
+`if (category.userId === null) reject` guard: the scoping already covers it, and a special case
+would imply the general rule needs supervision. `tests/integration/categories.test.ts` is what
+confirms the general rule is actually sufficient.
+
+Two constraints here are invisible to Prisma's types and must be handled as ordinary outcomes
+rather than crashes:
+
+- The partial unique indexes are **raw SQL**, so a duplicate name surfaces only as **P2002** at
+  write time. Adding a category you already have is a normal mistake, not an exception.
+- `Expense.category` is **`onDelete: Restrict`**, so deleting a category still in use surfaces as
+  **P2003**. The data layer counts the referencing expenses first and refuses with that count.
+  Reassigning them automatically is deliberately not offered: silently moving someone's records
+  while they asked to delete a label is a bigger action than the one they requested.
 
 #### Money
 

@@ -5,7 +5,6 @@ import {
   deleteExpense,
   getExpenseById,
   listExpensesForCar,
-  listVisibleCategories,
   updateExpense,
 } from "@/lib/expenses";
 import type { PrismaClient } from "@/lib/generated/prisma/client";
@@ -42,6 +41,7 @@ function expenseInput(overrides: Partial<ExpenseInput> = {}): ExpenseInput {
     liters: undefined,
     station: undefined,
     fullTank: false,
+    odometer: undefined,
     ...overrides,
   };
 }
@@ -360,33 +360,126 @@ describe("deleteExpense", () => {
   });
 });
 
-describe("listVisibleCategories", () => {
-  it("returns the system defaults plus the caller's own", async () => {
-    const { alice } = await fixtures();
-    await prisma.category.create({ data: { userId: alice.id, name: "Alice's category" } });
+describe("odometer capture on an expense", () => {
+  it("creates a linked EXPENSE-sourced reading when one is entered", async () => {
+    const { alice, aliceCar, category } = await fixtures();
 
-    const names = (await listVisibleCategories(alice.id)).map((category) => category.name);
+    const expense = await createExpense(
+      alice.id,
+      expenseInput({ carId: aliceCar.id, categoryId: category.id, odometer: 120000 }),
+    );
 
-    expect(names).toContain("Fuel");
-    expect(names).toContain("Alice's category");
+    const reading = await prisma.odometerReading.findUniqueOrThrow({
+      where: { expenseId: expense!.id },
+    });
+    expect(reading.reading).toBe(120000);
+    expect(reading.source).toBe("EXPENSE");
+    expect(reading.carId).toBe(aliceCar.id);
+    expect(reading.date).toEqual(expense!.date);
   });
 
-  it("excludes another user's categories", async () => {
-    const { alice, bob } = await fixtures();
-    await prisma.category.create({ data: { userId: bob.id, name: "Bob's category" } });
+  it("creates no reading when the field is left blank", async () => {
+    // Blank means "not recorded", which must not become a reading of zero.
+    const { alice, aliceCar, category } = await fixtures();
 
-    const names = (await listVisibleCategories(alice.id)).map((category) => category.name);
+    await createExpense(alice.id, expenseInput({ carId: aliceCar.id, categoryId: category.id }));
 
-    expect(names).not.toContain("Bob's category");
-    // Bob does see it, so the filter is scoping rather than hiding everything.
-    expect((await listVisibleCategories(bob.id)).map((c) => c.name)).toContain("Bob's category");
+    expect(await prisma.odometerReading.count()).toBe(0);
   });
 
-  it("sorts by name so the select is not in insertion order", async () => {
-    const { alice } = await fixtures();
+  it("updates the linked reading, carrying the date across", async () => {
+    const { alice, aliceCar, category } = await fixtures();
+    const expense = await createExpense(
+      alice.id,
+      expenseInput({ carId: aliceCar.id, categoryId: category.id, odometer: 120000 }),
+    );
 
-    const names = (await listVisibleCategories(alice.id)).map((category) => category.name);
+    await updateExpense(
+      alice.id,
+      expense!.id,
+      expenseInput({
+        carId: aliceCar.id,
+        categoryId: category.id,
+        odometer: 130000,
+        date: new Date("2026-09-01T00:00:00.000Z"),
+      }),
+    );
 
-    expect(names).toEqual([...names].sort());
+    const reading = await prisma.odometerReading.findUniqueOrThrow({
+      where: { expenseId: expense!.id },
+    });
+    expect(reading.reading).toBe(130000);
+    // A reading left on the old date would show the fill-up on a day it did not happen.
+    expect(reading.date).toEqual(new Date("2026-09-01T00:00:00.000Z"));
+  });
+
+  it("creates a reading when one is added to an expense that had none", async () => {
+    const { alice, aliceCar, category } = await fixtures();
+    const expense = await createExpense(
+      alice.id,
+      expenseInput({ carId: aliceCar.id, categoryId: category.id }),
+    );
+
+    await updateExpense(
+      alice.id,
+      expense!.id,
+      expenseInput({ carId: aliceCar.id, categoryId: category.id, odometer: 99000 }),
+    );
+
+    expect(
+      (await prisma.odometerReading.findUniqueOrThrow({ where: { expenseId: expense!.id } }))
+        .reading,
+    ).toBe(99000);
+  });
+
+  it("deletes the reading when the field is cleared", async () => {
+    // AC-8. The reading existed only as part of this expense, so it must not
+    // linger as an unexplained manual entry.
+    const { alice, aliceCar, category } = await fixtures();
+    const expense = await createExpense(
+      alice.id,
+      expenseInput({ carId: aliceCar.id, categoryId: category.id, odometer: 120000 }),
+    );
+
+    await updateExpense(
+      alice.id,
+      expense!.id,
+      expenseInput({ carId: aliceCar.id, categoryId: category.id, odometer: undefined }),
+    );
+
+    expect(await prisma.odometerReading.count()).toBe(0);
+  });
+
+  it("removes the reading when the expense is deleted", async () => {
+    // The cascade is a database guarantee, so assert it rather than trusting
+    // that the schema says what it means.
+    const { alice, aliceCar, category } = await fixtures();
+    const expense = await createExpense(
+      alice.id,
+      expenseInput({ carId: aliceCar.id, categoryId: category.id, odometer: 120000 }),
+    );
+
+    await deleteExpense(alice.id, expense!.id);
+
+    expect(await prisma.odometerReading.count()).toBe(0);
+  });
+
+  it("leaves a stranger's reading untouched when their expense cannot be edited", async () => {
+    const { alice, bob, aliceCar, bobCar, category } = await fixtures();
+    const bobs = await createExpense(
+      bob.id,
+      expenseInput({ carId: bobCar.id, categoryId: category.id, odometer: 222 }),
+    );
+
+    const count = await updateExpense(
+      alice.id,
+      bobs!.id,
+      expenseInput({ carId: aliceCar.id, categoryId: category.id, odometer: 1 }),
+    );
+
+    expect(count).toBe(0);
+    expect(
+      (await prisma.odometerReading.findUniqueOrThrow({ where: { expenseId: bobs!.id } })).reading,
+    ).toBe(222);
   });
 });

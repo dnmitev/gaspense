@@ -15,6 +15,7 @@ type ExpenseFormValues = {
   liters?: number | null;
   station?: string | null;
   fullTank?: boolean | null;
+  odometer?: number | null;
 };
 
 type Props = {
@@ -206,6 +207,27 @@ export function ExpenseForm({
               className={inputClass}
             />
             <FieldError messages={errors.station} />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="odometer" className="text-sm font-medium">
+              Odometer (km)
+            </label>
+            {/*
+              Captured at the fill-up because that is the one moment the number
+              is actually in front of the driver. It becomes a reading in the
+              car's odometer log, linked to this expense — clearing it here
+              removes that reading.
+            */}
+            <input
+              id="odometer"
+              name="odometer"
+              type="text"
+              inputMode="numeric"
+              defaultValue={expense?.odometer ?? ""}
+              className={inputClass}
+            />
+            <FieldError messages={errors.odometer} />
           </div>
 
           <div className="flex items-center gap-2">

@@ -3,7 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { createExpenseAction } from "@/app/cars/[id]/expenses/actions";
 import { ExpenseForm } from "@/app/cars/[id]/expenses/expense-form";
 import { getCarById } from "@/lib/cars";
-import { listVisibleCategories } from "@/lib/expenses";
+import { listVisibleCategories } from "@/lib/categories";
+
 import { FUEL_CATEGORY_NAME } from "@/lib/seed-categories";
 import { getCurrentUserId } from "@/lib/session";
 

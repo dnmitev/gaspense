@@ -13,7 +13,12 @@ export default async function CarsPage() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 p-6">
       <header className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Your cars</h1>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Your cars</h1>
+          <Link href="/categories" className="text-sm underline">
+            Manage categories
+          </Link>
+        </div>
         <Link
           href="/cars/new"
           className="rounded-lg bg-neutral-900 px-3 py-2 text-sm font-medium text-white dark:bg-white dark:text-neutral-900"

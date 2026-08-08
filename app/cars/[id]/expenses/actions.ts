@@ -36,6 +36,7 @@ function parseForm(formData: FormData) {
     liters: formData.get("liters"),
     station: formData.get("station"),
     fullTank: formData.get("fullTank"),
+    odometer: formData.get("odometer"),
   });
 }
 

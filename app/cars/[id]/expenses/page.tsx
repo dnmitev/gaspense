@@ -43,6 +43,9 @@ export default async function ExpensesPage({ params }: { params: Promise<{ id: s
         <p className="font-mono text-sm text-neutral-600 dark:text-neutral-400">
           {car.licensePlate}
         </p>
+        <Link href={`/cars/${car.id}/odometer`} className="text-sm underline">
+          Odometer log
+        </Link>
       </div>
 
       <div className="flex items-center justify-between gap-4">

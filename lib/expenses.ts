@@ -37,24 +37,17 @@ export function listExpensesForCar(userId: string, carId: string) {
   });
 }
 
-/** A single expense, or null if it does not exist or is not the caller's. */
+/**
+ * A single expense, or null if it does not exist or is not the caller's.
+ *
+ * Includes the linked odometer reading so an edit form can seed the field
+ * without a second query — and so the absence of one is visible rather than
+ * inferred.
+ */
 export function getExpenseById(userId: string, expenseId: string) {
   return prisma.expense.findFirst({
     where: { id: expenseId, car: ownedCar(userId) },
-  });
-}
-
-/**
- * Categories the caller may file an expense under: their own, plus the seeded
- * system rows (`userId: null`) that everyone shares.
- *
- * Read-only by design. Category writes are 02-07's, and must never be able to
- * reach a system row — editing one would change it for every user.
- */
-export function listVisibleCategories(userId: string) {
-  return prisma.category.findMany({
-    where: visibleCategory(userId),
-    orderBy: { name: "asc" },
+    include: { odometerReading: true },
   });
 }
 
@@ -96,7 +89,27 @@ async function mayWrite(userId: string, carId: string, categoryId: string): Prom
 export async function createExpense(userId: string, input: ExpenseInput) {
   if (!(await mayWrite(userId, input.carId, input.categoryId))) return null;
 
-  return prisma.expense.create({ data: input });
+  const { odometer, ...expense } = input;
+
+  // One transaction: an expense must never be saved with its reading half
+  // written, or the consumption series gains a fill-up with no distance.
+  return prisma.$transaction(async (tx) => {
+    const created = await tx.expense.create({ data: expense });
+
+    if (odometer !== undefined) {
+      await tx.odometerReading.create({
+        data: {
+          carId: created.carId,
+          date: created.date,
+          reading: odometer,
+          source: "EXPENSE",
+          expenseId: created.id,
+        },
+      });
+    }
+
+    return created;
+  });
 }
 
 /**
@@ -115,12 +128,44 @@ export async function updateExpense(
 ): Promise<number> {
   if (!(await mayWrite(userId, input.carId, input.categoryId))) return 0;
 
-  const result = await prisma.expense.updateMany({
-    where: { id: expenseId, car: ownedCar(userId) },
-    data: input,
-  });
+  const { odometer, ...expense } = input;
 
-  return result.count;
+  return prisma.$transaction(async (tx) => {
+    const result = await tx.expense.updateMany({
+      where: { id: expenseId, car: ownedCar(userId) },
+      data: expense,
+    });
+
+    // Nothing matched: not the caller's expense. Touch no reading either.
+    if (result.count === 0) return 0;
+
+    const existing = await tx.odometerReading.findUnique({ where: { expenseId } });
+
+    if (odometer === undefined) {
+      // Cleared. The reading only ever existed as part of this expense, so it
+      // goes with it rather than lingering as an unexplained manual entry.
+      if (existing) await tx.odometerReading.delete({ where: { expenseId } });
+    } else if (existing) {
+      // `carId` and `date` are carried across too: a reading left on the old
+      // date would show the fill-up happening on a day it did not.
+      await tx.odometerReading.update({
+        where: { expenseId },
+        data: { carId: expense.carId, date: expense.date, reading: odometer },
+      });
+    } else {
+      await tx.odometerReading.create({
+        data: {
+          carId: expense.carId,
+          date: expense.date,
+          reading: odometer,
+          source: "EXPENSE",
+          expenseId,
+        },
+      });
+    }
+
+    return result.count;
+  });
 }
 
 /**
@@ -128,6 +173,10 @@ export async function updateExpense(
  *
  * Hard, not soft: cars soft-delete so their history survives, but an expense
  * *is* the history — a deleted one is a correction, not something to preserve.
+ *
+ * Any linked odometer reading goes with it, by the `ON DELETE CASCADE` on
+ * `OdometerReading.expenseId`. That is a database guarantee rather than code
+ * here, so the integration suite asserts it actually happens.
  */
 export async function deleteExpense(userId: string, expenseId: string): Promise<number> {
   const result = await prisma.expense.deleteMany({

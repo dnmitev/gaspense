@@ -14,11 +14,11 @@ From a graduated PLANNING.md to a working personal vehicle expense tracker: firs
 
 **v0.1 Initial Release** (v0.1.0)
 Status: In progress
-Phases: 2 of 8 complete (25%)
+Phases: 2 of 9 complete (22%)
 
 ## Phases
 
-**Phase Numbering:** Integer phases only for now (0–7). Decimal phases (e.g. 2.1) reserved for urgent insertions later.
+**Phase Numbering:** Integer phases only for now (0–8). Decimal phases (e.g. 2.1) reserved for urgent insertions later.
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
@@ -30,6 +30,7 @@ Phases: 2 of 8 complete (25%)
 | 5 | Bulgarian Integrations | TBD | Not started | - |
 | 6 | Google Drive Export | TBD | Not started | - |
 | 7 | Maintenance Reminders | TBD | Not started | - |
+| 8 | Test Environment Safety | TBD | Not started | - |
 
 ## Phase Details
 
@@ -221,6 +222,55 @@ it matters least. It depends only on Phase 2, so it can be pulled earlier on req
 **Plans:**
 - [ ] TBD — defined during `/paul:plan`
 
+### Phase 8: Test Environment Safety
+
+**Goal:** Running the integration suite cannot destroy data that matters — neither a real
+deployment nor the local database being used for development.
+**Depends on:** Phase 2 (the suite and the tables it truncates must exist). Nothing later
+depends on it.
+**Research:** Unlikely (a connection-string precondition and a second database)
+
+**Scope:**
+- A precondition on the reset path that refuses to truncate a database not demonstrably a test database
+- A dedicated test database, separate from the development one, wired through its own variable
+- A decision on which database the e2e suite runs against
+- `.env.example`, `CLAUDE.md`, and `AGENTS.md` updated to describe the split
+- Tests proving the guard actually refuses — a safety check nobody has watched fail is not a safety check
+
+**Found during review (2026-08-08), against the code as it stands:**
+- `resetDatabase()` in `tests/integration/helpers.ts` issues `TRUNCATE ... CASCADE` over
+  `Expense`, `OdometerReading`, `Car`, `Category`, `User` with **no assertion about which
+  database it is connected to**. It truncates whatever `DATABASE_URL` resolves to.
+- Development, integration, and e2e all share one database (`gaspense_dev`) —
+  `playwright.config.ts` passes the same `DATABASE_URL` to the server under test. Running the
+  integration suite already wipes local development data today.
+- `tests/integration/setup.ts` depends on dotenv **not** overriding an already-set variable,
+  which is exactly what makes CI work. The flip side: an exported shell `DATABASE_URL` silently
+  beats `.env`, so the file that looks like it pins the connection does not.
+- `.env.example` documents pointing `DATABASE_URL` at the Supabase **direct** connection to run
+  migrations — precisely the shell state in which running the suite would truncate production.
+- CI already satisfies a host-plus-name guard (`localhost:5432/gaspense_test`), so the workflow
+  should need no change. Verify that rather than assuming it.
+
+**Ruled out at review time:** per-test transaction rollback, the usual way to avoid TRUNCATE
+altogether. `lib/expenses.ts` opens its own interactive `prisma.$transaction`, so an outer
+rollback wrapper would mean threading a transaction client through production signatures for
+the tests' benefit.
+
+**Open questions for `/paul:plan`:**
+- Is the guard host-and-name based, an explicit opt-in variable, or both?
+- Does e2e get its own database or share the integration one? They share today, and CI runs
+  integration immediately before e2e.
+- Does `npm run test:integration` create and migrate the test database on demand, or fail
+  loudly when it is absent?
+
+**Note on ordering:** placed last so numbering stays stable. There is no deployment yet, so
+nothing real is at risk today — but the exposure becomes real the moment one exists. Pull this
+before the first deploy, not after.
+
+**Plans:**
+- [ ] TBD — defined during `/paul:plan`
+
 ---
 *Roadmap created: 2026-08-07*
-*Last updated: 2026-08-07*
+*Last updated: 2026-08-08*

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { parseAmountToCents } from "@/lib/money";
-import { optionalText } from "@/lib/validation/shared";
+import { MAX_READING_KM } from "@/lib/validation/odometer";
+import { optionalText, recordedDate } from "@/lib/validation/shared";
 
 /**
  * Validation for an expense as submitted by a form.
@@ -14,9 +15,6 @@ import { optionalText } from "@/lib/validation/shared";
 
 /** €1,000,000. Not a real limit, a fat-finger guard — "4520" typed into euros. */
 export const MAX_AMOUNT_CENTS = 100_000_000;
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-const EARLIEST_DATE = new Date("1900-01-01T00:00:00.000Z");
 
 const id = (message: string) => z.string().trim().min(1, message);
 
@@ -46,27 +44,12 @@ const amountCents = z
       .max(MAX_AMOUNT_CENTS, "That amount looks too large"),
   );
 
-/**
- * Dates are compared per-parse rather than against a module-load constant: a
- * long-running server would otherwise keep enforcing the boundary from whenever
- * it booted.
- *
- * The future cut-off is 24 hours rather than "after today" so a user in a
- * timezone ahead of the server is never told that today is invalid.
- */
-const date = z.coerce
-  .date({ error: "Enter a valid date" })
-  .min(EARLIEST_DATE, "Date looks too early")
-  .refine((value) => value.getTime() <= Date.now() + DAY_MS, {
-    message: "Date cannot be in the future",
-  });
-
 export const expenseInputSchema = z.object({
   carId: id("Car is required"),
   categoryId: id("Choose a category"),
 
   amountCents,
-  date,
+  date: recordedDate,
 
   notes: optionalText(500),
 
@@ -82,6 +65,24 @@ export const expenseInputSchema = z.object({
   ),
   station: optionalText(60),
   fullTank: z.preprocess((value) => value === "on" || value === true, z.boolean()),
+
+  /**
+   * The odometer at the moment of the fill-up. Optional: blank means "not
+   * recorded", which is different from zero and must not become a reading.
+   *
+   * Captured here rather than only in the standalone log because a fill-up is
+   * the one moment the driver reliably has the number in front of them — and
+   * without it there is no distance between fills, so no consumption figure.
+   */
+  odometer: z.preprocess(
+    (value) => (value === "" || value === null ? undefined : value),
+    z.coerce
+      .number()
+      .int("Reading must be a whole number of kilometres")
+      .positive("Reading must be more than 0")
+      .max(MAX_READING_KM, "That reading looks too large")
+      .optional(),
+  ),
 });
 
 export type ExpenseInput = z.infer<typeof expenseInputSchema>;

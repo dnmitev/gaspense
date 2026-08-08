@@ -11,18 +11,18 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release, Phase 2: Foundations — Planning 02-07 (closes the phase)
+**Current focus:** v0.1 Initial Release, Phase 2: Foundations — 02-07 applied (closes the phase)
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 2 of 8 (Foundations) — In progress
-Plan: 02-07 created, awaiting approval
-Status: PLAN created, ready for APPLY
-Last activity: 2026-08-08 — Created 02-07 PLAN; the last of Phase 2, and the first schema change since 02-03
+Phase: 2 of 9 (Foundations) — In progress
+Plan: 02-07 executed, 6 of 6 tasks complete (checkpoint approved)
+Status: APPLY complete, ready for UNIFY — **this triggers the Phase 2 transition**
+Last activity: 2026-08-08 — Added Phase 8: Test Environment Safety (02-07 unaffected, still awaiting approval)
 
 Progress:
-- Milestone: [██░░░░░░░░] 25% (2 of 8 phases complete)
+- Milestone: [██░░░░░░░░] 22% (2 of 9 phases complete)
 - Phase 2: [████████░░] 86% (6 of 7 plans)
 
 ## Loop Position
@@ -30,7 +30,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan created, awaiting approval]
+  ✓        ✓        ◉     [Ready for UNIFY]
 ```
 
 ## Performance Metrics
@@ -81,9 +81,12 @@ Only what constrains upcoming work. **Full log (28 entries): `.paul/PROJECT.md` 
 | **`lib/money.ts` is the only euro↔cent converter** | Sum integers, format once. Applies to tests too — the AC is enforced by a comment-stripped source audit, not by convention |
 | **Vitest does not type-check; `next build` does** | A change can pass `npm test` and still break the build. Run both before believing a task is done |
 | **e2e suites must seed their own global fixtures** | `npm run test:integration` truncates `Category`, and CI runs integration immediately before e2e — a suite relying on leftover seed data passes locally and fails in CI |
+| **Migrations must be generated non-interactively** | `prisma migrate dev` refuses headless, and Prisma 7 blocks `migrate reset` when it detects Claude Code. Use `prisma migrate diff --from-config-datasource --to-schema`, then prove it with `migrate deploy` against an empty database |
+| **A silent no-op replace passes the build** | The odometer field never reached the form because a string replace missed on shifted indentation. Grep for the thing itself, not just a green build |
 | **Category uniqueness raises P2002, uncatchable by types** | The partial unique indexes are raw SQL, so Prisma cannot type them. Adding a duplicate name is an ordinary user action and must not 500 |
 | **`Expense.category` is `onDelete: Restrict`** | Deleting a category in use raises P2003. 02-07 refuses the delete with a count rather than reassigning silently |
 | **Nothing links an Expense to its OdometerReading** | `source: EXPENSE` records only that a reading came from *some* fill-up. 02-07 adds a nullable unique `expenseId` with cascade — the first schema change since 02-03 |
+| **Added Phase 8: Test Environment Safety** | Extends milestone scope to 9 phases. `resetDatabase()` truncates whatever `DATABASE_URL` points at, with no guard; dev, integration, and e2e share one database. Depends only on Phase 2 — pull it before the first deployment |
 
 ### Deferred Issues
 
@@ -133,8 +136,8 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-07 (resumed; handoff consumed and archived to `.paul/handoffs/archive/`)
-Stopped at: Plan 02-07 created — Category CRUD, odometer log, odometer on fuel entry
-Next action: Review and approve, then run `/paul:apply .paul/phases/02-foundations/02-07-PLAN.md`
+Stopped at: Plan 02-07 applied and approved at its checkpoint
+Next action: Run `/paul:unify .paul/phases/02-foundations/02-07-PLAN.md` — closes the loop AND triggers the Phase 2 transition
 Resume file: `.paul/phases/02-foundations/02-07-PLAN.md`
 Git strategy: `main` (direct commits)
 Resume context:

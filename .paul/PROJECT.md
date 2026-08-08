@@ -65,6 +65,7 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 - Phase 5: Bulgarian Integrations — research spike, then fines/vignette checks
 - Phase 6: Google Drive Export — OAuth consent, export/backup
 - Phase 7: Maintenance Reminders — service intervals per car with due/overdue indicators
+- Phase 8: Test Environment Safety — stop the integration suite truncating a non-test database
 
 ### Out of Scope
 - Multi-currency support — EUR only, by explicit decision

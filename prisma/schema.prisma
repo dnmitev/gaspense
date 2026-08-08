@@ -181,6 +181,10 @@ model Expense {
   car      Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
   category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
+  /// The odometer reading captured when this expense was recorded, if any.
+  /// Deleting the expense deletes the reading — see OdometerReading.expenseId.
+  odometerReading OdometerReading?
+
   @@index([carId])
   @@index([date])
   @@index([categoryId])
@@ -193,6 +197,20 @@ model OdometerReading {
   /// Kilometres.
   reading Int
   source  OdometerSource @default(MANUAL)
+
+  /// The expense this reading was captured alongside, if any.
+  ///
+  /// `source: EXPENSE` alone records only that a reading came from *some*
+  /// fill-up, which is not enough to maintain it: matching back on
+  /// (carId, date) is ambiguous — two fill-ups in one day is ordinary — and
+  /// editing an expense's date would orphan its reading.
+  ///
+  /// Nullable because a manually entered reading has no expense. Unique because
+  /// one expense captures at most one reading. Cascade because a reading must
+  /// never outlive the fill-up it claims to measure: a stale one would silently
+  /// corrupt the consumption series Phase 3 computes from it.
+  expenseId String?  @unique
+  expense   Expense? @relation(fields: [expenseId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

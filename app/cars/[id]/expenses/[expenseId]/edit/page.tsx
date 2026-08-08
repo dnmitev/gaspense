@@ -3,7 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { updateExpenseAction } from "@/app/cars/[id]/expenses/actions";
 import { ExpenseForm } from "@/app/cars/[id]/expenses/expense-form";
 import { getCarById } from "@/lib/cars";
-import { getExpenseById, listVisibleCategories } from "@/lib/expenses";
+import { listVisibleCategories } from "@/lib/categories";
+import { getExpenseById } from "@/lib/expenses";
 import { formatAmountInput } from "@/lib/money";
 import { getCurrentUserId } from "@/lib/session";
 
@@ -33,7 +34,10 @@ export default async function EditExpensePage({
   // collapsed otherwise — derived from the row rather than from its category,
   // which a user may rename.
   const hasFuelDetails =
-    expense.liters !== null || expense.station !== null || expense.fullTank !== null;
+    expense.liters !== null ||
+    expense.station !== null ||
+    expense.fullTank !== null ||
+    expense.odometerReading !== null;
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 p-6">
@@ -60,6 +64,7 @@ export default async function EditExpensePage({
           liters: expense.liters,
           station: expense.station,
           fullTank: expense.fullTank,
+          odometer: expense.odometerReading?.reading,
         }}
       />
     </main>
