@@ -11,15 +11,15 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release, Phase 2: Foundations — 6 of 7 plans complete
+**Current focus:** v0.1 Initial Release, Phase 2: Foundations — Planning 02-07 (closes the phase)
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
 Phase: 2 of 8 (Foundations) — In progress
-Plan: 02-06 complete (loop closed)
-Status: Ready for next PLAN (02-07 — closes Phase 2)
-Last activity: 2026-08-08 — Closed loop 02-06; expenses usable end to end, 161 tests green
+Plan: 02-07 created, awaiting approval
+Status: PLAN created, ready for APPLY
+Last activity: 2026-08-08 — Created 02-07 PLAN; the last of Phase 2, and the first schema change since 02-03
 
 Progress:
 - Milestone: [██░░░░░░░░] 25% (2 of 8 phases complete)
@@ -30,7 +30,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete — ready for next PLAN]
+  ✓        ○        ○     [Plan created, awaiting approval]
 ```
 
 ## Performance Metrics
@@ -81,6 +81,9 @@ Only what constrains upcoming work. **Full log (28 entries): `.paul/PROJECT.md` 
 | **`lib/money.ts` is the only euro↔cent converter** | Sum integers, format once. Applies to tests too — the AC is enforced by a comment-stripped source audit, not by convention |
 | **Vitest does not type-check; `next build` does** | A change can pass `npm test` and still break the build. Run both before believing a task is done |
 | **e2e suites must seed their own global fixtures** | `npm run test:integration` truncates `Category`, and CI runs integration immediately before e2e — a suite relying on leftover seed data passes locally and fails in CI |
+| **Category uniqueness raises P2002, uncatchable by types** | The partial unique indexes are raw SQL, so Prisma cannot type them. Adding a duplicate name is an ordinary user action and must not 500 |
+| **`Expense.category` is `onDelete: Restrict`** | Deleting a category in use raises P2003. 02-07 refuses the delete with a count rather than reassigning silently |
+| **Nothing links an Expense to its OdometerReading** | `source: EXPENSE` records only that a reading came from *some* fill-up. 02-07 adds a nullable unique `expenseId` with cascade — the first schema change since 02-03 |
 
 ### Deferred Issues
 
@@ -130,15 +133,15 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-07 (resumed; handoff consumed and archived to `.paul/handoffs/archive/`)
-Stopped at: Plan 02-06 loop closed — all 9 ACs pass; expenses usable end to end
-Next action: Run `/paul:plan` for 02-07 — Category CRUD, Odometer log, and odometer capture on the expense form. **This closes Phase 2.**
-Resume file: `.paul/phases/02-foundations/02-06-SUMMARY.md`
+Stopped at: Plan 02-07 created — Category CRUD, odometer log, odometer on fuel entry
+Next action: Review and approve, then run `/paul:apply .paul/phases/02-foundations/02-07-PLAN.md`
+Resume file: `.paul/phases/02-foundations/02-07-PLAN.md`
 Git strategy: `main` (direct commits)
 Resume context:
-- Phase 2 is **6 of 7**. PLAN and SUMMARY counts now both read 6, so the completion heuristic says "phase complete" — it is wrong for the seventh time. `02-07` is declared in ROADMAP with no PLAN file yet, and closing it WILL trigger the mandatory transition.
-- **02-07 copies the same vertical slice**: `lib/expenses.ts` and `tests/integration/expenses.test.ts` are now the closest templates.
-- **02-07 has three jobs**: Category CRUD (own rows only — system rows must stay read-only), the Odometer log, and odometer capture on the expense form.
-- **02-07 gained scope at the 02-06 review**: the odometer must be capturable on the expense form, not only as a standalone log (`OdometerSource.EXPENSE` already exists for it). Phase 3 gained L/100km; a new Phase 7 covers maintenance intervals.
+- **02-07 is the LAST plan of Phase 2** — closing it triggers the mandatory phase transition, which has been correctly withheld seven times. Do not skip it.
+- **02-07 copies the same vertical slice**: `lib/expenses.ts` and `tests/integration/expenses.test.ts` are the closest templates.
+- **02-07 carries a migration** — the first since 02-03. Generate it with `prisma migrate dev`, never hand-write the SQL; CI runs `migrate deploy` against a fresh database.
+- System categories stay immutable through ordinary scoping (`where: { id, userId }` can never match a `userId: null` row) — no special case needed, and adding one would imply the general rule is unreliable.
 - Integration tests must seed categories themselves: `resetDatabase()` truncates `Category`.
 - E2E auth is solved: `tests/e2e/helpers/auth.ts` seeds a session and sets the cookie.
 - Local dev needs `docker compose up -d` (Postgres on **5433**) before `npm run test:integration`.
