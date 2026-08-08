@@ -11,26 +11,26 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release, Phase 2: Foundations — 5 of 6 plans complete
+**Current focus:** v0.1 Initial Release, Phase 2: Foundations — Planning 02-06
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
 Phase: 2 of 7 (Foundations) — In progress
-Plan: 02-05 complete (loop closed)
-Status: Ready for next PLAN (02-06 — the last of Phase 2)
-Last activity: 2026-08-07 — Closed loop 02-05; cars usable end to end, 79 tests green
+Plan: 02-06 created, awaiting approval
+Status: PLAN created, ready for APPLY
+Last activity: 2026-08-08 — Created 02-06 PLAN; split Phase 2's last plan into 02-06 + 02-07
 
 Progress:
 - Milestone: [██░░░░░░░░] 29% (2 of 7 phases complete)
-- Phase 2: [████████░░] 83% (5 of 6 plans)
+- Phase 2: [███████░░░] 71% (5 of 7 plans)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete — ready for next PLAN]
+  ✓        ○        ○     [Plan created, awaiting approval]
 ```
 
 ## Performance Metrics
@@ -41,7 +41,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 |-------|-------|----------|
 | 00-ai-friendly-scaffolding | 2/2 ✅ | ~11 min |
 | 01-cicd-pipeline | 1/1 ✅ | ~29 min |
-| 02-foundations | 5/6 | ~31 min |
+| 02-foundations | 5/7 | ~31 min |
 
 **Trend:** 13, 9, 29, 33, 14, 35, 45, 28 min. Cost tracks how much *unknown third-party
 behaviour* a plan touches, not its size — 02-05 was the largest by files yet mid-pack, because
@@ -76,6 +76,8 @@ Only what constrains upcoming work. **Full log (28 entries): `.paul/PROJECT.md` 
 | **Verify e2e with `CI=true`** | `reuseExistingServer` can silently reuse a stale dev server, so a plain local pass proves nothing about CI |
 | **Assert against comment-stripped source** | Four checks in 02-05 matched explanatory comments, not code. Counting occurrences is weaker than checking each function |
 | **Vertical-slice pattern is set** | validation -> scoped data layer -> server actions -> server-component UI -> isolation tests -> authenticated e2e. 02-06 copies it |
+| **`Expense` has no `userId` column** | It is scoped only via `Expense.carId -> Car.userId`. Relation filters DO work in `updateMany`/`deleteMany` (verified in the generated Prisma 7.9.1 types), but `create` has no WHERE — ownership there must be an explicit pre-check |
+| **`Category.userId` is nullable — system rows are shared** | Reads use `OR: [{ userId }, { userId: null }]`. Making them writable would edit every user's category, which is why 02-07 owns that separately |
 
 ### Deferred Issues
 
@@ -125,14 +127,15 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-07 (resumed; handoff consumed and archived to `.paul/handoffs/archive/`)
-Stopped at: Plan 02-05 loop closed — all 7 ACs pass; cars usable end to end
-Next action: Run `/paul:plan` for 02-06 — Category, Expense, and Odometer CRUD. **This closes Phase 2.**
-Resume file: `.paul/phases/02-foundations/02-05-SUMMARY.md`
+Stopped at: Plan 02-06 created (Expense CRUD + money helper)
+Next action: Review and approve, then run `/paul:apply .paul/phases/02-foundations/02-06-PLAN.md`
+Resume file: `.paul/phases/02-foundations/02-06-PLAN.md`
 Git strategy: `main` (direct commits)
 Resume context:
-- Phase 2 is 5 of 6 — **02-06 is the last plan**, so closing it WILL trigger the mandatory phase transition. The file-count heuristic has false-positived six times; ROADMAP remains the authority.
+- Phase 2 is now **5 of 7** — the last plan was split into 02-06 (Expense + money) and 02-07 (Category + Odometer), so **02-07**, not 02-06, triggers the phase transition. The file-count heuristic has false-positived six times; ROADMAP remains the authority.
 - **02-06 copies 02-05's vertical slice**: `lib/cars.ts`, `app/cars/actions.ts`, and `tests/integration/cars.test.ts` are the templates.
-- **02-06 is the first money-facing UI.** Add a formatting helper with unit tests rather than inlining `amountCents / 100` at each call site.
+- **02-06 has a blocking human-verify checkpoint** — the money UI needs eyes before the loop closes.
+- Integration tests must seed categories themselves: `resetDatabase()` truncates `Category`.
 - E2E auth is solved: `tests/e2e/helpers/auth.ts` seeds a session and sets the cookie.
 - Local dev needs `docker compose up -d` (Postgres on **5433**) before `npm run test:integration`.
 - **Never read an exit code through a pipe** -- this has caused a wrong conclusion three times.
