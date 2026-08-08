@@ -14,7 +14,7 @@ From a graduated PLANNING.md to a working personal vehicle expense tracker: firs
 
 **v0.1 Initial Release** (v0.1.0)
 Status: In progress
-Phases: 2 of 9 complete (22%)
+Phases: 3 of 9 complete (33%)
 
 ## Phases
 
@@ -24,7 +24,7 @@ Phases: 2 of 9 complete (22%)
 |-------|------|-------|--------|-----------|
 | 0 | AI-Friendly Project Scaffolding | 2/2 | ✅ Complete | 2026-08-07 |
 | 1 | CI/CD Pipeline | 1/1 | ✅ Complete | 2026-08-07 |
-| 2 | Foundations | 6/7 | In progress | - |
+| 2 | Foundations | 7/7 | ✅ Complete | 2026-08-08 |
 | 3 | Reporting | TBD | Not started | - |
 | 4 | PWA & Mobile UX | TBD | Not started | - |
 | 5 | Bulgarian Integrations | TBD | Not started | - |
@@ -121,13 +121,25 @@ read from the packages rather than assumed.
 - [x] 02-04: NextAuth v5 Google OAuth, database sessions, `lib/session.ts` scoping helper, isolation proven
 - [x] 02-05: Car CRUD vertical slice — server actions, scoped data layer, soft delete, authenticated e2e
 - [x] 02-06: Expense CRUD vertical slice + the money helper (euro↔cent conversion in one place)
-- [ ] 02-07: Category CRUD (own rows only) and the Odometer log — **closes Phase 2**
+- [x] 02-07: Category CRUD (own rows only), the Odometer log, and odometer capture on fuel entry
 
 **Added to 02-07 during 02-06 review:** the odometer must also be capturable *on the
 expense form*, not only as a standalone log — the schema already anticipates this with
 `OdometerSource.EXPENSE`. Recording mileage at each fill-up is what makes Phase 3's
 litres-per-100km and Phase 7's service intervals possible, so it is a prerequisite for
 both rather than a convenience.
+
+**Completed 2026-08-08.** The phase goal is met: a user can log in, add a car, and record
+expenses against categories they control. 227 tests — 85 unit, 89 integration, 53 e2e — with
+every entity's cross-user isolation proven by a test that re-reads the victim's row.
+
+**⚠️ For Phase 3:** the odometer series may be **out of order or have gaps**. Readings are
+deliberately not required to increase (odometers get replaced and corrected), and a fill-up
+may carry no reading at all. Litres-per-100km must handle both rather than assume a clean
+ascending series. `Expense.fullTank` marks which fills are usable as endpoints.
+
+**⚠️ Also for Phase 3:** `/` still asserts placeholder copy in `tests/e2e/home.spec.ts`, which
+turning it into the dashboard will break. Expected, not a regression.
 
 **Split at 02-06 planning time.** The original single plan bundled four vertical slices
 (money helper, Category, Expense, Odometer) against a 2-3 task guideline; 02-05 spent 28

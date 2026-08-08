@@ -20,7 +20,7 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 |-----------|-------|
 | Type | Application |
 | Version | 0.0.0 |
-| Status | Prototype — Phases 0-1 complete; Phase 2 at 6 of 7 (cars and expenses usable; categories and odometer remain) |
+| Status | Prototype — **Phases 0-2 complete.** The core loop works end to end: log in, add a car, record expenses against categories you control, track mileage. No reporting yet |
 | Last Updated | 2026-08-07 |
 
 **Production URLs:** none yet.
@@ -55,16 +55,20 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 - ✓ Authentication — NextAuth v5 + Google OAuth, database sessions, and per-user isolation proven by test — Phase 2 (02-04)
 - ✓ Car CRUD — server actions over a scoped data layer, soft delete preserving expense history, mobile-first UI, 79 tests — Phase 2 (02-05)
 - ✓ Expense CRUD — scoped through car ownership, separate fuel and other entry points, and a single audited euro↔cent helper — Phase 2 (02-06)
+- ✓ Category CRUD — user-owned rows only; the seeded system defaults are shared and provably immutable — Phase 2 (02-07)
+- ✓ Odometer log — per car, plus capture at fill-up time linked to the expense that produced it — Phase 2 (02-07)
+- ✓ **Phase 2 complete** — 7 plans, 227 tests (85 unit, 89 integration, 53 e2e), every entity's cross-user isolation proven by test
 
 ### Active (In Progress)
-- Phase 2: Foundations — 6 of 7 plans complete (expenses usable end to end; Category and Odometer remain)
+- Nothing in progress — Phase 2 closed 2026-08-08; Phase 3 (Reporting) is next to plan
 
 ### Planned (Next)
-- Phase 3: Reporting — monthly/yearly cost aggregations, dashboard charts, cost-per-km
+- Phase 3: Reporting — monthly/yearly cost aggregations, dashboard charts, cost-per-km, litres per 100 km
 - Phase 4: PWA & Mobile UX — installable PWA, quick-add flow, photo upload
 - Phase 5: Bulgarian Integrations — research spike, then fines/vignette checks
 - Phase 6: Google Drive Export — OAuth consent, export/backup
 - Phase 7: Maintenance Reminders — service intervals per car with due/overdue indicators
+- Phase 8: Test Environment Safety — stop the integration suite being able to truncate a database that matters
 - Phase 8: Test Environment Safety — stop the integration suite truncating a non-test database
 
 ### Out of Scope
@@ -165,6 +169,12 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 | Fuel and other expenses have separate entry points | One form carrying every field is cluttered for the common case; only field VISIBILITY branches, never validation | 2026-08-08 | Active |
 | The form may match the seeded Fuel category by name | It matches system rows only (`userId: null`), which no user can rename; user categories stay off-limits to name matching | 2026-08-08 | Active |
 | e2e suites seed their own categories | System categories are global rows; the integration suite truncates them and CI runs it first | 2026-08-08 | Active |
+| `OdometerReading.expenseId` — nullable, unique, cascade | `source: EXPENSE` alone cannot maintain the pair; matching on (carId, date) is ambiguous and a stale reading would corrupt the consumption series | 2026-08-08 | Active |
+| Database constraints Prisma cannot type are described results, not exceptions | Duplicate names (P2002) and in-use categories (P2003) are ordinary user actions and must not surface as crashes | 2026-08-08 | Active |
+| Category deletion is refused with a count, never reassigned | Silently moving someone's records while they asked to delete a label exceeds the request | 2026-08-08 | Active |
+| System rows protected by ordinary scoping, with no special case | `where: { id, userId }` cannot match a NULL userId; a special case would imply the general rule needs supervision | 2026-08-08 | Active |
+| Odometer readings are not required to increase | Odometers get replaced, corrected, and roll over; Phase 3 must cope with an out-of-order series instead | 2026-08-08 | Active |
+| Migrations generated with `migrate diff`, proven with `migrate deploy` | `migrate dev` refuses headless and Prisma 7 blocks `migrate reset` under Claude Code | 2026-08-08 | Active |
 
 ## Success Metrics
 
@@ -172,7 +182,7 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 |--------|--------|---------|--------|
 | Docs/lint presence | CLAUDE.md, AGENTS.md, docs/ARCHITECTURE.md exist; markdownlint + ESLint/Prettier pass | `npm run check` green | **Achieved** (Phase 0) |
 | CI pipeline green | Lint + test + build pass on every push/PR; secret scanning active | All four run green: check, build, unit (Vitest), e2e (Playwright). Secret scanning + push protection active | **Achieved** (Phase 2, plan 02-02) |
-| Test coverage | Unit + integration + automation (e2e) tests for every phase | Unit (Vitest), integration (Postgres-backed), and e2e (Playwright) all run in CI | **On track** |
+| Test coverage | Unit + integration + automation (e2e) tests for every phase | 227 tests: 85 unit, 89 integration, 53 e2e — all green in CI | **On track** |
 | Security scan | Pass, every phase | - | Not started |
 | Accessibility | WCAG AA on frontend phases | - | Not started |
 | Performance | PWA installable, high Lighthouse PWA score | - | Not started |
@@ -199,4 +209,4 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-08-07 during Phase 2*
+*Last updated: 2026-08-08 after Phase 2*
