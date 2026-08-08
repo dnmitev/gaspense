@@ -11,15 +11,15 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release, Phase 2: Foundations — 02-06 applied
+**Current focus:** v0.1 Initial Release, Phase 2: Foundations — 6 of 7 plans complete
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
 Phase: 2 of 8 (Foundations) — In progress
-Plan: 02-06 executed, 7 of 7 tasks complete (checkpoint approved)
-Status: APPLY complete, ready for UNIFY
-Last activity: 2026-08-08 — Applied 02-06: expenses live, 161 tests green, split fuel/other entry added at review
+Plan: 02-06 complete (loop closed)
+Status: Ready for next PLAN (02-07 — closes Phase 2)
+Last activity: 2026-08-08 — Closed loop 02-06; expenses usable end to end, 161 tests green
 
 Progress:
 - Milestone: [██░░░░░░░░] 25% (2 of 8 phases complete)
@@ -30,22 +30,22 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ◉     [Ready for UNIFY]
+  ✓        ✓        ✓     [Loop complete — ready for next PLAN]
 ```
 
 ## Performance Metrics
 
-8 plans complete, ~3.5h total, ~26 min average.
+9 plans complete, ~4.3h total, ~28 min average.
 
 | Phase | Plans | Avg/Plan |
 |-------|-------|----------|
 | 00-ai-friendly-scaffolding | 2/2 ✅ | ~11 min |
 | 01-cicd-pipeline | 1/1 ✅ | ~29 min |
-| 02-foundations | 5/7 | ~31 min |
+| 02-foundations | 6/7 | ~34 min |
 
-**Trend:** 13, 9, 29, 33, 14, 35, 45, 28 min. Cost tracks how much *unknown third-party
-behaviour* a plan touches, not its size — 02-05 was the largest by files yet mid-pack, because
-the stack was already understood.
+**Trend:** 13, 9, 29, 33, 14, 35, 45, 28, 47 min. 02-06 is the longest so far, and not because
+the stack was unfamiliar — roughly a third went to a scope addition accepted mid-loop and to
+re-verifying an e2e suite that had been passing on leftover database state.
 
 ## Accumulated Context
 
@@ -130,13 +130,14 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-07 (resumed; handoff consumed and archived to `.paul/handoffs/archive/`)
-Stopped at: Plan 02-06 applied and approved at its checkpoint
-Next action: Run `/paul:unify .paul/phases/02-foundations/02-06-PLAN.md` to close the loop
-Resume file: `.paul/phases/02-foundations/02-06-PLAN.md`
+Stopped at: Plan 02-06 loop closed — all 9 ACs pass; expenses usable end to end
+Next action: Run `/paul:plan` for 02-07 — Category CRUD, Odometer log, and odometer capture on the expense form. **This closes Phase 2.**
+Resume file: `.paul/phases/02-foundations/02-06-SUMMARY.md`
 Git strategy: `main` (direct commits)
 Resume context:
-- Phase 2 is now **5 of 7** — the last plan was split into 02-06 (Expense + money) and 02-07 (Category + Odometer), so **02-07**, not 02-06, triggers the phase transition. The file-count heuristic has false-positived six times; ROADMAP remains the authority.
-- **02-06 copies 02-05's vertical slice**: `lib/cars.ts`, `app/cars/actions.ts`, and `tests/integration/cars.test.ts` are the templates.
+- Phase 2 is **6 of 7**. PLAN and SUMMARY counts now both read 6, so the completion heuristic says "phase complete" — it is wrong for the seventh time. `02-07` is declared in ROADMAP with no PLAN file yet, and closing it WILL trigger the mandatory transition.
+- **02-07 copies the same vertical slice**: `lib/expenses.ts` and `tests/integration/expenses.test.ts` are now the closest templates.
+- **02-07 has three jobs**: Category CRUD (own rows only — system rows must stay read-only), the Odometer log, and odometer capture on the expense form.
 - **02-07 gained scope at the 02-06 review**: the odometer must be capturable on the expense form, not only as a standalone log (`OdometerSource.EXPENSE` already exists for it). Phase 3 gained L/100km; a new Phase 7 covers maintenance intervals.
 - Integration tests must seed categories themselves: `resetDatabase()` truncates `Category`.
 - E2E auth is solved: `tests/e2e/helpers/auth.ts` seeds a session and sets the cookie.
