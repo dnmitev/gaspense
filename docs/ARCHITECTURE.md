@@ -137,8 +137,8 @@ client.
 
 > **Superseded:** earlier versions of this document listed nine REST route groups (`/api/cars`,
 > `/api/expenses`, and so on). That was a design-time sketch written before any UI existed; it was
-> never built. Server actions replaced it in plan 02-05. The genuinely-HTTP endpoints are listed
-> below.
+> never built. Server actions replaced it in plan 02-05, and `/api/expenses` likewise in 02-06.
+> The genuinely-HTTP endpoints are listed below.
 
 ### How a data path is built
 
@@ -161,6 +161,40 @@ page / form  →  server action        →  lib/<entity>.ts        →  Prisma
   addresses the row by id alone.
 - **Server action return values must be plain serialisable objects** — they cross the
   server/client boundary, so no `Error` or Zod error instances.
+
+#### Expenses are scoped through their car, not a column
+
+`Expense` has **no `userId` column**. Its only link to an owner is `Expense.carId → Car.userId`, so
+every filter reaches through the relation:
+
+```ts
+where: {
+  id: expenseId, car: { userId, deletedAt: null }
+}
+```
+
+This is the fact about the schema most likely to be misread, and getting it wrong does not produce a
+type error — it produces a query that returns everybody's rows. Two consequences worth knowing
+before touching `lib/expenses.ts`:
+
+- **`updateMany` and `deleteMany` accept relation filters**, so the scoped-write pattern above
+  survives unchanged (verified against the generated Prisma 7 types, where `ExpenseWhereInput`
+  exposes `car`).
+- **`create` has no WHERE clause**, so ownership of `carId` — and visibility of `categoryId` — must
+  be checked explicitly before inserting. That check in `lib/expenses.ts` is the one place in the
+  codebase where scoping is a check rather than a filter, and therefore the one place it can be
+  forgotten. Without it, a forged `carId` in a form post attaches an expense to a stranger's car.
+
+`Category.userId` is nullable, where `null` means a shared system default. Reads use
+`OR: [{ userId }, { userId: null }]`; a system row must never become writable, since editing one
+would change it for every user.
+
+#### Money
+
+`amountCents` is an integer and **`lib/money.ts` is the only place euros and cents convert**. A
+missed ÷100 is a 100× error that produces a plausible-looking number, so nothing crashes and the
+report is simply wrong. Sum the integers, format once, and never inline the arithmetic — including
+in tests.
 
 ### Isolation
 

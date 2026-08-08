@@ -46,6 +46,9 @@ export default async function CarsPage() {
               </div>
 
               <div className="flex items-center gap-4">
+                <Link href={`/cars/${car.id}/expenses`} className="text-sm underline">
+                  Expenses
+                </Link>
                 <Link href={`/cars/${car.id}/edit`} className="text-sm underline">
                   Edit
                 </Link>

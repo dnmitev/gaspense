@@ -11,26 +11,26 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release, Phase 2: Foundations — Planning 02-06
+**Current focus:** v0.1 Initial Release, Phase 2: Foundations — 02-06 applied
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 2 of 7 (Foundations) — In progress
-Plan: 02-06 created, awaiting approval
-Status: PLAN created, ready for APPLY
-Last activity: 2026-08-08 — Created 02-06 PLAN; split Phase 2's last plan into 02-06 + 02-07
+Phase: 2 of 8 (Foundations) — In progress
+Plan: 02-06 executed, 7 of 7 tasks complete (checkpoint approved)
+Status: APPLY complete, ready for UNIFY
+Last activity: 2026-08-08 — Applied 02-06: expenses live, 161 tests green, split fuel/other entry added at review
 
 Progress:
-- Milestone: [██░░░░░░░░] 29% (2 of 7 phases complete)
-- Phase 2: [███████░░░] 71% (5 of 7 plans)
+- Milestone: [██░░░░░░░░] 25% (2 of 8 phases complete)
+- Phase 2: [████████░░] 86% (6 of 7 plans)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan created, awaiting approval]
+  ✓        ✓        ◉     [Ready for UNIFY]
 ```
 
 ## Performance Metrics
@@ -78,6 +78,9 @@ Only what constrains upcoming work. **Full log (28 entries): `.paul/PROJECT.md` 
 | **Vertical-slice pattern is set** | validation -> scoped data layer -> server actions -> server-component UI -> isolation tests -> authenticated e2e. 02-06 copies it |
 | **`Expense` has no `userId` column** | It is scoped only via `Expense.carId -> Car.userId`. Relation filters DO work in `updateMany`/`deleteMany` (verified in the generated Prisma 7.9.1 types), but `create` has no WHERE — ownership there must be an explicit pre-check |
 | **`Category.userId` is nullable — system rows are shared** | Reads use `OR: [{ userId }, { userId: null }]`. Making them writable would edit every user's category, which is why 02-07 owns that separately |
+| **`lib/money.ts` is the only euro↔cent converter** | Sum integers, format once. Applies to tests too — the AC is enforced by a comment-stripped source audit, not by convention |
+| **Vitest does not type-check; `next build` does** | A change can pass `npm test` and still break the build. Run both before believing a task is done |
+| **e2e suites must seed their own global fixtures** | `npm run test:integration` truncates `Category`, and CI runs integration immediately before e2e — a suite relying on leftover seed data passes locally and fails in CI |
 
 ### Deferred Issues
 
@@ -96,7 +99,7 @@ Only what constrains upcoming work. **Full log (28 entries): `.paul/PROJECT.md` 
 | e2e step rebuilds the app, duplicating the Build step | Slower CI runs | Accepted; optimising means touching 01-01's verified workflow structure |
 | Auth is wired but never exercised against real Google | A real OAuth login has not been performed; seeded DB sessions are what the tests use | User adds `AUTH_*` to `.env` and clicks through when convenient |
 | e2e suite asserts placeholder copy on `/` | Phase 3 turns `/` into the dashboard and will need `tests/e2e/home.spec.ts` updated | Expected, not a regression |
-| **No money formatting helper exists yet** | 02-06 is the first money UI; inlining `/100` at each call site invites a missed conversion | Add a formatter with its own unit tests |
+| **System categories exist only if `db:seed` ran** | They are global `userId: null` rows created by no runtime code, so a fresh production database gives a new user an empty category select | 02-07 owns categories — decide whether the app self-heals or deployment must seed |
 | No accessibility audit has been run | WCAG AA is a stated goal; fields are labelled but contrast/focus/keyboard are unverified | Dedicated pass once the UI stops growing |
 
 **Resolved:** CI metric + stale agent docs (02-02); `.env.example` + ARCHITECTURE schema (02-03);
@@ -127,14 +130,14 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-07 (resumed; handoff consumed and archived to `.paul/handoffs/archive/`)
-Stopped at: Plan 02-06 created (Expense CRUD + money helper)
-Next action: Review and approve, then run `/paul:apply .paul/phases/02-foundations/02-06-PLAN.md`
+Stopped at: Plan 02-06 applied and approved at its checkpoint
+Next action: Run `/paul:unify .paul/phases/02-foundations/02-06-PLAN.md` to close the loop
 Resume file: `.paul/phases/02-foundations/02-06-PLAN.md`
 Git strategy: `main` (direct commits)
 Resume context:
 - Phase 2 is now **5 of 7** — the last plan was split into 02-06 (Expense + money) and 02-07 (Category + Odometer), so **02-07**, not 02-06, triggers the phase transition. The file-count heuristic has false-positived six times; ROADMAP remains the authority.
 - **02-06 copies 02-05's vertical slice**: `lib/cars.ts`, `app/cars/actions.ts`, and `tests/integration/cars.test.ts` are the templates.
-- **02-06 has a blocking human-verify checkpoint** — the money UI needs eyes before the loop closes.
+- **02-07 gained scope at the 02-06 review**: the odometer must be capturable on the expense form, not only as a standalone log (`OdometerSource.EXPENSE` already exists for it). Phase 3 gained L/100km; a new Phase 7 covers maintenance intervals.
 - Integration tests must seed categories themselves: `resetDatabase()` truncates `Category`.
 - E2E auth is solved: `tests/e2e/helpers/auth.ts` seeds a session and sets the cookie.
 - Local dev needs `docker compose up -d` (Postgres on **5433**) before `npm run test:integration`.

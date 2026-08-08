@@ -2,8 +2,18 @@ import type { PrismaClient } from "@/lib/generated/prisma/client";
 
 /// System-default categories, seeded with userId = null so every user sees them.
 /// No real personal data here — this is a public repository.
+/**
+ * The seeded category the fuel entry form preselects.
+ *
+ * Named rather than written as a literal in the UI so the two cannot drift. It
+ * is safe for the form to match on this name because it only ever looks at
+ * SYSTEM rows (`userId: null`), which no user can rename — a user's own
+ * categories are a separate set.
+ */
+export const FUEL_CATEGORY_NAME = "Fuel";
+
 export const DEFAULT_CATEGORIES = [
-  "Fuel",
+  FUEL_CATEGORY_NAME,
   "Maintenance",
   "Body Work",
   "Insurance",

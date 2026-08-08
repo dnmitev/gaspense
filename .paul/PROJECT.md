@@ -20,7 +20,7 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 |-----------|-------|
 | Type | Application |
 | Version | 0.0.0 |
-| Status | Prototype — Phases 0-1 complete; Phase 2 at 5 of 6 (cars are fully usable; expenses remain) |
+| Status | Prototype — Phases 0-1 complete; Phase 2 at 6 of 7 (cars and expenses usable; categories and odometer remain) |
 | Last Updated | 2026-08-07 |
 
 **Production URLs:** none yet.
@@ -35,6 +35,11 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 - Check Bulgarian traffic police (КАТ/МВР) fines and vignette validity per car
 - Export/backup data to Google Drive
 - Attach photos to cars and expenses
+- Record an odometer reading alongside a fuel fill-up, not only as a separate log
+- Track fuel consumption as litres per 100 km
+- Track maintenance intervals per car (e.g. engine oil every 10,000 km; transmission oil
+  every 50,000 km or 3 years) and show how close each is to due, as a progress indicator
+  that reads green, amber when near, and red when overdue
 
 ### Validated (Shipped)
 - ✓ Agent-readable project context — `CLAUDE.md`, `AGENTS.md`, `docs/ARCHITECTURE.md` — Phase 0
@@ -49,15 +54,17 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 - ✓ Data layer — Prisma 7 schema (5 entities), committed migrations, idempotent seed, 8 integration tests green in CI — Phase 2 (02-03)
 - ✓ Authentication — NextAuth v5 + Google OAuth, database sessions, and per-user isolation proven by test — Phase 2 (02-04)
 - ✓ Car CRUD — server actions over a scoped data layer, soft delete preserving expense history, mobile-first UI, 79 tests — Phase 2 (02-05)
+- ✓ Expense CRUD — scoped through car ownership, separate fuel and other entry points, and a single audited euro↔cent helper — Phase 2 (02-06)
 
 ### Active (In Progress)
-- Phase 2: Foundations — 5 of 6 plans complete (cars usable end to end; Category/Expense/Odometer remain)
+- Phase 2: Foundations — 6 of 7 plans complete (expenses usable end to end; Category and Odometer remain)
 
 ### Planned (Next)
 - Phase 3: Reporting — monthly/yearly cost aggregations, dashboard charts, cost-per-km
 - Phase 4: PWA & Mobile UX — installable PWA, quick-add flow, photo upload
 - Phase 5: Bulgarian Integrations — research spike, then fines/vignette checks
 - Phase 6: Google Drive Export — OAuth consent, export/backup
+- Phase 7: Maintenance Reminders — service intervals per car with due/overdue indicators
 
 ### Out of Scope
 - Multi-currency support — EUR only, by explicit decision
@@ -152,6 +159,11 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 | Writes use scoped `updateMany`, never findUnique-then-update | Puts `userId` in the same WHERE clause as the id, so a wrong owner affects zero rows | 2026-08-07 | Active |
 | No licence-plate format regex | The owner may register a car in any country; a guessed pattern would reject valid input | 2026-08-07 | Active |
 | `AUTH_URL` required for production builds | Auth.js rejects every session read with UntrustedHost otherwise; narrower than `trustHost: true` | 2026-08-07 | Active |
+| `lib/money.ts` is the only euro↔cent converter | A missed ÷100 is a 100× error that produces a plausible number and crashes nothing | 2026-08-08 | Active |
+| Amount input is `type="text" inputMode="decimal"` | `type="number"` lets the browser's locale rules reject or reformat "12,34" before the schema sees it | 2026-08-08 | Active |
+| Fuel and other expenses have separate entry points | One form carrying every field is cluttered for the common case; only field VISIBILITY branches, never validation | 2026-08-08 | Active |
+| The form may match the seeded Fuel category by name | It matches system rows only (`userId: null`), which no user can rename; user categories stay off-limits to name matching | 2026-08-08 | Active |
+| e2e suites seed their own categories | System categories are global rows; the integration suite truncates them and CI runs it first | 2026-08-08 | Active |
 
 ## Success Metrics
 

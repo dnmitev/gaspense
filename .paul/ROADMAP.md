@@ -14,21 +14,22 @@ From a graduated PLANNING.md to a working personal vehicle expense tracker: firs
 
 **v0.1 Initial Release** (v0.1.0)
 Status: In progress
-Phases: 2 of 7 complete (29%)
+Phases: 2 of 8 complete (25%)
 
 ## Phases
 
-**Phase Numbering:** Integer phases only for now (0–6). Decimal phases (e.g. 2.1) reserved for urgent insertions later.
+**Phase Numbering:** Integer phases only for now (0–7). Decimal phases (e.g. 2.1) reserved for urgent insertions later.
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
 | 0 | AI-Friendly Project Scaffolding | 2/2 | ✅ Complete | 2026-08-07 |
 | 1 | CI/CD Pipeline | 1/1 | ✅ Complete | 2026-08-07 |
-| 2 | Foundations | 5/7 | In progress | - |
+| 2 | Foundations | 6/7 | In progress | - |
 | 3 | Reporting | TBD | Not started | - |
 | 4 | PWA & Mobile UX | TBD | Not started | - |
 | 5 | Bulgarian Integrations | TBD | Not started | - |
 | 6 | Google Drive Export | TBD | Not started | - |
+| 7 | Maintenance Reminders | TBD | Not started | - |
 
 ## Phase Details
 
@@ -118,8 +119,14 @@ read from the packages rather than assumed.
 - [x] 02-03: Prisma 7 schema + migrations + seeded categories, `.env.example`, `docs/ARCHITECTURE.md` update
 - [x] 02-04: NextAuth v5 Google OAuth, database sessions, `lib/session.ts` scoping helper, isolation proven
 - [x] 02-05: Car CRUD vertical slice — server actions, scoped data layer, soft delete, authenticated e2e
-- [ ] 02-06: Expense CRUD vertical slice + the money helper (euro↔cent conversion in one place)
+- [x] 02-06: Expense CRUD vertical slice + the money helper (euro↔cent conversion in one place)
 - [ ] 02-07: Category CRUD (own rows only) and the Odometer log — **closes Phase 2**
+
+**Added to 02-07 during 02-06 review:** the odometer must also be capturable *on the
+expense form*, not only as a standalone log — the schema already anticipates this with
+`OdometerSource.EXPENSE`. Recording mileage at each fill-up is what makes Phase 3's
+litres-per-100km and Phase 7's service intervals possible, so it is a prerequisite for
+both rather than a convenience.
 
 **Split at 02-06 planning time.** The original single plan bundled four vertical slices
 (money helper, Category, Expense, Odometer) against a 2-3 task guideline; 02-05 spent 28
@@ -137,6 +144,10 @@ problem, not a footnote to expense entry.
 **Scope:**
 - Monthly/yearly fuel and category cost aggregations
 - Dashboard charts, cost-per-km calculation
+- **Fuel consumption in litres per 100 km**, computed from consecutive full-tank fill-ups
+  and their odometer readings. `fullTank` and `liters` exist on Expense for exactly this;
+  the calculation needs the odometer capture that 02-07 adds, and must handle partial
+  fills and gaps in the series rather than assuming every fill-up is complete.
 
 **Plans:**
 - [ ] TBD — defined during `/paul:plan`
@@ -178,6 +189,34 @@ problem, not a footnote to expense entry.
 **Scope:**
 - Google Drive OAuth consent (reusing login provider)
 - Export/backup of expense data to Drive
+
+**Plans:**
+- [ ] TBD — defined during `/paul:plan`
+
+### Phase 7: Maintenance Reminders
+
+**Goal:** A user can see, per car, how close each service item is to being due — and what is
+already overdue — without doing arithmetic themselves.
+**Depends on:** Phase 2 (needs cars and odometer readings to measure against)
+**Research:** Unlikely (the logic is arithmetic over readings; no external service involved)
+
+**Scope:**
+- A new entity for a per-car service interval: what the item is, its interval in kilometres
+  and/or months, and when it was last done (at which odometer reading and date)
+- Due calculation against the latest odometer reading and today's date, whichever comes first
+- A progress indicator per item: green, amber as it approaches due, red once overdue
+
+**Requested during 02-06 review**, with worked examples: engine oil every 10,000 km;
+transmission oil every 50,000 km or 3 years — so an interval must support distance, time, or
+both, with whichever falls first winning.
+
+**Open questions for `/paul:plan`:**
+- Are intervals seeded as common defaults, or entered per car by the user?
+- What distance or time before due should turn the indicator amber?
+- Does marking an item done create an odometer reading, or just reference the latest one?
+
+**Note on ordering:** placed after the existing phases so numbering stays stable, not because
+it matters least. It depends only on Phase 2, so it can be pulled earlier on request.
 
 **Plans:**
 - [ ] TBD — defined during `/paul:plan`
