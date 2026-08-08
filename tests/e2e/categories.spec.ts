@@ -19,6 +19,14 @@ test.afterEach(async () => {
   await deleteSeededUser(seeded.userId);
 });
 
+/**
+ * Submits the add-category form.
+ *
+ * Callers must wait for the result before submitting again — the action
+ * redirects, and a second submit that races the first navigation lands on a
+ * page that is about to be replaced. That failed only on CI, where the server
+ * is slow enough for the gap to be observable.
+ */
 async function addCategory(page: import("@playwright/test").Page, name: string) {
   await page.getByLabel("Category name").fill(name);
   await page.getByRole("button", { name: "Add category" }).click();
@@ -54,7 +62,13 @@ test.describe("categories", () => {
     // The constraint is a raw-SQL partial index, so this arrives as a Prisma
     // P2002 with nothing in the type system to catch it.
     await page.goto("/categories");
+
     await addCategory(page, "Servicing");
+    // Barrier: the first add must have landed before the second is submitted.
+    await expect(
+      page.getByRole("list", { name: "Your categories" }).getByText("Servicing"),
+    ).toBeVisible();
+
     await addCategory(page, "Servicing");
 
     await expect(page.getByText("You already have a category with that name")).toBeVisible();
@@ -76,6 +90,9 @@ test.describe("categories", () => {
   test("refuses to delete a category that expenses use, and says how many", async ({ page }) => {
     await page.goto("/categories");
     await addCategory(page, "Servicing");
+    await expect(
+      page.getByRole("list", { name: "Your categories" }).getByText("Servicing"),
+    ).toBeVisible();
 
     // A car and an expense filed under the new category.
     await page.goto("/cars/new");
