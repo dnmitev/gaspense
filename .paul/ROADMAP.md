@@ -24,7 +24,7 @@ Phases: 2 of 7 complete (29%)
 |-------|------|-------|--------|-----------|
 | 0 | AI-Friendly Project Scaffolding | 2/2 | ✅ Complete | 2026-08-07 |
 | 1 | CI/CD Pipeline | 1/1 | ✅ Complete | 2026-08-07 |
-| 2 | Foundations | 4/6 | In progress | - |
+| 2 | Foundations | 5/6 | In progress | - |
 | 3 | Reporting | TBD | Not started | - |
 | 4 | PWA & Mobile UX | TBD | Not started | - |
 | 5 | Bulgarian Integrations | TBD | Not started | - |
@@ -117,7 +117,7 @@ read from the packages rather than assumed.
 - [x] 02-02: Vitest + Playwright, `test`/`test:e2e`/`start` scripts + CI steps, agent docs corrected
 - [x] 02-03: Prisma 7 schema + migrations + seeded categories, `.env.example`, `docs/ARCHITECTURE.md` update
 - [x] 02-04: NextAuth v5 Google OAuth, database sessions, `lib/session.ts` scoping helper, isolation proven
-- [ ] 02-05: Car CRUD vertical slice (API + UI + tests, incl. soft delete)
+- [x] 02-05: Car CRUD vertical slice — server actions, scoped data layer, soft delete, authenticated e2e
 - [ ] 02-06: Category, Expense, and Odometer CRUD vertical slice
 
 ### Phase 3: Reporting

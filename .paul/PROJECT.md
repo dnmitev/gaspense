@@ -20,7 +20,7 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 |-----------|-------|
 | Type | Application |
 | Version | 0.0.0 |
-| Status | Prototype — Phases 0-1 complete; Phase 2 at 4 of 6 (app shell, test infra, data layer, and auth in place; no feature UI yet) |
+| Status | Prototype — Phases 0-1 complete; Phase 2 at 5 of 6 (cars are fully usable; expenses remain) |
 | Last Updated | 2026-08-07 |
 
 **Production URLs:** none yet.
@@ -47,10 +47,11 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 - ✓ Next.js 16 App Router app shell, building and serving, build-gated in CI — Phase 2 (02-01)
 - ✓ Test infrastructure — Vitest + Playwright (desktop and mobile), both proven failable — Phase 2 (02-02)
 - ✓ Data layer — Prisma 7 schema (5 entities), committed migrations, idempotent seed, 8 integration tests green in CI — Phase 2 (02-03)
-- ✓ Authentication — NextAuth v5 + Google OAuth, database sessions, and per-user isolation proven by test (30 tests total) — Phase 2 (02-04)
+- ✓ Authentication — NextAuth v5 + Google OAuth, database sessions, and per-user isolation proven by test — Phase 2 (02-04)
+- ✓ Car CRUD — server actions over a scoped data layer, soft delete preserving expense history, mobile-first UI, 79 tests — Phase 2 (02-05)
 
 ### Active (In Progress)
-- Phase 2: Foundations — 4 of 6 plans complete (app shell, test infra, data layer, auth done; Car and Expense UI remain)
+- Phase 2: Foundations — 5 of 6 plans complete (cars usable end to end; Category/Expense/Odometer remain)
 
 ### Planned (Next)
 - Phase 3: Reporting — monthly/yearly cost aggregations, dashboard charts, cost-per-km
@@ -145,6 +146,12 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 | Omit the WebAuthn `Authenticator` model | The adapter only touches it in WebAuthn methods, unreachable with Google-only sign-in | 2026-08-07 | Active |
 | Per-page auth checks, not middleware | Next 16 middleware plus NextAuth beta adds moving parts for no gain; per-page checks are testable | 2026-08-07 | Active |
 | No Google Drive scopes until Phase 6 | Keeps the consent screen honest about what the app currently does | 2026-08-07 | Active |
+| Mutations are server actions, not REST routes | The app is its own only client; the nine documented REST groups were a design sketch never built | 2026-08-07 | Active |
+| Hand-rolled Tailwind, no component library | A list and a form need no library; adopt shadcn when a dialog or date picker earns it | 2026-08-07 | Active |
+| Data-layer functions take `userId` explicitly | Scoping is visible at the call site and the functions stay unit-testable without mocking auth | 2026-08-07 | Active |
+| Writes use scoped `updateMany`, never findUnique-then-update | Puts `userId` in the same WHERE clause as the id, so a wrong owner affects zero rows | 2026-08-07 | Active |
+| No licence-plate format regex | The owner may register a car in any country; a guessed pattern would reject valid input | 2026-08-07 | Active |
+| `AUTH_URL` required for production builds | Auth.js rejects every session read with UntrustedHost otherwise; narrower than `trustHost: true` | 2026-08-07 | Active |
 
 ## Success Metrics
 

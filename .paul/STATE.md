@@ -11,40 +11,41 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release, Phase 2: Foundations — Applying 02-05
+**Current focus:** v0.1 Initial Release, Phase 2: Foundations — 5 of 6 plans complete
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
 Phase: 2 of 7 (Foundations) — In progress
-Plan: 02-05 executed, 3 of 3 tasks complete
-Status: APPLY complete, ready for UNIFY
-Last activity: 2026-08-07 — Executed 02-05: Car CRUD live, 79 tests green, CI green after an AUTH_URL fix
+Plan: 02-05 complete (loop closed)
+Status: Ready for next PLAN (02-06 — the last of Phase 2)
+Last activity: 2026-08-07 — Closed loop 02-05; cars usable end to end, 79 tests green
 
 Progress:
 - Milestone: [██░░░░░░░░] 29% (2 of 7 phases complete)
-- Phase 2: [███████░░░] 67% (4 of 6 plans)
+- Phase 2: [████████░░] 83% (5 of 6 plans)
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ◉     [Ready for UNIFY]
+  ✓        ✓        ✓     [Loop complete — ready for next PLAN]
 ```
 
 ## Performance Metrics
 
-7 plans complete, ~3.0h total, ~25 min average.
+8 plans complete, ~3.5h total, ~26 min average.
 
 | Phase | Plans | Avg/Plan |
 |-------|-------|----------|
 | 00-ai-friendly-scaffolding | 2/2 ✅ | ~11 min |
 | 01-cicd-pipeline | 1/1 ✅ | ~29 min |
-| 02-foundations | 4/6 | ~32 min |
+| 02-foundations | 5/6 | ~31 min |
 
-**Trend:** 13, 9, 29, 33, 14, 35, 45 min. Cost tracks how much *unknown third-party behaviour*
-a plan touches. 02-04's 45 included NextAuth v5 beta API discovery.
+**Trend:** 13, 9, 29, 33, 14, 35, 45, 28 min. Cost tracks how much *unknown third-party
+behaviour* a plan touches, not its size — 02-05 was the largest by files yet mid-pack, because
+the stack was already understood.
 
 ## Accumulated Context
 
@@ -73,6 +74,8 @@ Only what constrains upcoming work. **Full log (28 entries): `.paul/PROJECT.md` 
 | **Writes use scoped `updateMany`, never findUnique-then-update** | Putting `userId` in the same WHERE clause as the id means a wrong owner affects zero rows; find-then-update is where cross-user writes leak |
 | **`AUTH_URL` is required for a production build** | Auth.js rejects every session read with UntrustedHost otherwise. Dev mode trusts localhost, so this only appears against `next start` |
 | **Verify e2e with `CI=true`** | `reuseExistingServer` can silently reuse a stale dev server, so a plain local pass proves nothing about CI |
+| **Assert against comment-stripped source** | Four checks in 02-05 matched explanatory comments, not code. Counting occurrences is weaker than checking each function |
+| **Vertical-slice pattern is set** | validation -> scoped data layer -> server actions -> server-component UI -> isolation tests -> authenticated e2e. 02-06 copies it |
 
 ### Deferred Issues
 
@@ -91,6 +94,8 @@ Only what constrains upcoming work. **Full log (28 entries): `.paul/PROJECT.md` 
 | e2e step rebuilds the app, duplicating the Build step | Slower CI runs | Accepted; optimising means touching 01-01's verified workflow structure |
 | Auth is wired but never exercised against real Google | A real OAuth login has not been performed; seeded DB sessions are what the tests use | User adds `AUTH_*` to `.env` and clicks through when convenient |
 | e2e suite asserts placeholder copy on `/` | Phase 3 turns `/` into the dashboard and will need `tests/e2e/home.spec.ts` updated | Expected, not a regression |
+| **No money formatting helper exists yet** | 02-06 is the first money UI; inlining `/100` at each call site invites a missed conversion | Add a formatter with its own unit tests |
+| No accessibility audit has been run | WCAG AA is a stated goal; fields are labelled but contrast/focus/keyboard are unverified | Dedicated pass once the UI stops growing |
 
 **Resolved:** CI metric + stale agent docs (02-02); `.env.example` + ARCHITECTURE schema (02-03);
 the `@auth/prisma-adapter`/Prisma 7 worry — its peer range is open-ended, and compatibility was
@@ -120,15 +125,15 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-07 (resumed; handoff consumed and archived to `.paul/handoffs/archive/`)
-Stopped at: Plan 02-05 APPLY complete — Car CRUD live; CI green after diagnosing an UntrustedHost failure
-Next action: Run `/paul:unify .paul/phases/02-foundations/02-05-PLAN.md` to close the loop
-Resume file: `.paul/phases/02-foundations/02-05-PLAN.md`
+Stopped at: Plan 02-05 loop closed — all 7 ACs pass; cars usable end to end
+Next action: Run `/paul:plan` for 02-06 — Category, Expense, and Odometer CRUD. **This closes Phase 2.**
+Resume file: `.paul/phases/02-foundations/02-05-SUMMARY.md`
 Git strategy: `main` (direct commits)
 Resume context:
-- Phase 2 is 4 of 6 -- NOT complete; the file-count heuristic has now false-positived five times. ROADMAP is the authority.
-- **Pattern to follow:** every scoped query helper gets a matching cross-user leakage test. `tests/integration/isolation.test.ts` is the template.
-- **Correction:** 02-05 is NOT the first money-facing UI — `Car` has no money field. `amountCents` lives on `Expense`, so **02-06** is where a missed ÷100 would first appear.
-- 02-05 introduces the e2e auth technique (seed a `Session` row, set the `authjs.session-token` cookie) that every later authenticated flow reuses.
+- Phase 2 is 5 of 6 — **02-06 is the last plan**, so closing it WILL trigger the mandatory phase transition. The file-count heuristic has false-positived six times; ROADMAP remains the authority.
+- **02-06 copies 02-05's vertical slice**: `lib/cars.ts`, `app/cars/actions.ts`, and `tests/integration/cars.test.ts` are the templates.
+- **02-06 is the first money-facing UI.** Add a formatting helper with unit tests rather than inlining `amountCents / 100` at each call site.
+- E2E auth is solved: `tests/e2e/helpers/auth.ts` seeds a session and sets the cookie.
 - Local dev needs `docker compose up -d` (Postgres on **5433**) before `npm run test:integration`.
 - **Never read an exit code through a pipe** -- this has caused a wrong conclusion three times.
 

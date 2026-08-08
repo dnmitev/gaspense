@@ -5,8 +5,10 @@ const valid = { licensePlate: "TEST-0001", fuelType: "PETROL" as const };
 
 describe("licence plate", () => {
   // The plate field deliberately has no format regex. These cases are the
-  // reason: all are real registration formats, and a pattern guessing the
-  // Bulgarian shape would reject most of them.
+  // reason: each mirrors the SHAPE of a real registration format from a
+  // different country, and a pattern guessing the Bulgarian shape would reject
+  // most of them. The values themselves are synthetic (X/0 placeholders) —
+  // this is a public repo.
   it.each([
     ["Bulgarian with spaces", "XX 0000 XX"],
     ["Bulgarian compact", "XX0000XX"],
