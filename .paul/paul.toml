@@ -28,6 +28,6 @@ position = "IDLE"
 groom = true
 
 [stats]
-total_plans = 11
-total_phases = 3
-last_activity = "2026-08-09T18:37:38Z"
+total_plans = 12
+total_phases = 4
+last_activity = "2026-08-09T19:13:16Z"

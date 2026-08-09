@@ -16,28 +16,31 @@ See: .paul/PROJECT.md (updated 2026-08-07)
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 3 of 10 (Reporting) — In progress, **paused for Phase 9**
-Plan: 03-01 complete
-Status: Ready for next PLAN — **Phase 9 (Demo Data Seed)**, then back to 03-02
-Last activity: 2026-08-09 — Added Phase 9 (Demo Data Seed), pulled to run next
+Phase: **Phase 9 complete** → resuming Phase 3 (Reporting) at 03-02
+Plan: Not started
+Status: Ready to plan 03-02
+Last activity: 2026-08-09 — **Phase 9 closed** in ~20 min; 304 tests green (125 unit, 109 integration, 70 e2e)
 
 Progress:
-- Milestone: [███░░░░░░░] 30% (3 of 10 phases complete)
+- Milestone: [████░░░░░░] 40% (4 of 10 phases complete)
 - Phase 2: [██████████] 100% (7 of 7 plans) ✅
-- Phase 3: [███░░░░░░░] 33% (1 of 3 plans) — paused after 03-01
-- Phase 9: [░░░░░░░░░░] 0% — next up
+- Phase 9: [██████████] 100% (1 of 1 plan) ✅
+- Phase 3: [███░░░░░░░] 33% (1 of 3 plans) — resumes at 03-02
+
+**Next is Phase 3, not Phase 10.** Phase 9 was numbered last for stability and pulled forward in
+execution order; numbering and running order are deliberately not the same thing here.
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete — ready for PLAN 03-02]
+  ✓        ✓        ✓     [Loop complete — Phase 9 closed, ready for PLAN 03-02]
 ```
 
 ## Performance Metrics
 
-11 plans complete, ~7.9h total, ~43 min average.
+12 plans complete, ~8.2h total, ~41 min average.
 
 | Phase | Plans | Avg/Plan |
 |-------|-------|----------|
@@ -45,11 +48,12 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | 01-cicd-pipeline | 1/1 ✅ | ~29 min |
 | 02-foundations | 7/7 ✅ | ~57 min |
 | 03-reporting | 1/3 | ~21 min |
+| 09-demo-data-seed | 1/1 ✅ | ~20 min |
 
-**Trend:** 13, 9, 29, 33, 14, 35, 45, 28, 47, 195, **21** min. 02-07's 195 was three vertical
-slices plus a migration in one plan. 03-01 was one slice, deliberately split at planning time
-on that lesson, and came in at 21 — with more tests added (36) than 02-07 per slice. The split
-is confirmed, not merely assumed: keep Phase 3 at one concern per plan.
+**Trend:** 13, 9, 29, 33, 14, 35, 45, 28, 47, 195, **21**, **20** min. 02-07's 195 was three
+vertical slices plus a migration in one plan. The two since — one concern each — came in at 21
+and 20 while adding 36 and 40 tests respectively. Two data points, same result: a single-concern
+plan lands in roughly 20 minutes and tests *more*, not less. Keep splitting.
 
 ## Accumulated Context
 
@@ -113,7 +117,7 @@ Only what constrains upcoming work. **Full log (28 entries): `.paul/PROJECT.md` 
 |---------|--------|-----------------|
 | Next.js owns a section of AGENTS.md | Hand-edits inside the `nextjs-agent-rules` block are silently overwritten on `next dev` | Edit only outside the markers |
 | e2e step rebuilds the app, duplicating the Build step | Slower CI runs | Accepted; optimising means touching 01-01's verified workflow structure |
-| Auth is wired but never exercised against real Google | A real OAuth login has not been performed; seeded DB sessions are what the tests use | User adds `AUTH_*` to `.env` and clicks through when convenient |
+| ~~Auth never exercised against real Google~~ **RESOLVED 2026-08-09** | A real Google sign-in was performed at 09-01's checkpoint. Verified in the database: a `User` row with a linked `Account` of provider `google` | Closed — no action outstanding |
 | e2e suite asserts placeholder copy on `/` | Phase 3 turns `/` into the dashboard and will need `tests/e2e/home.spec.ts` updated | Expected, not a regression |
 | **System categories exist only if `db:seed` ran** | They are global `userId: null` rows created by no runtime code, so a fresh production database gives a new user an empty category select | 02-07 owns categories — decide whether the app self-heals or deployment must seed |
 | No accessibility audit has been run | WCAG AA is a stated goal; fields are labelled but contrast/focus/keyboard are unverified | Dedicated pass once the UI stops growing |
@@ -146,13 +150,15 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-09
-Stopped at: 03-01 loop closed and committed (`2ecb99e`, `d185c64`, `9fc8776`); Phase 9 added, not yet planned
-Next action: Run `/paul:plan` for **Phase 9 (Demo Data Seed)** — then return to 03-02
-Resume file: `.paul/ROADMAP.md` → Phase 9
+Stopped at: Phase 9 complete and closed. **Nothing committed yet.**
+Next action: Commit the Phase 9 work, then run `/paul:plan` for **03-02** (fuel efficiency)
+Resume file: `.paul/phases/09-demo-data-seed/09-01-SUMMARY.md`
 Git strategy: `main` (direct commits)
 Resume context:
-- **Phase 9 (Demo Data Seed) runs next**, then Phase 3 resumes at 03-02. Phase 9 is a `--email`-driven script attaching ~12 months of demo history to an already-signed-in user. Open questions for its plan are listed in ROADMAP under Phase 9.
-- **Never seed a `User` row for the demo data.** Google sign-in against a user with no linked `Account` is refused with `OAuthAccountNotLinked`, so seeding first breaks login.
+- **⚠️ Phase 9 is uncommitted.** 9 files plus `.paul/` bookkeeping. The repo's convention is three loop commits (`Create plan` / `Apply` / `Close loop`) plus a `feat(phase):` transition commit.
+- **⚠️ The dev server was stopped** during 09-01's e2e verification and not restarted. `npm run dev` when needed.
+- **`npm run db:seed:demo -- --email <address>` populates an account in ~1s.** Re-run it after `npm run test:integration`, which truncates everything.
+- **03-02's fixture already exists.** `lib/demo-data.ts` exports `PARTIAL_FILL_INDEX`, `MISSING_READING_INDEX`, `DECREASING_READING_INDEX` — reference them rather than rediscovering the awkward rows.
 - **Phase 3 is three plans**: 03-01 aggregations ✅, 03-02 fuel efficiency, 03-03 dashboard. The split was confirmed by outcome — 21 min vs 02-07's 195. Keep one concern per plan.
 - **03-02 must carry its own ownership read.** Mutation-proven in 03-01: the `getCarById` pre-check is what isolates, not the relation filter. A new query that relies on the filter alone will not refuse a stranger's car — it will return an empty/zero result, leaking existence.
 - **The odometer series is not monotonic.** Readings may decrease, repeat, or be missing on a fill-up. `Expense.fullTank` marks usable endpoints; `OdometerReading.expenseId` links a reading to its fill-up.

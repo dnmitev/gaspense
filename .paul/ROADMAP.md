@@ -14,7 +14,7 @@ From a graduated PLANNING.md to a working personal vehicle expense tracker: firs
 
 **v0.1 Initial Release** (v0.1.0)
 Status: In progress
-Phases: 3 of 10 complete (30%) — Phase 3 in progress; **Phase 9 pulled to run next**
+Phases: 4 of 10 complete (40%) — Phase 9 done; **Phase 3 resumes at 03-02**
 
 ## Phases
 
@@ -36,7 +36,7 @@ be pulled forward. Phase 9 has been pulled to run **next**, ahead of the rest of
 | 6 | Google Drive Export | TBD | Not started | - |
 | 7 | Maintenance Reminders | TBD | Not started | - |
 | 8 | Test Environment Safety | TBD | Not started | - |
-| 9 | Demo Data Seed | TBD | ⏭️ Next | - |
+| 9 | Demo Data Seed | 1/1 | ✅ Complete | 2026-08-09 |
 
 ## Phase Details
 
@@ -361,16 +361,37 @@ once for development and again for the seed.
 amounts from anyone's actual records. The `--email` is supplied at runtime and must never be
 committed or defaulted to a real address in tracked files.
 
-**Open questions for `/paul:plan`:**
+**Settled at planning time (2026-08-09) — the open questions above, answered:**
 
-- Re-running the seed: replace the existing demo car's data, or refuse unless `--force`?
-- Are dates anchored to today (so "this month" always has data, but output is non-deterministic)
-  or to a pinned anchor date that tests can assert against — or today by default with an
-  `--anchor` override?
-- Does removal delete the demo car outright, or soft-delete it like any other car?
+- **Re-running replaces the demo car silently**, scoped strictly to the `DEMO-0001` marker. The
+  common case is re-seeding after an integration run has wiped everything, where there is
+  nothing to replace and a `--force` flag would be pure friction.
+- **Dates anchor to today by default, with `--anchor YYYY-MM-DD` to pin them.** Dev runs always
+  populate the current month; tests pin the anchor and assert hand-computed totals.
+- **Clearing hard-deletes the demo car**, cascading to its expenses and readings — a deliberate
+  exception to the soft-delete-cars rule, which exists to protect real history. Undoing a seed
+  is not deletion of history.
+- **The seed writes through `lib/expenses.ts` and friends**, not raw `createMany`. Slower, but
+  the odometer↔expense linking stays in the one audited place instead of being duplicated, and
+  a regression in the real write path breaks the seed loudly.
 
 **Plans:**
-- [ ] TBD — defined during `/paul:plan`
+- [x] 09-01: The demo dataset as a pure deterministic function, attached to a user by email
+      through the real data layer, with a runner, docs, and proof it renders
+
+**Completed 2026-08-09.** ~20 minutes, 40 tests added. `npm run db:seed:demo -- --email <address>`
+produces 47 expenses and 30 odometer readings across twelve months.
+
+**⚠️ For 03-02:** the fixture is deliberately awkward and its irregularity positions are exported
+constants — `PARTIAL_FILL_INDEX`, `MISSING_READING_INDEX`, `DECREASING_READING_INDEX` in
+`lib/demo-data.ts`. Reference them rather than rediscovering them. The decreasing reading is a
+transposed digit, not a replaced odometer, so the following fill returns to the true series —
+the harder case for a consumption calculation.
+
+**Found during 09-01:** `Math.round(x / 100)` had made every fill a whole number of litres.
+Nothing failed; the data was merely subtly unrealistic, and every consumption figure in 03-02
+would have inherited that imprecision. Fixed, with a €/L ratio-band test that catches a scaling
+error in either field.
 
 ---
 *Roadmap created: 2026-08-07*

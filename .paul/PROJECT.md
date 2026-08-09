@@ -20,8 +20,8 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 |-----------|-------|
 | Type | Application |
 | Version | 0.0.0 |
-| Status | Prototype — **Phases 0-2 complete.** The core loop works end to end: log in, add a car, record expenses against categories you control, track mileage. No reporting yet |
-| Last Updated | 2026-08-07 |
+| Status | Prototype — **Phases 0-2 and 9 complete; Phase 3 underway.** Log in, add a car, record expenses and mileage, and see what a car has cost by month, year and category. One command seeds a year of demo data to look at |
+| Last Updated | 2026-08-09 |
 
 **Production URLs:** none yet.
 
@@ -58,16 +58,16 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 - ✓ Category CRUD — user-owned rows only; the seeded system defaults are shared and provably immutable — Phase 2 (02-07)
 - ✓ Odometer log — per car, plus capture at fill-up time linked to the expense that produced it — Phase 2 (02-07)
 - ✓ **Phase 2 complete** — 7 plans, 227 tests (85 unit, 89 integration, 53 e2e), every entity's cross-user isolation proven by test
+- ✓ Per-car cost reporting — all-time, yearly, monthly and by-category totals at `/cars/[id]/report`, over a database-free aggregation module — Phase 3 (03-01)
+- ✓ Real Google OAuth login performed and verified against a live provider, closing a concern open since 02-04 — Phase 9 (09-01)
+- ✓ **Phase 9 complete** — `npm run db:seed:demo` attaches twelve months of deterministic demo history to a signed-in account in about a second, carrying the odometer edge cases fuel reporting must survive
 
 ### Active (In Progress)
-- Phase 3 (Reporting) — 1 of 3 plans done. 03-01 shipped per-car cost totals (all-time, yearly,
-  monthly, by category) at `/cars/[id]/report`. Paused after 03-01 to pull Phase 9 forward
+- Phase 3 (Reporting) — 1 of 3 plans done. 03-01 shipped per-car cost totals; 03-02 (litres per
+  100 km, cost-per-km) and 03-03 (dashboard, charts, fleet roll-up) remain
 
 ### Planned (Next)
-- **Phase 9: Demo Data Seed** — one command attaches ~12 months of realistic history to your own
-  account, so no screen has to be hand-built to be looked at. **Pulled to run next**: its
-  full-tank/odometer series is the fixture Phase 3's litres-per-100km work needs anyway
-- Phase 3: Reporting — monthly/yearly cost aggregations, dashboard charts, cost-per-km, litres per 100 km
+- Phase 3 (resuming): 03-02 fuel efficiency, then 03-03 dashboard and charts
 - Phase 4: PWA & Mobile UX — installable PWA, quick-add flow, photo upload
 - Phase 5: Bulgarian Integrations — research spike, then fines/vignette checks
 - Phase 6: Google Drive Export — OAuth consent, export/backup
@@ -178,6 +178,13 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 | System rows protected by ordinary scoping, with no special case | `where: { id, userId }` cannot match a NULL userId; a special case would imply the general rule needs supervision | 2026-08-08 | Active |
 | Odometer readings are not required to increase | Odometers get replaced, corrected, and roll over; Phase 3 must cope with an out-of-order series instead | 2026-08-08 | Active |
 | Migrations generated with `migrate diff`, proven with `migrate deploy` | `migrate dev` refuses headless and Prisma 7 blocks `migrate reset` under Claude Code | 2026-08-08 | Active |
+| Reports aggregate in JavaScript, not SQL `date_trunc` | Keeps the UTC month-bucketing rule reachable from unit tests with no database; personal-scale data makes the cost nil | 2026-08-09 | Active |
+| Report ownership resolved by a `getCarById` pre-check, not the relation filter | Proven by mutation: dropping the pre-check fails three tests, dropping the filter fails none. Without it a stranger's car reports €0.00 instead of 404, leaking existence | 2026-08-09 | Active |
+| Date bucketing is proven under non-UTC timezones, not asserted | CI runs UTC, so a default-timezone assertion can never fail. Node re-reads `process.env.TZ` at runtime, so tests run under New York and Tokyo | 2026-08-09 | Active |
+| Demo data attaches to an existing user by email; never seeds a `User` | Google sign-in against a user with no linked `Account` is refused with `OAuthAccountNotLinked` — seeding first breaks login | 2026-08-09 | Active |
+| The demo seed writes through the real data layer, not `createMany` | The odometer↔expense pairing is owned by `createExpense`; duplicating it would let the seed build states the app never produces | 2026-08-09 | Active |
+| The demo seed hard-deletes its car, unlike normal car deletion | The soft-delete rule protects real history; undoing a seed is not that, and soft-deleting would accumulate hidden dead cars | 2026-08-09 | Active |
+| Demo fixtures are deliberately imperfect | A partial fill, a fill with no reading, and one decreasing reading. A tidy series hides exactly the bugs consumption maths must survive | 2026-08-09 | Active |
 
 ## Success Metrics
 
@@ -185,7 +192,7 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 |--------|--------|---------|--------|
 | Docs/lint presence | CLAUDE.md, AGENTS.md, docs/ARCHITECTURE.md exist; markdownlint + ESLint/Prettier pass | `npm run check` green | **Achieved** (Phase 0) |
 | CI pipeline green | Lint + test + build pass on every push/PR; secret scanning active | All four run green: check, build, unit (Vitest), e2e (Playwright). Secret scanning + push protection active | **Achieved** (Phase 2, plan 02-02) |
-| Test coverage | Unit + integration + automation (e2e) tests for every phase | 227 tests: 85 unit, 89 integration, 53 e2e — all green in CI | **On track** |
+| Test coverage | Unit + integration + automation (e2e) tests for every phase | 304 tests: 125 unit, 109 integration, 70 e2e — all green in CI | **On track** |
 | Security scan | Pass, every phase | - | Not started |
 | Accessibility | WCAG AA on frontend phases | - | Not started |
 | Performance | PWA installable, high Lighthouse PWA score | - | Not started |
@@ -212,4 +219,4 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-08-08 after Phase 2*
+*Last updated: 2026-08-09 after Phase 9*
