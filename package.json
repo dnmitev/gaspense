@@ -26,6 +26,7 @@
     "test:integration": "vitest run --project integration",
     "test:e2e": "playwright test",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:demo": "tsx prisma/seed-demo.ts",
     "lint": "eslint .",
     "lint:md": "markdownlint-cli2",
     "format": "prettier --write .",

@@ -49,12 +49,29 @@ Run `npm install` once, then these all work:
 | Lint markdown            | `npm run lint:md`      |
 | Format                   | `npm run format`       |
 | Check formatting         | `npm run format:check` |
+| Seed system categories   | `npm run db:seed`      |
+| Seed demo data (dev)     | `npm run db:seed:demo` |
 
 `npm run check` is the docs + style gate: it verifies the agent docs exist, then runs
 `format:check`, `lint`, and `lint:md`. Run it before committing — the pre-push hook runs it anyway.
 
-Runtime dependencies are Next.js and React. Supabase and NextAuth arrive in later Phase 2 plans
-(02-03 and 02-04); there is no database or auth yet.
+### Demo data
+
+`npm run db:seed:demo -- --email you@example.com` attaches about twelve months of history —
+one car, ~28 fuel fills with odometer readings, ~19 other expenses — to an account that
+**already exists**. Sign in with Google once first: the command deliberately never creates the
+user, because seeding a `User` row with no linked `Account` makes Google sign-in fail with
+`OAuthAccountNotLinked`.
+
+- `--anchor YYYY-MM-DD` pins the end date for reproducible output; it defaults to today so the
+  current month always has data.
+- `--clear` removes the demo car and everything on it.
+- **`npm run test:integration` truncates the tables and wipes this data.** Re-run the command
+  afterwards. Phase 8 (Test Environment Safety) fixes the underlying problem.
+
+The dataset deliberately contains a partial fill, a fill with no odometer reading, and one
+reading lower than its predecessor — the awkward cases fuel-consumption reporting has to
+survive. Do not "tidy" them away.
 
 ## CI and Quality Gates
 
