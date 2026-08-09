@@ -14,11 +14,16 @@ From a graduated PLANNING.md to a working personal vehicle expense tracker: firs
 
 **v0.1 Initial Release** (v0.1.0)
 Status: In progress
-Phases: 3 of 9 complete (33%) — Phase 3 in planning
+Phases: 3 of 10 complete (30%) — Phase 3 in progress; **Phase 9 pulled to run next**
 
 ## Phases
 
-**Phase Numbering:** Integer phases only for now (0–8). Decimal phases (e.g. 2.1) reserved for urgent insertions later.
+**Phase Numbering:** Integer phases only for now (0–9). Decimal phases (e.g. 2.1) reserved for
+urgent insertions later.
+
+**Numbering is not execution order.** Phases 7, 8 and 9 are all numbered after the existing work
+so numbering stays stable, not because they matter least — each depends only on Phase 2 and can
+be pulled forward. Phase 9 has been pulled to run **next**, ahead of the rest of Phase 3.
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
@@ -31,6 +36,7 @@ Phases: 3 of 9 complete (33%) — Phase 3 in planning
 | 6 | Google Drive Export | TBD | Not started | - |
 | 7 | Maintenance Reminders | TBD | Not started | - |
 | 8 | Test Environment Safety | TBD | Not started | - |
+| 9 | Demo Data Seed | TBD | ⏭️ Next | - |
 
 ## Phase Details
 
@@ -303,6 +309,65 @@ the tests' benefit.
 **Note on ordering:** placed last so numbering stays stable. There is no deployment yet, so
 nothing real is at risk today — but the exposure becomes real the moment one exists. Pull this
 before the first deploy, not after.
+
+**Plans:**
+- [ ] TBD — defined during `/paul:plan`
+
+### Phase 9: Demo Data Seed
+
+**Goal:** One command populates a realistic twelve-month history against the signed-in
+developer's own account, so no screen has to be hand-built before it can be looked at.
+**Depends on:** Phase 2 (needs Car, Expense, Category, OdometerReading to write).
+**Research:** Unlikely (a script over the existing data layer).
+
+**Requested 2026-08-09**, after 03-01: hand-creating a car and a dozen expenses to eyeball a
+report is enough friction to stop the checking happening at all.
+
+**Pulled ahead of 03-02 deliberately.** The seed's consecutive full-tank fill-ups with odometer
+readings — including the awkward cases — are precisely the fixture 03-02 needs to develop
+litres-per-100km against. Building the seed after 03-02 would mean hand-building that series
+once for development and again for the seed.
+
+**Scope:**
+
+- `lib/seed-demo.ts` — the data builder, importable by tests without running a script. Mirrors
+  the `lib/seed-categories.ts` split that keeps `prisma/seed.ts` a thin runner.
+- A runner under `tsx` plus an `npm run db:seed:demo` script, taking `--email`.
+- **Attaches to an existing user, found by email.** Fails loudly with an instruction to sign in
+  with Google first if the address is unknown.
+- Roughly twelve months against one car: ~28 fuel fills of which most are full-tank with an
+  odometer reading, ~19 other expenses across the seeded categories.
+- **Deliberate edge cases, not a clean series** — at least one partial fill, at least one fill
+  with no odometer reading, and at least one non-increasing reading. A tidy dataset would hide
+  exactly the bugs 03-02 has to survive.
+- A way to remove the seeded data again, scoped so it can only ever touch the demo car.
+- Tests: unit on the builder's shape and edge cases, integration proving it attaches to the
+  right user, is safe to re-run, and cannot write to or delete another user's rows.
+
+**Decided at request time (2026-08-09):**
+
+- **Attach by email after first login**, rather than seeding a `User` row up front. Seeding the
+  user first breaks sign-in: with the Prisma adapter, Google OAuth against an existing user that
+  has no linked `Account` row is refused with `OAuthAccountNotLinked`. Attaching afterwards keeps
+  the seed entirely out of the auth path.
+- **One car, twelve months, built for 03-02 and 03-03** rather than a minimal populate-the-screen
+  fixture.
+- **The integration-suite clash is accepted, not solved here.** `resetDatabase()` truncates
+  `User`, `Car`, `Expense` and `Category`, so running `npm run test:integration` wipes the demo
+  data and it must be re-seeded. That is Phase 8's problem to fix properly; duplicating a
+  partial fix here would mean two guards to keep honest.
+
+**⚠️ Public repo:** placeholder data only — `DEMO-0001`-style plates, no real addresses, no real
+amounts from anyone's actual records. The `--email` is supplied at runtime and must never be
+committed or defaulted to a real address in tracked files.
+
+**Open questions for `/paul:plan`:**
+
+- Re-running the seed: replace the existing demo car's data, or refuse unless `--force`?
+- Are dates anchored to today (so "this month" always has data, but output is non-deterministic)
+  or to a pinned anchor date that tests can assert against — or today by default with an
+  `--anchor` override?
+- Does removal delete the demo car outright, or soft-delete it like any other car?
 
 **Plans:**
 - [ ] TBD — defined during `/paul:plan`

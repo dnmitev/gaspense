@@ -16,15 +16,16 @@ See: .paul/PROJECT.md (updated 2026-08-07)
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 3 of 9 (Reporting) — In progress
+Phase: 3 of 10 (Reporting) — In progress, **paused for Phase 9**
 Plan: 03-01 complete
-Status: Ready for next PLAN (03-02)
-Last activity: 2026-08-09 — **03-01 closed** in ~21 min; 264 tests green (105 unit, 97 integration, 62 e2e)
+Status: Ready for next PLAN — **Phase 9 (Demo Data Seed)**, then back to 03-02
+Last activity: 2026-08-09 — Added Phase 9 (Demo Data Seed), pulled to run next
 
 Progress:
-- Milestone: [███░░░░░░░] 33% (3 of 9 phases complete)
+- Milestone: [███░░░░░░░] 30% (3 of 10 phases complete)
 - Phase 2: [██████████] 100% (7 of 7 plans) ✅
-- Phase 3: [███░░░░░░░] 33% (1 of 3 plans) — 03-02 next
+- Phase 3: [███░░░░░░░] 33% (1 of 3 plans) — paused after 03-01
+- Phase 9: [░░░░░░░░░░] 0% — next up
 
 ## Loop Position
 
@@ -93,6 +94,9 @@ Only what constrains upcoming work. **Full log (28 entries): `.paul/PROJECT.md` 
 | **Report isolation rests on the `getCarById` pre-check, not the relation filter** | Proven by mutation in 03-01: dropping the pre-check fails 3 tests, dropping `car: ownedCar(userId)` fails none — `carId` already identifies one car. Deleting the pre-check would make a stranger's car report €0.00 instead of 404, leaking existence. 03-02/03-03 must keep an ownership read of their own, not assume the query filter covers them |
 | **Node re-reads `process.env.TZ` at runtime (Node 24)** | So a UTC-only rule can be *proven* in CI rather than asserted: `tests/unit/aggregation.test.ts` runs cases under `America/New_York` and `Asia/Tokyo`, restoring TZ in `afterEach`. Any later date bucketing (03-02's consumption series, Phase 7's intervals) should use the same technique |
 | **Aggregation is JS, not SQL `date_trunc`** | Deliberate: it keeps the UTC bucketing rule reachable from unit tests with no database. Fine at personal scale; if a car ever holds enough rows to matter, replace with `groupBy` behind the same `getCarReport` signature |
+| **Added Phase 9: Demo Data Seed, pulled to run next** | Milestone is now 10 phases. Hand-building a car and a dozen expenses to eyeball a report is enough friction to stop the checking happening. Pulled ahead of 03-02 because its full-tank + odometer series is the exact fixture 03-02 needs — building it afterwards means hand-building that series twice |
+| **Demo data attaches to an existing user by email, never seeds the User** | With `@auth/prisma-adapter`, signing in with Google against a `User` that has no linked `Account` row is refused with `OAuthAccountNotLinked`. Seeding the user first would break login; attaching after first sign-in keeps the seed out of the auth path entirely |
+| **The demo seed does NOT solve the truncation clash** | `resetDatabase()` wipes `User`/`Car`/`Expense`/`Category`, so `npm run test:integration` destroys the demo data and it must be re-seeded. Left to Phase 8 on purpose — a partial guard here would mean two safety mechanisms to keep honest |
 
 ### Deferred Issues
 
@@ -142,13 +146,14 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-09
-Stopped at: 03-01 loop closed (SUMMARY written). **Nothing committed yet.**
-Next action: Commit the 03-01 work, then run `/paul:plan` for 03-02 (fuel efficiency)
-Resume file: `.paul/phases/03-reporting/03-01-SUMMARY.md`
+Stopped at: 03-01 loop closed and committed (`2ecb99e`, `d185c64`, `9fc8776`); Phase 9 added, not yet planned
+Next action: Run `/paul:plan` for **Phase 9 (Demo Data Seed)** — then return to 03-02
+Resume file: `.paul/ROADMAP.md` → Phase 9
 Git strategy: `main` (direct commits)
 Resume context:
+- **Phase 9 (Demo Data Seed) runs next**, then Phase 3 resumes at 03-02. Phase 9 is a `--email`-driven script attaching ~12 months of demo history to an already-signed-in user. Open questions for its plan are listed in ROADMAP under Phase 9.
+- **Never seed a `User` row for the demo data.** Google sign-in against a user with no linked `Account` is refused with `OAuthAccountNotLinked`, so seeding first breaks login.
 - **Phase 3 is three plans**: 03-01 aggregations ✅, 03-02 fuel efficiency, 03-03 dashboard. The split was confirmed by outcome — 21 min vs 02-07's 195. Keep one concern per plan.
-- **⚠️ 03-01 is uncommitted.** 7 files plus `.paul/` bookkeeping. The phase-transition commit does not apply (phase is not done), so this needs an ordinary `feat(03-reporting):` commit.
 - **03-02 must carry its own ownership read.** Mutation-proven in 03-01: the `getCarById` pre-check is what isolates, not the relation filter. A new query that relies on the filter alone will not refuse a stranger's car — it will return an empty/zero result, leaking existence.
 - **The odometer series is not monotonic.** Readings may decrease, repeat, or be missing on a fill-up. `Expense.fullTank` marks usable endpoints; `OdometerReading.expenseId` links a reading to its fill-up.
 - **Prove timezone logic, do not assert it.** Node 24 re-reads `process.env.TZ`, so run date cases under `America/New_York` and `Asia/Tokyo` (restore in `afterEach`). CI is UTC, so a default-TZ assertion is vacuous.

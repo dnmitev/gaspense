@@ -60,16 +60,19 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 - ✓ **Phase 2 complete** — 7 plans, 227 tests (85 unit, 89 integration, 53 e2e), every entity's cross-user isolation proven by test
 
 ### Active (In Progress)
-- Nothing in progress — Phase 2 closed 2026-08-08; Phase 3 (Reporting) is next to plan
+- Phase 3 (Reporting) — 1 of 3 plans done. 03-01 shipped per-car cost totals (all-time, yearly,
+  monthly, by category) at `/cars/[id]/report`. Paused after 03-01 to pull Phase 9 forward
 
 ### Planned (Next)
+- **Phase 9: Demo Data Seed** — one command attaches ~12 months of realistic history to your own
+  account, so no screen has to be hand-built to be looked at. **Pulled to run next**: its
+  full-tank/odometer series is the fixture Phase 3's litres-per-100km work needs anyway
 - Phase 3: Reporting — monthly/yearly cost aggregations, dashboard charts, cost-per-km, litres per 100 km
 - Phase 4: PWA & Mobile UX — installable PWA, quick-add flow, photo upload
 - Phase 5: Bulgarian Integrations — research spike, then fines/vignette checks
 - Phase 6: Google Drive Export — OAuth consent, export/backup
 - Phase 7: Maintenance Reminders — service intervals per car with due/overdue indicators
-- Phase 8: Test Environment Safety — stop the integration suite being able to truncate a database that matters
-- Phase 8: Test Environment Safety — stop the integration suite truncating a non-test database
+- Phase 8: Test Environment Safety — stop the integration suite truncating a database that matters
 
 ### Out of Scope
 - Multi-currency support — EUR only, by explicit decision
