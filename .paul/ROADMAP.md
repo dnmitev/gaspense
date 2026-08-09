@@ -14,7 +14,7 @@ From a graduated PLANNING.md to a working personal vehicle expense tracker: firs
 
 **v0.1 Initial Release** (v0.1.0)
 Status: In progress
-Phases: 3 of 9 complete (33%)
+Phases: 3 of 9 complete (33%) — Phase 3 in planning
 
 ## Phases
 
@@ -25,7 +25,7 @@ Phases: 3 of 9 complete (33%)
 | 0 | AI-Friendly Project Scaffolding | 2/2 | ✅ Complete | 2026-08-07 |
 | 1 | CI/CD Pipeline | 1/1 | ✅ Complete | 2026-08-07 |
 | 2 | Foundations | 7/7 | ✅ Complete | 2026-08-08 |
-| 3 | Reporting | TBD | Not started | - |
+| 3 | Reporting | 1/3 | 🔵 In progress | - |
 | 4 | PWA & Mobile UX | TBD | Not started | - |
 | 5 | Bulgarian Integrations | TBD | Not started | - |
 | 6 | Google Drive Export | TBD | Not started | - |
@@ -162,8 +162,32 @@ problem, not a footnote to expense entry.
   the calculation needs the odometer capture that 02-07 adds, and must handle partial
   fills and gaps in the series rather than assuming every fill-up is complete.
 
+**Split into three plans at planning time (2026-08-09).** The phase bundles three
+distinct concerns — SQL-shaped aggregation, a pure calculation with awkward edge cases,
+and a charted dashboard — which is exactly the shape that made 02-07 cost 195 minutes.
+One concern per plan.
+
+**Confirmed by outcome:** 03-01 closed in ~21 minutes with 36 tests added. The split is
+paying for itself; do not re-bundle 03-02 and 03-03.
+
+**⚠️ For 03-02, found in 03-01 by mutation testing:** isolation on the report path is
+enforced by the `getCarById` **pre-check**, not by the `car: ownedCar(userId)` relation
+filter — dropping the pre-check fails three tests, dropping the filter fails none. Any new
+query must carry its own ownership read; relying on the filter alone returns an empty or
+zero result for a stranger's car instead of refusing, which leaks existence.
+
+**Decided at planning time:** reports are **per car** first. It reuses the existing
+car-scoped data layer and its proven isolation pattern unchanged; the all-cars roll-up
+becomes the dashboard's job in 03-03 rather than a second scoping shape in 03-01.
+
 **Plans:**
-- [ ] TBD — defined during `/paul:plan`
+- [x] 03-01: Cost aggregations — all-time/yearly/monthly/by-category totals over a
+      DB-free calculation module and a scoped query, at `/cars/[id]/report`
+- [ ] 03-02: Fuel efficiency — litres per 100 km from full-tank pairs, and cost-per-km;
+      must survive gaps, partial fills, and a non-ascending odometer series
+- [ ] 03-03: Dashboard — `/` becomes the dashboard with charts and the fleet roll-up;
+      updates `tests/e2e/home.spec.ts`. The chart approach (library vs hand-rolled SVG)
+      is decided at that plan, not before — no dependency is added in 03-01 or 03-02.
 
 ### Phase 4: PWA & Mobile UX
 
@@ -285,4 +309,4 @@ before the first deploy, not after.
 
 ---
 *Roadmap created: 2026-08-07*
-*Last updated: 2026-08-08*
+*Last updated: 2026-08-09*

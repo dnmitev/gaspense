@@ -16,38 +16,39 @@ See: .paul/PROJECT.md (updated 2026-08-07)
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 3 of 9 (Reporting) — Not started
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-08-08 — **Phase 2 complete** (7 plans, 227 tests); transitioned to Phase 3
+Phase: 3 of 9 (Reporting) — In progress
+Plan: 03-01 complete
+Status: Ready for next PLAN (03-02)
+Last activity: 2026-08-09 — **03-01 closed** in ~21 min; 264 tests green (105 unit, 97 integration, 62 e2e)
 
 Progress:
 - Milestone: [███░░░░░░░] 33% (3 of 9 phases complete)
 - Phase 2: [██████████] 100% (7 of 7 plans) ✅
-- Phase 3: [░░░░░░░░░░] 0% (not started)
+- Phase 3: [███░░░░░░░] 33% (1 of 3 plans) — 03-02 next
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete — Phase 2 closed, ready for next PLAN]
+  ✓        ✓        ✓     [Loop complete — ready for PLAN 03-02]
 ```
 
 ## Performance Metrics
 
-10 plans complete, ~7.6h total, ~45 min average.
+11 plans complete, ~7.9h total, ~43 min average.
 
 | Phase | Plans | Avg/Plan |
 |-------|-------|----------|
 | 00-ai-friendly-scaffolding | 2/2 ✅ | ~11 min |
 | 01-cicd-pipeline | 1/1 ✅ | ~29 min |
 | 02-foundations | 7/7 ✅ | ~57 min |
+| 03-reporting | 1/3 | ~21 min |
 
-**Trend:** 13, 9, 29, 33, 14, 35, 45, 28, 47, 195 min. 02-07 dwarfs the rest: three vertical
-slices plus a migration in one plan, and four self-inflicted defects found by verification
-rather than review. The lesson is not "plans got harder" — it is that a plan bundling three
-slices costs more than three plans bundling one each.
+**Trend:** 13, 9, 29, 33, 14, 35, 45, 28, 47, 195, **21** min. 02-07's 195 was three vertical
+slices plus a migration in one plan. 03-01 was one slice, deliberately split at planning time
+on that lesson, and came in at 21 — with more tests added (36) than 02-07 per slice. The split
+is confirmed, not merely assumed: keep Phase 3 at one concern per plan.
 
 ## Accumulated Context
 
@@ -89,6 +90,9 @@ Only what constrains upcoming work. **Full log (28 entries): `.paul/PROJECT.md` 
 | **`Expense.category` is `onDelete: Restrict`** | Deleting a category in use raises P2003. 02-07 refuses the delete with a count rather than reassigning silently |
 | **Nothing links an Expense to its OdometerReading** | `source: EXPENSE` records only that a reading came from *some* fill-up. 02-07 adds a nullable unique `expenseId` with cascade — the first schema change since 02-03 |
 | **Added Phase 8: Test Environment Safety** | Extends milestone scope to 9 phases. `resetDatabase()` truncates whatever `DATABASE_URL` points at, with no guard; dev, integration, and e2e share one database. Depends only on Phase 2 — pull it before the first deployment |
+| **Report isolation rests on the `getCarById` pre-check, not the relation filter** | Proven by mutation in 03-01: dropping the pre-check fails 3 tests, dropping `car: ownedCar(userId)` fails none — `carId` already identifies one car. Deleting the pre-check would make a stranger's car report €0.00 instead of 404, leaking existence. 03-02/03-03 must keep an ownership read of their own, not assume the query filter covers them |
+| **Node re-reads `process.env.TZ` at runtime (Node 24)** | So a UTC-only rule can be *proven* in CI rather than asserted: `tests/unit/aggregation.test.ts` runs cases under `America/New_York` and `Asia/Tokyo`, restoring TZ in `afterEach`. Any later date bucketing (03-02's consumption series, Phase 7's intervals) should use the same technique |
+| **Aggregation is JS, not SQL `date_trunc`** | Deliberate: it keeps the UTC bucketing rule reachable from unit tests with no database. Fine at personal scale; if a car ever holds enough rows to matter, replace with `groupBy` behind the same `getCarReport` signature |
 
 ### Deferred Issues
 
@@ -137,19 +141,23 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 
 ## Session Continuity
 
-Last session: 2026-08-07 (resumed; handoff consumed and archived to `.paul/handoffs/archive/`)
-Stopped at: Plan 02-07 applied and approved at its checkpoint
-Next action: Run `/paul:unify .paul/phases/02-foundations/02-07-PLAN.md` — closes the loop AND triggers the Phase 2 transition
-Resume file: `.paul/phases/02-foundations/02-07-PLAN.md`
+Last session: 2026-08-09
+Stopped at: 03-01 loop closed (SUMMARY written). **Nothing committed yet.**
+Next action: Commit the 03-01 work, then run `/paul:plan` for 03-02 (fuel efficiency)
+Resume file: `.paul/phases/03-reporting/03-01-SUMMARY.md`
 Git strategy: `main` (direct commits)
 Resume context:
-- **02-07 is the LAST plan of Phase 2** — closing it triggers the mandatory phase transition, which has been correctly withheld seven times. Do not skip it.
-- **02-07 copies the same vertical slice**: `lib/expenses.ts` and `tests/integration/expenses.test.ts` are the closest templates.
-- **02-07 carries a migration** — the first since 02-03. Generate it with `prisma migrate dev`, never hand-write the SQL; CI runs `migrate deploy` against a fresh database.
-- System categories stay immutable through ordinary scoping (`where: { id, userId }` can never match a `userId: null` row) — no special case needed, and adding one would imply the general rule is unreliable.
-- Integration tests must seed categories themselves: `resetDatabase()` truncates `Category`.
+- **Phase 3 is three plans**: 03-01 aggregations ✅, 03-02 fuel efficiency, 03-03 dashboard. The split was confirmed by outcome — 21 min vs 02-07's 195. Keep one concern per plan.
+- **⚠️ 03-01 is uncommitted.** 7 files plus `.paul/` bookkeeping. The phase-transition commit does not apply (phase is not done), so this needs an ordinary `feat(03-reporting):` commit.
+- **03-02 must carry its own ownership read.** Mutation-proven in 03-01: the `getCarById` pre-check is what isolates, not the relation filter. A new query that relies on the filter alone will not refuse a stranger's car — it will return an empty/zero result, leaking existence.
+- **The odometer series is not monotonic.** Readings may decrease, repeat, or be missing on a fill-up. `Expense.fullTank` marks usable endpoints; `OdometerReading.expenseId` links a reading to its fill-up.
+- **Prove timezone logic, do not assert it.** Node 24 re-reads `process.env.TZ`, so run date cases under `America/New_York` and `Asia/Tokyo` (restore in `afterEach`). CI is UTC, so a default-TZ assertion is vacuous.
+- **Grep for absence must strip comments first** — the plan's own verify command failed this in 03-01, matching prose that said the file imports no Prisma.
+- **03-03 still owns `/` and `tests/e2e/home.spec.ts`** — untouched, placeholder assertion still live.
+- Integration tests must seed categories themselves: `resetDatabase()` truncates `Category`. E2E suites must too — CI runs integration immediately before e2e.
 - E2E auth is solved: `tests/e2e/helpers/auth.ts` seeds a session and sets the cookie.
 - Local dev needs `docker compose up -d` (Postgres on **5433**) before `npm run test:integration`.
+- **Verify e2e with `CI=true`**; `npm run build` is the only type-check (Vitest is not).
 - **Never read an exit code through a pipe** -- this has caused a wrong conclusion three times.
 
 ---
