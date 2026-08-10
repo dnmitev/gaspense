@@ -37,22 +37,26 @@ There is no separate backend service, no cache layer, and no real-time transport
 
 ## Data Model
 
-**Implemented: five entities.** Three more are designed but deliberately deferred — see
+**Implemented: six entities.** `Attachment` landed in 04-03 with expense photo upload. Two more are
+designed but deliberately deferred — see
 [Deferred entities](#deferred-entities) below. The authoritative source is
 [`prisma/schema.prisma`](../prisma/schema.prisma); this section describes it.
 
 ```text
 User ──< Car ──< Expense >── Category
-              └─< OdometerReading
+         │       └─< OdometerReading
+         │       └─< Attachment
+         └─< Attachment
 ```
 
-| Entity              | Key fields                                                                                                                                                       | Relationships                                                  |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| **User**            | `id` (cuid), `email` (unique), `name?`, `emailVerified?`, `image?`, timestamps                                                                                   | has many Cars and Categories                                   |
-| **Car**             | `id`, `userId`, `licensePlate`, `make?`, `model?`, `year?`, `nickname?`, `fuelType` (enum), **`deletedAt?`** (soft delete), timestamps                           | belongs to User; has many Expenses and OdometerReadings        |
-| **Category**        | `id`, `userId?` (null = system default), `name`, timestamps                                                                                                      | belongs to User (optional); has many Expenses                  |
-| **Expense**         | `id`, `carId`, `categoryId`, `date`, **`amountCents`** (Int), `notes?` — fuel expenses additionally carry `liters?` (Float), `station?`, `fullTank?`, timestamps | belongs to Car and Category                                    |
-| **OdometerReading** | `id`, `carId`, `date`, `reading` (Int, km), `source` (enum `MANUAL` \| `EXPENSE`), **`expenseId?`** (unique, cascade), timestamps                                | belongs to Car; optionally to the Expense it was captured with |
+| Entity              | Key fields                                                                                                                                                       | Relationships                                                    |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| **User**            | `id` (cuid), `email` (unique), `name?`, `emailVerified?`, `image?`, timestamps                                                                                   | has many Cars and Categories                                     |
+| **Car**             | `id`, `userId`, `licensePlate`, `make?`, `model?`, `year?`, `nickname?`, `fuelType` (enum), **`deletedAt?`** (soft delete), timestamps                           | belongs to User; has many Expenses and OdometerReadings          |
+| **Category**        | `id`, `userId?` (null = system default), `name`, timestamps                                                                                                      | belongs to User (optional); has many Expenses                    |
+| **Expense**         | `id`, `carId`, `categoryId`, `date`, **`amountCents`** (Int), `notes?` — fuel expenses additionally carry `liters?` (Float), `station?`, `fullTank?`, timestamps | belongs to Car and Category                                      |
+| **OdometerReading** | `id`, `carId`, `date`, `reading` (Int, km), `source` (enum `MANUAL` \| `EXPENSE`), **`expenseId?`** (unique, cascade), timestamps                                | belongs to Car; optionally to the Expense it was captured with   |
+| **Attachment**      | `id`, **`carId?`**, **`expenseId?`** (exactly one set, CHECK-enforced), `storageKey` (unique), `mimeType`, `sizeBytes`, `width?`, `height?`, `createdAt`         | belongs to a Car **or** an Expense, never both and never neither |
 
 **Enums:** `FuelType` (PETROL, DIESEL, LPG, ELECTRIC, HYBRID, OTHER) and
 `OdometerSource` (MANUAL, EXPENSE).
@@ -115,11 +119,10 @@ so 7.x satisfies it. Compatibility was nonetheless verified functionally in
 
 ### Deferred entities
 
-| Entity         | Deferred to | Why                                                                                                                                                                                    |
-| -------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Fine**       | Phase 5     | Its fields depend on what the КАТ/МВР research spike finds the service actually returns. Modelling it now would be speculation likely contradicted later.                              |
-| **Vignette**   | Phase 5     | Same reason — the vignette check has no confirmed API either.                                                                                                                          |
-| **Attachment** | Phase 4     | Arrives with car/expense photo upload. Design stands: nullable dual foreign keys (`carId`/`expenseId`), with the file body in Supabase Storage and only `storagePath` in the database. |
+| Entity       | Deferred to | Why                                                                                                                                                       |
+| ------------ | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Fine**     | Phase 5     | Its fields depend on what the КАТ/МВР research spike finds the service actually returns. Modelling it now would be speculation likely contradicted later. |
+| **Vignette** | Phase 5     | Same reason — the vignette check has no confirmed API either.                                                                                             |
 
 Prisma migrations are additive, so adding these later is a normal migration rather than a rewrite.
 
@@ -236,12 +239,33 @@ not merely that the call returned nothing. **Every new scoped helper gets a matc
 | Route                     | Purpose                                                   | Status                  |
 | ------------------------- | --------------------------------------------------------- | ----------------------- |
 | `/api/auth/[...nextauth]` | NextAuth handlers (Google sign-in, session, callbacks)    | **Built** (02-04)       |
+| `/api/attachments/[id]`   | Streams an attachment to its owner; 404 to anyone else    | **Built** (04-03)       |
 | `/api/fines/check`        | Trigger an external КАТ fines lookup, rate-limited        | Phase 5, research-gated |
 | `/api/vignette/check`     | Trigger an external vignette validity check, rate-limited | Phase 5, research-gated |
 | `/api/export/gdrive`      | Trigger an export/backup to the user's Google Drive       | Phase 6                 |
 
 These are endpoints rather than actions because each triggers an outbound call to a third party, not
 a CRUD write. There are no public endpoints — the app is authenticated end to end.
+
+### Attachment storage
+
+The bytes are never in the database. `Attachment.storageKey` names an object in whatever backend
+`lib/storage.ts` resolves — a gitignored `.storage/` directory today, Supabase Storage from 04-04.
+Nothing above the interface knows which.
+
+**`.storage/` is deliberately not under `public/`**: anything there is served statically with no
+session check, which would make every photo world-readable at a guessable path.
+
+Serving goes through `/api/attachments/[id]`, which resolves ownership and streams the object —
+**404 for someone else's and for no session, never 403**, since a 403 confirms the id exists. A
+signed URL was rejected: it works for whoever holds it until it expires, and isolation would have to
+be argued about URL minting rather than demonstrated by a request being refused. `/api/*` is outside
+the service worker's cache allowlist, so no photo is ever cached.
+
+Keys are `randomUUID` plus an extension from the **validated** MIME type — never the client's
+filename — and never leave the server. Exactly one of `carId`/`expenseId` is enforced by a
+hand-written `CHECK (num_nonnulls("carId", "expenseId") = 1)`, because Prisma cannot express a CHECK;
+the same reason the category partial unique indexes are raw SQL.
 
 ### Auth
 

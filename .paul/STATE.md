@@ -18,24 +18,24 @@ See: .paul/PROJECT.md (updated 2026-08-10)
 
 Milestone: v0.1 Initial Release (v0.1.0)
 Phase: 4 of 10 (PWA & Mobile UX) — In progress
-Plan: 04-02 complete ✅ — all 6 ACs pass, 46 tests added
-Status: Loop closed, ready to plan 04-03
-Last activity: 2026-08-10 — **04-02 complete**: three taps to one, and an accessibility gate whose blind spots are measured
+Plan: 04-03 complete ✅ — all 6 ACs pass, 56 tests added
+Status: Loop closed, ready to plan 04-04
+Last activity: 2026-08-10 — **04-03 complete**: expense photos, and three size limits found by measuring
 
 Progress:
 - Milestone: [██████░░░░] 60% (6 of 10 phases complete)
-- Phase 4: [███████░░░] 67% (2 of 3 plans) — 04-03 attachments remains
+- Phase 4: [████████░░] 75% (3 of 4 plans) — 04-04 Supabase adapter + car photos remains
 
 ## Loop Position
 
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete — ready for 04-03]
+  ✓        ✓        ✓     [Loop complete — ready for 04-04]
 ```
 
 ## Performance Metrics
 
-18 plans complete, ~12h total, ~41 min average.
+19 plans complete, ~13h total, ~43 min average.
 
 | Phase | Plans | Avg/Plan |
 |-------|-------|----------|
@@ -43,16 +43,18 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | 01-cicd-pipeline | 1/1 ✅ | ~29 min |
 | 02-foundations | 7/7 ✅ | ~57 min |
 | 03-reporting | 3/3 ✅ | ~28 min |
-| 04-pwa-mobile-ux | 2/3 | ~66 min |
+| 04-pwa-mobile-ux | 3/4 | ~69 min |
 | 08-test-environment-safety | 2/2 ✅ | ~25 min |
 | 09-demo-data-seed | 1/1 ✅ | ~20 min |
 
-**Trend:** …**45**, **36**, **14**, **47**, **85** min. Phase 4 is the most expensive phase since
-Phase 2, and the pattern is consistent across both plans: **most of the overrun was spent
-discovering that the tests proving the deliverable did not prove it.** 04-01 rewrote two; 04-02
-found its planned accessibility control could not fire at all. Neither would have been caught by
-review, only by deliberately breaking things. **Budget a third of any guarantee-shaped plan for
-proving the proof** — 04-03's upload path is the same shape again.
+**Trend:** …**36**, **14**, **47**, **85**, **75** min. Phase 4 is the most expensive phase since
+Phase 2, and the pattern held for a third straight plan: **most of the overrun was spent
+discovering that the tests proving the deliverable did not prove it.** 04-01 rewrote two; 04-02's
+planned accessibility control could not fire at all; 04-03's AC-4 fixture could not have failed,
+and replacing it exposed a real product defect. None would have been caught by review — only by
+deliberately breaking things and by *looking at output*. **Budget a third of any guarantee-shaped
+plan for proving the proof**, and treat a clean result from a new check as unverified until the
+check has been made to fail.
 
 ## Accumulated Context
 
@@ -64,7 +66,10 @@ Only what constrains upcoming work. **Full log: `.paul/PROJECT.md` → Key Decis
 |----------|---------------------------|
 | **Isolation is app-layer, not RLS** | Every new query path needs a test proving one user cannot read another's rows. No database backstop exists |
 | **Which check is load-bearing is measured, never inferred — three for three** | `getCarReport`'s pre-check did all the work and its relation filter none; `getFleetSummary`'s two filters are redundant; 04-01's `isNavigation` guard did **nothing** because the allowlist already refused those paths. Every time, the obvious test passed for the wrong reason. Mutation-test the guard you just wrote |
-| **Look at visual output; no assertion substitutes** | 04-01's icons passed every automated check while rendering as a small glyph in the top-left corner. Opening the PNG is what caught it. 04-02's screenshots are what revealed nothing linked to `/expenses/new` |
+| **Look at visual output; no assertion substitutes** | 04-01's icons passed every check while rendering wrong; 04-02's screenshots revealed nothing linked to `/expenses/new`; 04-03's revealed a photo that never loaded **and** a `width`/`height` column nothing wrote to |
+| **A fixture that cannot exercise the branch proves nothing about it** | 04-03's attachment tests all used a 192px icon, so the downscaler took its "leave it alone" path every time and AC-4 was never tested. Replacing the fixture is what exposed a real defect |
+| **`toBeVisible()` passes on a broken image** | It only needs a non-empty box. 04-03's photo assertion passed against a 320×2 element that had not loaded. Poll `naturalWidth > 0` |
+| **Three size limits on an upload, not one** | Browser downscale (1600px) → validation (2 MB, the readable one) → **Next server action body (`next.config.ts`, default 1 MB and stricter than Vercel's 4.5 MB)**. Exceeding the last one fails *silently*. Changing the downscale target means re-checking it |
 | **Prove a new gate can fail before trusting a clean result** | 04-02's audit reports zero violations. Its *planned* control (strip a label's `htmlFor`) could not fire — a `placeholder` satisfies axe's accessible-name rules. Contrast is the control that works |
 | **An audit's precondition must not depend on what it audits** | The a11y tests waited on `getByLabel`; with labels broken they failed on the wait and axe never ran — a control that looks like it works and does not. They wait on `#amount` now |
 | **axe's measured blind spots here** | A `placeholder` satisfies accessible-name rules, and the HTML parser silently unnests `<a>` inside `<a>` so `nested-interactive` never fires. Neither is covered by the gate — the keyboard and unit tests cover the first |
@@ -77,7 +82,9 @@ Only what constrains upcoming work. **Full log: `.paul/PROJECT.md` → Key Decis
 | **Soft-delete cars only (`deletedAt`)** | Every car query filters `deletedAt: null`. Expenses/odometer hard-delete. The demo seed's `--clear` is a documented exception |
 | **Money is `amountCents Int`; `lib/money.ts` is the only converter** | Includes `formatEurPerKm` — dividing money by distance is money changing unit. Enforced by comment-stripped audit |
 | **Money-derived rates round in integer space, never `toFixed`** | `toFixed` rounds by the double's actual value, so half-way cases are unpredictable per input |
-| **Schema is 5 entities** | Phase 4 adds `Attachment`; Phase 5 adds Fine/Vignette after the research spike |
+| **Schema is 6 entities** — `Attachment` landed in 04-03 | Phase 5 adds Fine/Vignette after the research spike. `Attachment.carId` and its CHECK constraint already exist, so car photos need no migration |
+| **Attachment bytes live behind `lib/storage.ts`, in a gitignored `.storage/`** | **Never under `public/`** — anything there is served statically with no session check. The local adapter is *not* a deployment story: Vercel's filesystem is ephemeral, so 04-04's Supabase adapter is required before attachments are deployed |
+| **`/api/attachments/[id]` returns 404, never 403** | Including for no session. A 403 confirms the id exists. A missing object returns 410, because that row *is* the caller's |
 | **Prisma 7: adapter mandatory, URLs in `prisma.config.ts`, scripts under `tsx`** | Never `new PrismaClient()` bare; the generated client's imports are bundler-style |
 | **Migrations generated non-interactively** | `migrate dev` refuses headless and Prisma 7 blocks `migrate reset` under Claude Code. Use `migrate diff`, prove with `migrate deploy` |
 | **Mutations are server actions; reads in server components** | No REST routes. `docs/ARCHITECTURE.md`'s REST table was a design sketch |
@@ -121,6 +128,8 @@ Only what constrains upcoming work. **Full log: `.paul/PROJECT.md` → Key Decis
 |---------|--------|-----------------|
 | The accessibility gate covers 4 of 9 routes | 04-02 gave the project its first real gate — zero serious/critical on `/signin`, `/`, and both add forms, on both viewports. `/cars`, `/cars/new`, the edit pages, `/categories`, and the report and odometer pages are **not** audited, and the gate has two measured blind spots. It is a gate, not a WCAG AA certification | Add pages to `tests/e2e/accessibility.spec.ts` — one line each |
 | No real home-screen install has been performed | Everything installability *requires* is proven by test (complete manifest, maskable icon, controlling fetch-handling worker, secure origin), but the device install is not. Same shape of gap as the Google login open from 02-04 to 09-01 | Install it on a phone once, or run Lighthouse |
+| **Photos carry EXIF, including GPS** | The canvas re-encode drops it as a *side effect*, not a guarantee, and the no-canvas fallback preserves it entirely. Tolerable with local storage and no deployment; not tolerable once real photos are uploaded anywhere | Settle in 04-04 or before any deploy |
+| **The local storage adapter cannot be deployed** | Vercel's filesystem is ephemeral — `.storage/` works in development and would silently lose photos in production | 04-04's Supabase adapter is required, not optional |
 | System categories exist only if `db:seed` ran | A fresh production database gives a new user an empty category select | Decide whether the app self-heals or deployment must seed |
 | Next.js owns a section of AGENTS.md | Hand-edits inside `nextjs-agent-rules` are overwritten on `next dev` | Edit only outside the markers |
 | e2e step rebuilds the app, duplicating the Build step | Slower CI runs | Accepted; optimising means touching 01-01's verified structure |
@@ -152,29 +161,29 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 
 ## Session Continuity
 
-Last session: 2026-08-10 — 04-01 and 04-02 both planned, applied, closed and pushed
-Stopped at: 04-02 complete, committed and pushed
-Next action: `/paul:plan` for **04-03 — `Attachment` + Supabase Storage + photo upload**
-Resume file: `.paul/phases/04-pwa-mobile-ux/04-02-SUMMARY.md`
+Last session: 2026-08-10 — 04-01, 04-02 and 04-03 all planned, applied, closed and pushed
+Stopped at: 04-03 complete, committed and pushed
+Next action: `/paul:plan` for **04-04 — the Supabase Storage adapter and car photos** (closes Phase 4)
+Resume file: `.paul/phases/04-pwa-mobile-ux/04-03-SUMMARY.md`
 Git strategy: `main` (direct commits)
 Resume context:
-- **04-03 closes Phase 4: `Attachment` — the first schema change since 02-07 — plus Supabase Storage
-  and photo upload on cars and expenses.**
-- **⚠️ 04-03 needs a real Supabase project** with credentials in `.env` before it can be verified
-  end-to-end. The user has taken that on. Expect a human-action checkpoint in the plan.
-- **⚠️ The migration must be generated with `migrate diff` and proven with `migrate deploy`** —
-  `migrate dev` refuses headless and Prisma 7 blocks `migrate reset` under Claude Code.
-- **⚠️ Add the upload pages to `tests/e2e/accessibility.spec.ts`** — one line each. The gate exists
-  now; a new UI that skips it is the gap reopening.
-- **⚠️ A file upload is a new write path with a new trust boundary.** Size, MIME type and ownership
-  all need validating, and the isolation test must prove one user cannot read another's attachment.
-- **⚠️ Mutation-test what you write — four for four now.** 04-02's planned a11y control could not
-  fire at all; only a contrast regression proved the gate works.
+- **04-04 closes Phase 4: the Supabase Storage adapter behind the existing `ObjectStorage`
+  interface, plus car photos.** No feature code should move — it is an adapter and a resolver.
+- **⚠️ 04-04 needs the real Supabase project** with credentials in `.env`. The user has taken that
+  on. It is also **required rather than optional**: the local adapter cannot survive a deploy.
+- **⚠️ Car photos need no migration.** `Attachment.carId` and the CHECK constraint already exist.
+- **⚠️ Settle EXIF/GPS stripping in 04-04**, or explicitly accept it before any deployment.
+- **⚠️ Add every new page to `tests/e2e/accessibility.spec.ts`** — one line each.
+- **⚠️ Mutation-test what you write — five for five now.** 04-03's `deleteAttachment` filter turned
+  out redundant, and its AC-4 fixture could not have failed.
+- **⚠️ Prisma 7 `migrate diff` needs `SHADOW_DATABASE_URL`** and has renamed flags: `--to-schema`,
+  not `--to-schema-datamodel`, and there is no `--shadow-database-url`. `gaspense_shadow` exists on
+  the local container now.
 - **⚠️ `.env` carries `TEST_DATABASE_URL`** (gitignored). A fresh clone needs it from
   `.env.example` plus `npm run db:test:setup`, or the suites refuse to run.
 - **⚠️ Local e2e needs port 3000 free** — `reuseExistingServer` is off, so it fails rather than
   reusing the wrong server. Identify a process through its parent chain before killing anything.
-- **490 tests:** 218 unit, 142 integration, 130 e2e.
+- **546 tests:** 249 unit, 153 integration, 144 e2e.
 - **Never read an exit code through a pipe** — this has caused a wrong conclusion three times.
 - **`.agents/` and `skills-lock.json` are untracked and predate this session** — deliberately left
   out of every 04-01 and 04-02 commit. Decide what they are before something sweeps them in.

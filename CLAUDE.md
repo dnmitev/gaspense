@@ -187,6 +187,54 @@ defaulting to the **most recently added** with several, and a redirect to `/cars
   `createExpense` verifies ownership in the database — which is exactly why offering a select is
   safe, proven in `tests/integration/quick-add.test.ts`.
 
+## Attachments (photos)
+
+A photo can be attached to an expense as it is recorded or afterwards. Four pieces:
+
+| File                                          | What it is                                                      |
+| --------------------------------------------- | --------------------------------------------------------------- |
+| `lib/storage.ts`                              | The `ObjectStorage` interface plus the local filesystem adapter |
+| `lib/attachments.ts`                          | Scoped data access — ownership runs `expense → car → userId`    |
+| `app/cars/[id]/expenses/attachment-field.tsx` | Client component: downscales via canvas before upload           |
+| `app/api/attachments/[id]/route.ts`           | Ownership-checked serving                                       |
+
+- **⚠️ `.storage/` is gitignored and must NEVER live under `public/`.** Anything in `public/` is
+  served statically with no session check, which would make every photo world-readable at a
+  guessable path. Override the location with `STORAGE_LOCAL_ROOT` (the suites point it at a
+  temporary directory). **Supabase Storage replaces this adapter in 04-04** — nothing above the
+  interface changes.
+- **Keys are opaque** — `randomUUID` plus an extension from the _validated_ MIME type, never the
+  client's filename. The key never leaves the server; the route takes the row id.
+- **404, never 403**, for someone else's attachment and for no session at all. A 403 confirms the id
+  exists. `/api/*` is already outside the service worker's cache allowlist, so no photo is cached.
+- **Exactly one of `carId`/`expenseId`** is enforced by a hand-written CHECK constraint —
+  `num_nonnulls(...) = 1` — because Prisma cannot express one. Same precedent as the category
+  partial unique indexes. Proven by tests that drop to raw SQL.
+- **`deleteExpense` deletes the stored objects before the row.** `Attachment.expenseId` cascades, so
+  after the delete nothing knows the keys — every object would be orphaned invisibly.
+
+### The size limits, and why there are three
+
+Measured, not assumed — the first attempt failed silently because only two were known:
+
+| Limit              | Value                           | What it is                                                                |
+| ------------------ | ------------------------------- | ------------------------------------------------------------------------- |
+| Browser downscale  | 1600px longest edge, JPEG ~0.85 | `lib/image.ts`; a typical photo lands well under 1 MB                     |
+| Validation         | 2 MB                            | `lib/validation/attachment.ts` — the real limit, with a readable message  |
+| Next server action | 3 MB                            | `next.config.ts` — **the default is 1 MB**, stricter than Vercel's 4.5 MB |
+
+**A 4000×3000 test image downscaled to 1137 KB and the action was rejected before it ran, with no
+error to show the user.** If the downscale target or quality changes, re-check `bodySizeLimit`.
+
+- **The browser is never trusted.** If canvas is unavailable the original file uploads untouched and
+  the server refuses it. The declared MIME type is checked against the file's leading bytes, and the
+  declared byte length against the actual one — a browser's `File.type` is a claim.
+- **Width/height are a hint only**, used to size the `<img>` so it reserves space. `toBeVisible()`
+  passes on a broken image, so the e2e test polls `naturalWidth > 0` instead.
+- **No EXIF stripping.** A canvas re-encode drops EXIF — including GPS — as a _side effect_, not a
+  guarantee, and the no-canvas fallback preserves it. ⚠️ Settle this before any deployment carries
+  real photos.
+
 ## Accessibility
 
 `tests/e2e/accessibility.spec.ts` runs `@axe-core/playwright` against WCAG 2 A and AA rules on both

@@ -140,4 +140,24 @@ test.describe("accessibility — signed in", () => {
     await expect(page.locator("#amount")).toBeVisible();
     await expectAccessible(page, "/cars/[id]/expenses/new?type=fuel");
   });
+
+  test("the edit page with a photo has no serious or critical violations", async ({ page }) => {
+    // Added in 04-03. An <img> is exactly what this gate is good at: a missing
+    // or unhelpful alt is a serious violation, and a photo whose contents
+    // nothing can know is precisely where that gets fudged.
+    await page.goto("/");
+    await page
+      .getByRole("link", { name: /^All expenses for / })
+      .first()
+      .click();
+
+    await page.getByRole("link", { name: "Edit" }).first().click();
+    await page.getByLabel(/^Photo/).setInputFiles("public/icons/icon-192.png");
+    await page.getByRole("button", { name: "Save changes" }).click();
+
+    await page.getByRole("link", { name: "Edit" }).first().click();
+    await expect(page.getByRole("region", { name: "Photos" }).getByRole("img")).toBeVisible();
+
+    await expectAccessible(page, "/cars/[id]/expenses/[expenseId]/edit (with a photo)");
+  });
 });

@@ -97,3 +97,12 @@ desktop.ini
 !.vscode/settings.json
 !.vscode/extensions.json
 !.vscode/launch.json
+
+# ─────────────────────────────────────────────────────────────
+# Attachment objects (local storage adapter)
+#
+# User photos. NEVER under public/ — anything there is served statically with
+# no session check, which would make every attachment world-readable at a
+# guessable path. Supabase Storage replaces this backend in 04-04.
+# ─────────────────────────────────────────────────────────────
+.storage/

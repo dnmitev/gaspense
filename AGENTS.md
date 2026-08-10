@@ -178,6 +178,44 @@ picker with one car, a select defaulting to the **most recently added** with sev
   first field, otherwise the hidden input stays. `carId` is untrusted either way and `createExpense`
   verifies ownership in the database, which is what makes the select safe.
 
+## Attachments (photos)
+
+A photo attaches to an expense at creation or afterwards. `lib/storage.ts` (the `ObjectStorage`
+interface plus a local filesystem adapter), `lib/attachments.ts` (scoped data access — ownership
+runs `expense → car → userId`), `app/cars/[id]/expenses/attachment-field.tsx` (client component,
+downscales via canvas), and `app/api/attachments/[id]/route.ts` (ownership-checked serving).
+
+- **⚠️ `.storage/` is gitignored and must NEVER be under `public/`.** Anything there is served
+  statically with no session check — every photo world-readable at a guessable path. Override with
+  `STORAGE_LOCAL_ROOT`. Supabase Storage replaces the adapter in 04-04.
+- Keys are opaque (`randomUUID` + an extension from the _validated_ MIME type, never the client's
+  filename) and never leave the server — the route takes the row id.
+- **404, never 403**, for someone else's attachment and for no session. A 403 confirms the id
+  exists. `/api/*` is outside the service worker's cache allowlist, so photos are never cached.
+- Exactly one of `carId`/`expenseId` is enforced by a hand-written CHECK constraint
+  (`num_nonnulls(...) = 1`); Prisma cannot express one.
+- `deleteExpense` deletes stored objects **before** the row — the cascade would otherwise orphan
+  every object, since nothing knows the keys afterwards.
+
+### Three size limits, all load-bearing
+
+| Limit              | Value                           | Where                                      |
+| ------------------ | ------------------------------- | ------------------------------------------ |
+| Browser downscale  | 1600px longest edge, JPEG ~0.85 | `lib/image.ts`                             |
+| Validation         | 2 MB                            | `lib/validation/attachment.ts`             |
+| Next server action | 3 MB                            | `next.config.ts` — **the default is 1 MB** |
+
+Found by measurement: a 4000×3000 image downscaled to 1137 KB and the server action was rejected
+before running, with no error shown. Re-check `bodySizeLimit` if the downscale target changes.
+
+The browser is never trusted — canvas unavailable means the original uploads and the server refuses
+it; the declared MIME is checked against the leading bytes and the declared size against the actual
+length. Width/height are a hint for sizing the `<img>` only, and the e2e test polls
+`naturalWidth > 0` because `toBeVisible()` passes on a broken image.
+
+**⚠️ No EXIF stripping** — a canvas re-encode drops it as a side effect, not a guarantee, and the
+fallback path preserves it. Settle before any deployment carries real photos.
+
 ## Accessibility
 
 `tests/e2e/accessibility.spec.ts` runs `@axe-core/playwright` over WCAG 2 A/AA on both viewports, as

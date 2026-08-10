@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getStorage } from "@/lib/storage";
 import type { ExpenseInput } from "@/lib/validation/expense";
 
 /**
@@ -179,9 +180,27 @@ export async function updateExpense(
  * here, so the integration suite asserts it actually happens.
  */
 export async function deleteExpense(userId: string, expenseId: string): Promise<number> {
+  // Read the storage keys BEFORE deleting. `Attachment.expenseId` cascades, so
+  // the rows vanish with the expense and the app never learns which objects
+  // they named — every stored photo would be orphaned, invisibly and forever.
+  // The cascade is right for the rows; it just cannot reach outside the
+  // database, so this does.
+  const attachments = await prisma.attachment.findMany({
+    where: { expenseId, expense: { id: expenseId, car: ownedCar(userId) } },
+    select: { storageKey: true },
+  });
+
   const result = await prisma.expense.deleteMany({
     where: { id: expenseId, car: ownedCar(userId) },
   });
+
+  // Only after the delete succeeded, and only for a delete that affected rows —
+  // otherwise a refused delete (someone else's expense) would still remove the
+  // objects it was not allowed to touch.
+  if (result.count > 0) {
+    const storage = getStorage();
+    await Promise.all(attachments.map((attachment) => storage.delete(attachment.storageKey)));
+  }
 
   return result.count;
 }

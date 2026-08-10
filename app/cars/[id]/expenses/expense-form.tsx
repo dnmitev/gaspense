@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
+import { AttachmentField } from "@/app/cars/[id]/expenses/attachment-field";
 import type { ActionResult } from "@/app/cars/[id]/expenses/actions";
 
 type CategoryOption = { id: string; name: string };
@@ -155,7 +156,6 @@ export function ExpenseForm({
           the page was opened. Off when editing, where it would fight scroll
           restoration and move focus away from whatever the user came to change.
         */}
-        {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
         <input
           id="amount"
           name="amount"
@@ -291,6 +291,13 @@ export function ExpenseForm({
           </div>
         </fieldset>
       </FuelDetails>
+
+      {/*
+        Outside FuelDetails on purpose: a receipt photo is as useful on a
+        service invoice as on a fill-up, so it is not a fuel field.
+      */}
+      <AttachmentField />
+      <FieldError messages={errors.attachment} />
 
       <div className="mt-2 flex items-center gap-3">
         <button

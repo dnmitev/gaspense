@@ -1,9 +1,9 @@
 // Gaspense data model.
 //
-// Scope: Phase 2's five entities only. Fine and Vignette are deferred to Phase 5
-// (their fields depend on what the КАТ/vignette research spike finds the services
-// actually return, so modelling them now would be speculation). Attachment is
-// deferred to Phase 4 with photo upload. See docs/ARCHITECTURE.md.
+// Scope: six entities. Attachment landed in 04-03 with expense photo upload.
+// Fine and Vignette remain deferred to Phase 5 — their fields depend on what the
+// КАТ/vignette research spike finds the services actually return, so modelling
+// them now would be speculation. See docs/ARCHITECTURE.md.
 //
 // Prisma 7 note: connection URLs live in prisma.config.ts, not here — the
 // datasource block no longer accepts `url` or `directUrl`.
@@ -124,6 +124,7 @@ model Car {
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   expenses         Expense[]
   odometerReadings OdometerReading[]
+  attachments      Attachment[]
 
   @@index([userId])
   @@index([deletedAt])
@@ -185,9 +186,60 @@ model Expense {
   /// Deleting the expense deletes the reading — see OdometerReading.expenseId.
   odometerReading OdometerReading?
 
+  attachments Attachment[]
+
   @@index([carId])
   @@index([date])
   @@index([categoryId])
+}
+
+/// A photo attached to a car or to an expense.
+///
+/// **Nullable dual foreign keys**, per the standing decision: one table serves
+/// both, rather than two near-identical ones. Exactly one of `carId`/`expenseId`
+/// must be set, and that rule is a **CHECK constraint written by hand in the
+/// migration** — Prisma cannot express it, the same reason 02-03's partial
+/// unique indexes live in raw SQL. Without the constraint the rule would be a
+/// comment, and comments do not reject rows.
+///
+/// `carId` exists from this migration even though car photos arrive in 04-04:
+/// splitting one table across two migrations to defer a nullable column is
+/// worse than declaring it once.
+///
+/// **The bytes are not here.** `storageKey` names an object in whatever backend
+/// `lib/storage.ts` resolves — a local directory today, Supabase Storage in
+/// 04-04. The key is opaque (`randomUUID` plus an extension derived from the
+/// *validated* MIME type, never the client's filename) and never leaves the
+/// server: `/api/attachments/[id]` takes the row id, checks ownership, and
+/// streams the object itself.
+model Attachment {
+  id    String  @id @default(cuid())
+  carId String?
+
+  expenseId String?
+
+  /// Opaque object key. Unique so a key can never be claimed by two rows.
+  storageKey String @unique
+
+  /// Validated against an allowlist AND against the file's leading bytes — a
+  /// MIME string from a browser is a claim, not a fact.
+  mimeType  String
+  sizeBytes Int
+
+  /// Stored so the <img> can carry width/height and reserve its space, which
+  /// is what prevents layout shift without a client-side measurement.
+  width  Int?
+  height Int?
+
+  createdAt DateTime @default(now())
+
+  /// Cascade removes the ROW, which is why `deleteExpense` deletes the stored
+  /// object first — a cascade the app never sees would orphan every object.
+  car     Car?     @relation(fields: [carId], references: [id], onDelete: Cascade)
+  expense Expense? @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  @@index([carId])
+  @@index([expenseId])
 }
 
 model OdometerReading {

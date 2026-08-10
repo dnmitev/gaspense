@@ -32,7 +32,7 @@ be pulled forward. Phase 9 was pulled ahead of the rest of Phase 3 and is now co
 | 1 | CI/CD Pipeline | 1/1 | ✅ Complete | 2026-08-07 |
 | 2 | Foundations | 7/7 | ✅ Complete | 2026-08-08 |
 | 3 | Reporting | 3/3 | ✅ Complete | 2026-08-10 |
-| 4 | PWA & Mobile UX | 1/3 | In progress — **current** | - |
+| 4 | PWA & Mobile UX | 3/4 | In progress — **current** | - |
 | 5 | Bulgarian Integrations | TBD | Not started | - |
 | 6 | Google Drive Export | TBD | Not started | - |
 | 7 | Maintenance Reminders | TBD | Not started | - |
@@ -313,7 +313,9 @@ project-wide.
       cache boundary is proven offline, and the `/offline.html` fallback
 - [x] 04-02: Quick-add — one tap from the dashboard, a car-agnostic `/expenses/new`, and the
       project's first accessibility audit over that path
-- [ ] 04-03: `Attachment` schema + Supabase Storage + car/expense photo upload
+- [x] 04-03: `Attachment` schema, a storage interface with a local adapter, expense photo upload
+      with browser-side downscaling, and ownership-checked serving
+- [ ] 04-04: The Supabase Storage adapter, car photos, and the deployment wiring
 
 **04-01 completed 2026-08-10.** ~47 minutes, 33 tests added (444 total). Installable with zero new
 dependencies; the cache boundary is demonstrated by an offline navigation returning the user's data
@@ -396,6 +398,75 @@ merely not closing.
 and therefore its own isolation and mutation tests, to buy a preselected `<option>`), and a
 persistent navigation — every page still hand-rolls its own back link. The audit surfaced no urgent
 reason to revisit the latter.
+
+**Split again at 04-03 planning time (2026-08-10) — the phase is now four plans.** Verified against
+the working tree first: there is no Supabase project, no credentials, no SDK and no CLI. Rather than
+stall a loop at a human-action checkpoint, 04-03 builds everything behind a **storage interface with
+a local filesystem adapter** — fully testable today — and 04-04 adds the Supabase adapter, car
+photos, and the deployment wiring once the project exists.
+
+**Settled at 04-03 planning time:**
+
+- **The browser downscales before upload, and that is not cosmetic.** A Vercel serverless request
+  body is capped at **4.5 MB** and a phone photo is routinely 3–6 MB, so a plain server-action
+  upload fails on exactly the files the feature exists for. A canvas resize to a 1600px longest edge
+  puts a typical photo under 500 KB. The file still passes through the server, so size and MIME
+  validation stay in one place — **server-side validation is the backstop; the browser is never
+  trusted to have shrunk anything.**
+- **Serving is an ownership-checked proxy route**, `/api/attachments/[id]`, not a signed URL. A
+  leaked signed URL works for anyone until it expires, and isolation would have to be argued about
+  URL minting instead of demonstrated by a request being refused. **404, never 403** — the existing
+  rule that saying which would confirm the other exists. `/api/*` is already outside the service
+  worker's cache allowlist, so no photo is ever cached; 04-03 confirms that rather than assuming it.
+- **Objects live under a gitignored `.storage/`, never under `public/`.** Anything in `public/` is
+  served statically with no session check, which would make every photo world-readable at a
+  guessable path. Keys are `randomUUID` plus an extension from the *validated* MIME type, never the
+  client's filename, and the key never leaves the server — the route takes the attachment id.
+- **A CHECK constraint enforces exactly one of `carId`/`expenseId`.** Prisma cannot express it, so
+  it is hand-written migration SQL, the same precedent as 02-03's partial unique indexes. Without
+  it the dual-nullable-foreign-key decision is a comment rather than a rule.
+- **`carId` lands in this migration** even though car photos are 04-04's — splitting one table
+  across two migrations to defer a nullable column is worse than declaring it.
+- **`deleteExpense` deletes the objects before the row.** The database cascade removes Attachment
+  rows without the app ever learning their storage keys, which would orphan every object silently.
+  This is the one edit to a file 04-02 protected, and AC-5 requires it.
+- **One attachment per expense in the UI**; the schema permits many, but a gallery has its own
+  design questions.
+
+**⚠️ Deferred privacy issue from 04-03:** **no EXIF stripping.** A canvas re-encode drops EXIF as a
+side effect — including GPS coordinates — but that is a consequence, not a guarantee, and the
+no-canvas fallback path preserves it. Worth making explicit before any deployment carries real
+photos.
+
+**04-03 completed 2026-08-10.** ~75 minutes, 56 tests added (546 total). A photo attaches at the
+moment the expense is recorded, shrinks in the browser first, and is readable by nobody else —
+404 for another user and for no session at all.
+
+**⚠️ The single most important finding: AC-4 was never actually tested, and hid a real defect.**
+Every attachment test used the committed 192px icon as its fixture — already inside the 1600px
+limit, so the downscaler took its "leave it alone" branch every time. Replacing it with a generated
+4000×3000 image immediately exposed that **Next caps a server action's body at 1 MB by default**,
+stricter than the 4.5 MB Vercel limit the whole design was built around. A 1137 KB upload was
+rejected before the action ran, **with no error shown to the user at all**. There are now three
+layered limits — browser downscale (1600px) → validation (2 MB, the readable one) → `bodySizeLimit`
+(3 MB) — and changing the first means re-checking the last.
+
+**⚠️ Two more assertions that proved nothing**, both found by looking at a screenshot rather than by
+a test: `toBeVisible()` passed against a 320×2 image that had never loaded (it only needs a
+non-empty box — poll `naturalWidth > 0`), and the `width`/`height` columns existed for the express
+purpose of reserving the image's space while nothing ever wrote to them.
+
+**Mutation results — the answers diverged again, for the fourth time.**
+`getAttachmentForUser`'s ownership filter is load-bearing; `deleteAttachment`'s `deleteMany` filter
+is **not** — the pre-check carries it. It stays as defence in depth and is documented as redundant
+rather than implied to be proven.
+
+**⚠️ For 04-04, which now closes the phase:**
+- **The Supabase adapter is required, not optional.** Vercel's filesystem is ephemeral, so the local
+  adapter works in development and would silently lose photos in production.
+- **Car photos need no migration** — `Attachment.carId` and the CHECK constraint already exist.
+- Prisma 7's `migrate diff` needs `SHADOW_DATABASE_URL` and has renamed flags (`--to-schema`, and
+  no `--shadow-database-url`). `gaspense_shadow` exists on the local container now.
 
 ### Phase 5: Bulgarian Integrations
 
