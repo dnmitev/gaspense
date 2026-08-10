@@ -11,32 +11,31 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-10)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release — Phase 8 closed; Phase 4 (PWA & Mobile UX) ready to plan,
-resuming the roadmap order
+**Current focus:** v0.1 Initial Release — Phase 4 (PWA & Mobile UX), split into three plans;
+04-01 (installable PWA) complete, 04-02 (quick-add + accessibility) next
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 4 of 10 (PWA & Mobile UX) — Not started
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-08-10 — **Phase 8 complete** (2 plans, 27 tests); transitioned to Phase 4
+Phase: 4 of 10 (PWA & Mobile UX) — In progress
+Plan: 04-01 complete ✅ — all 6 ACs pass, 33 tests added
+Status: Loop closed, ready to plan 04-02
+Last activity: 2026-08-10 — **04-01 complete**: installable PWA; the cache boundary is proven, not asserted
 
 Progress:
 - Milestone: [██████░░░░] 60% (6 of 10 phases complete)
-- Phase 8: [██████████] 100% (2 of 2 plans) ✅
-- Phase 4: [░░░░░░░░░░] 0% (not started)
+- Phase 4: [███░░░░░░░] 33% (1 of 3 plans) — 04-02 quick-add + a11y, 04-03 attachments
 
 ## Loop Position
 
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete — Phase 8 closed, ready for next PLAN]
+  ✓        ✓        ✓     [Loop complete — ready for 04-02]
 ```
 
 ## Performance Metrics
 
-16 plans complete, ~10h total, ~38 min average.
+17 plans complete, ~11h total, ~39 min average.
 
 | Phase | Plans | Avg/Plan |
 |-------|-------|----------|
@@ -44,13 +43,15 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | 01-cicd-pipeline | 1/1 ✅ | ~29 min |
 | 02-foundations | 7/7 ✅ | ~57 min |
 | 03-reporting | 3/3 ✅ | ~28 min |
+| 04-pwa-mobile-ux | 1/3 | ~47 min |
 | 08-test-environment-safety | 2/2 ✅ | ~25 min |
 | 09-demo-data-seed | 1/1 ✅ | ~20 min |
 
-**Trend:** …**20**, **17**, **45**, **36**, **14** min. 08-02's 14 is the fastest plan since
-Phase 0, and it was the *harder* of the two — because 08-01 had already paid for the resolver, the
-test database and the wiring. The lesson holds twice over: **the second plan of a split phase is
-cheap precisely because the first one was scoped narrowly.** Keep splitting.
+**Trend:** …**17**, **45**, **36**, **14**, **47** min. 04-01 is the longest since Phase 2, and the
+time went where it should have: roughly a third of it was mutation-testing the proof and then
+rewriting two tests that passed for the wrong reason. **A plan whose deliverable is a guarantee
+costs more than one whose deliverable is a feature** — budget for that in 04-03, where the
+`Attachment` upload path carries the same shape of claim.
 
 ## Accumulated Context
 
@@ -61,7 +62,8 @@ Only what constrains upcoming work. **Full log: `.paul/PROJECT.md` → Key Decis
 | Decision | Impact on what comes next |
 |----------|---------------------------|
 | **Isolation is app-layer, not RLS** | Every new query path needs a test proving one user cannot read another's rows. No database backstop exists |
-| **Which scope filter is load-bearing is measured, never inferred** | `getCarReport`'s pre-check did all the work and its relation filter none; `getFleetSummary`'s two filters are redundant with each other. Same question, different answers — mutation-test each new query shape |
+| **Which check is load-bearing is measured, never inferred — three for three** | `getCarReport`'s pre-check did all the work and its relation filter none; `getFleetSummary`'s two filters are redundant; 04-01's `isNavigation` guard did **nothing** because the allowlist already refused those paths. Every time, the obvious test passed for the wrong reason. Mutation-test the guard you just wrote |
+| **Look at visual output; no assertion substitutes** | 04-01's icons passed every automated check while rendering as a small glyph in the top-left corner. Opening the PNG is what caught it |
 | **`lib/session.ts` is the only way to learn the caller** | `requireUserId()` throws rather than returning falsy — Prisma reads `undefined` in `where` as "no filter" |
 | **Data-layer functions take `userId` explicitly; writes use scoped `updateMany`** | Never findUnique-then-update. Scoping visible at the call site |
 | **`Expense` has no `userId`** — scoped via `carId → Car.userId` | `create` has no WHERE, so ownership there is an explicit pre-check |
@@ -73,7 +75,10 @@ Only what constrains upcoming work. **Full log: `.paul/PROJECT.md` → Key Decis
 | **Prisma 7: adapter mandatory, URLs in `prisma.config.ts`, scripts under `tsx`** | Never `new PrismaClient()` bare; the generated client's imports are bundler-style |
 | **Migrations generated non-interactively** | `migrate dev` refuses headless and Prisma 7 blocks `migrate reset` under Claude Code. Use `migrate diff`, prove with `migrate deploy` |
 | **Mutations are server actions; reads in server components** | No REST routes. `docs/ARCHITECTURE.md`'s REST table was a design sketch |
-| **Hand-rolled Tailwind, no component library; charts are hand-rolled SVG** | The app ships almost no client JavaScript — the strongest possible starting point for Phase 4's PWA. The only client components are Phase 2's forms and delete buttons |
+| **Hand-rolled Tailwind, no component library; charts are hand-rolled SVG** | Client components: Phase 2's forms and delete buttons, plus 04-01's worker registration in the shell (renders `null`). That last one is the cost of installability, not a precedent |
+| **The service-worker cache is an allowlist — never HTML, never `/api`** | Widening it is a **security** change, not a performance tweak: a cached navigation outlives the session that authorised it. Re-run the AC-4 tests in `tests/e2e/pwa.spec.ts` if you touch it |
+| **`CACHE_VERSION` in `public/sw.js` is bumped by hand** | Change the precache list without bumping and stale entries survive. Same shape of unenforced obligation as "a new destructive path needs its own `assertTestDatabase`" |
+| **`public/sw.js` is the one plain-JS file, an ES module worker** | Its types live in `types/sw.d.ts`, deliberately outside `public/` — everything there is publicly fetchable. Registration is production-only |
 | **`/` requires a session** | It is a server component reading auth, so it cannot be unit-tested under jsdom. Page coverage is e2e; jsdom renders only auth-free components |
 | **Unit tests DB-free; integration separate** | `npm test` must keep passing with Docker stopped. Pure modules (`aggregation`, `consumption`, `chart`, `demo-data`) import nothing |
 | **Vitest does not type-check; `next build` does** | Run both. Also: a failed test *file* reports "all passed" — read the exit code, not the summary |
@@ -108,7 +113,8 @@ Only what constrains upcoming work. **Full log: `.paul/PROJECT.md` → Key Decis
 
 | Concern | Impact | Resolution Path |
 |---------|--------|-----------------|
-| No accessibility audit has been run | WCAG AA is a stated goal. Landmarks and chart labelling exist; contrast, focus order and keyboard nav are unverified | Phase 4 is where this matters most — mobile UX |
+| No accessibility audit has been run | WCAG AA is a stated goal. Landmarks and chart labelling exist; contrast, focus order and keyboard nav are unverified. 04-01 changed no user-facing UI, so this is untouched | **04-02** — it changes the UI a user actually reads |
+| No real home-screen install has been performed | Everything installability *requires* is proven by test (complete manifest, maskable icon, controlling fetch-handling worker, secure origin), but the device install is not. Same shape of gap as the Google login open from 02-04 to 09-01 | Install it on a phone once, or run Lighthouse |
 | System categories exist only if `db:seed` ran | A fresh production database gives a new user an empty category select | Decide whether the app self-heals or deployment must seed |
 | Next.js owns a section of AGENTS.md | Hand-edits inside `nextjs-agent-rules` are overwritten on `next dev` | Edit only outside the markers |
 | e2e step rebuilds the app, duplicating the Build step | Slower CI runs | Accepted; optimising means touching 01-01's verified structure |
@@ -140,25 +146,31 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 
 ## Session Continuity
 
-Last session: 2026-08-10 — Phase 8 planned, applied and closed across two loops
-Stopped at: Phase 8 complete, committed and pushed
-Next action: `/paul:plan` for **Phase 4 — PWA & Mobile UX**
-Resume file: `.paul/ROADMAP.md`
+Last session: 2026-08-10 — Phase 4 split three ways; 04-01 planned, applied and closed
+Stopped at: 04-01 complete, committed and pushed
+Next action: `/paul:plan` for **04-02 — quick-add expense flow + the first accessibility audit**
+Resume file: `.paul/phases/04-pwa-mobile-ux/04-01-SUMMARY.md`
 Git strategy: `main` (direct commits)
 Resume context:
-- **Phase 4 is next, and it is a big one:** installable PWA manifest/service worker, a quick-add
-  expense flow, and photo upload — which means `Attachment`, **the first schema change since
-  02-07**, plus Supabase Storage. Expect to split it.
-- **⚠️ Phase 4's starting position is the app's best asset:** every page is a server component and
-  the app ships almost no client JavaScript. Do not casually add a client boundary.
-- **⚠️ No accessibility audit has ever been run.** WCAG AA is a stated goal and mobile UX is where
-  it matters most — Phase 4 is the place.
+- **04-02 is next: the quick-add expense flow plus the accessibility audit.** It is the only plan in
+  the phase that changes UI a user reads, so the audit belongs there and nowhere else.
+- **⚠️ 04-02 must not treat 04-01's client component as a precedent.** The shell now ships one, it
+  renders `null`, and it exists because there is no server-side way to register a worker.
+- **⚠️ The service-worker cache is a security boundary.** Static assets only; widening the allowlist
+  in `public/sw.js` means re-running the AC-4 tests in `tests/e2e/pwa.spec.ts`.
+- **⚠️ 04-03 needs a real Supabase project** before it can be verified end-to-end. The user has
+  taken that on. It blocks nothing in 04-02.
+- **⚠️ Mutation-test the guard you write — three for three now.** 04-01's `isNavigation` check did
+  nothing until the test was rewritten, because the allowlist already refused those paths.
+- **⚠️ Look at visual output.** 04-01's icons passed every check while rendering wrong.
 - **⚠️ `.env` carries `TEST_DATABASE_URL`** (gitignored). A fresh clone needs it from
   `.env.example` plus `npm run db:test:setup`, or the suites refuse to run.
 - **⚠️ Local e2e needs port 3000 free** — `reuseExistingServer` is off, so it fails rather than
   reusing the wrong server. Identify a process through its parent chain before killing anything.
-- **411 tests:** 187 unit, 136 integration, 88 e2e.
+- **444 tests:** 206 unit, 136 integration, 102 e2e.
 - **Never read an exit code through a pipe** — this has caused a wrong conclusion three times.
+- **`.agents/` and `skills-lock.json` are untracked and predate this session** — deliberately left
+  out of 04-01's commits. Decide what they are before something sweeps them in.
 
 ---
 *STATE.md — Updated after every significant action*

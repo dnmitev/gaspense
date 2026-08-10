@@ -250,6 +250,42 @@ which makes sessions revocable). Input is validated with Zod at every action bou
 
 ---
 
+## PWA and the Service Worker Cache Boundary
+
+The app is installable: `app/manifest.ts` serves a typed manifest at `/manifest.webmanifest`, the
+icons are rasterised from a single `public/icon.svg`, and `public/sw.js` is a hand-written ES module
+service worker registered by `app/service-worker-registration.tsx` — the only client component in the
+app shell, rendering `null`.
+
+**The manifest route is deliberately reachable without a session.** Every _page_ redirects to
+`/signin`, but a manifest the browser cannot fetch before sign-in means the app is never installable,
+and the manifest carries nothing private.
+
+**The cache is an allowlist, and that is a security property.** A service worker is a proxy that
+outlives the page installing it. Every page here is behind a session and renders one user's rows, so
+a cached navigation response would outlive the session that authorised it — the app would serve a
+signed-in dashboard after sign-out, from a store the server can neither reach nor clear.
+
+| Request                                                                                                       | Treatment                                           |
+| ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `/_next/static/*`, `/icons/*`, `/icon.svg`, `/apple-touch-icon.png`, `/manifest.webmanifest`, `/offline.html` | Cache-first, then network                           |
+| Any document navigation                                                                                       | Network-only; on failure the static `/offline.html` |
+| `/api/*`                                                                                                      | Never cached                                        |
+| Any non-GET                                                                                                   | Never cached                                        |
+| Any cross-origin or opaque response                                                                           | Never cached                                        |
+
+The fallback is never a cached copy of the requested page — there is never one to fall back to.
+Anything off the allowlist is passed through untouched, with no `respondWith`, so the worker never
+sees the response.
+
+`CACHE_VERSION` gates eviction: `activate` deletes every cache that does not match it, so it must be
+bumped whenever the precache list changes.
+
+**No offline writes.** No background sync and no queued mutations — offline means the shell loads and
+says so honestly. Queuing writes needs a conflict story this project does not have.
+
+---
+
 ## Phase Roadmap
 
 Seven phases toward the v0.1 release. See `.paul/ROADMAP.md` for status, dependencies, and plans.

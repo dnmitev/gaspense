@@ -37,21 +37,22 @@ It is a personal project shared with trusted friends and family, each with their
 
 Run `npm install` once, then these all work:
 
-| Purpose                  | Command                 |
-| ------------------------ | ----------------------- |
-| **All gates (this one)** | **`npm run check`**     |
-| Dev server               | `npm run dev`           |
-| Production build         | `npm run build`         |
-| Serve production build   | `npm start`             |
-| Unit + integration tests | `npm test`              |
-| End-to-end tests         | `npm run test:e2e`      |
-| Lint code                | `npm run lint`          |
-| Lint markdown            | `npm run lint:md`       |
-| Format                   | `npm run format`        |
-| Check formatting         | `npm run format:check`  |
-| Seed system categories   | `npm run db:seed`       |
-| Seed demo data (dev)     | `npm run db:seed:demo`  |
-| Create the test database | `npm run db:test:setup` |
+| Purpose                  | Command                  |
+| ------------------------ | ------------------------ |
+| **All gates (this one)** | **`npm run check`**      |
+| Dev server               | `npm run dev`            |
+| Production build         | `npm run build`          |
+| Serve production build   | `npm start`              |
+| Unit + integration tests | `npm test`               |
+| End-to-end tests         | `npm run test:e2e`       |
+| Lint code                | `npm run lint`           |
+| Lint markdown            | `npm run lint:md`        |
+| Format                   | `npm run format`         |
+| Check formatting         | `npm run format:check`   |
+| Seed system categories   | `npm run db:seed`        |
+| Seed demo data (dev)     | `npm run db:seed:demo`   |
+| Create the test database | `npm run db:test:setup`  |
+| Regenerate the PWA icons | `npm run icons:generate` |
 
 `npm run check` is the docs + style gate: it verifies the agent docs exist, then runs
 `format:check`, `lint`, and `lint:md`. Run it before committing — the pre-push hook runs it anyway.
@@ -128,9 +129,54 @@ survive. Do not "tidy" them away.
   recognised secret. Treat that as a safety net, not a strategy: never write a real credential to a
   file in the first place.
 
+## PWA
+
+The app is an installable PWA. Four files, and one rule that matters more than the rest.
+
+| File                                  | What it is                                                                                      |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `app/manifest.ts`                     | The manifest, served at `/manifest.webmanifest`. Typed, so `next build` catches a malformed one |
+| `public/icon.svg`                     | The one hand-authored icon source — glyph only, no background                                   |
+| `public/sw.js`                        | The service worker                                                                              |
+| `public/offline.html`                 | The static navigation fallback                                                                  |
+| `app/service-worker-registration.tsx` | Registers the worker, renders `null`                                                            |
+
+**The caching rule is a security boundary, not a performance setting.** Every page sits behind a
+session and renders one user's rows, so a cached navigation response would outlive the session that
+authorised it — the app would keep serving a signed-in dashboard after sign-out, from a store the
+server can neither reach nor clear. So the worker caches an **allowlist of static assets and nothing
+else**: never HTML, never `/api`, never a non-GET, never an opaque cross-origin response.
+Navigations are network-only, falling back to `/offline.html` and never to a previous page.
+
+`tests/e2e/pwa.spec.ts` proves it two ways — Cache Storage contains no HTML entry, and an offline
+navigation returns a page with the user's data **absent**. Both were confirmed to fail when
+navigations are routed through the cache.
+
+- **`CACHE_VERSION` in `public/sw.js` must be bumped when the precache list changes.** `activate`
+  deletes every cache not matching it, so bumping is what evicts stale entries. Nothing enforces it.
+- **Registration is production-only.** In `next dev` the chunks under `/_next/static` are unhashed,
+  so a cache-first worker serves yesterday's chunk and breaks hot reload in a way that looks like a
+  compiler bug. e2e runs a production build, so the worker is still fully covered.
+- **`npm run icons:generate`** rasterises `public/icon.svg` into the PNGs, using the Chromium
+  Playwright already installs — no image library for four files. **The PNGs are committed**: Vercel
+  serves `public/` statically and never runs the generator. `tests/unit/icons.test.ts` parses their
+  IHDR headers against the sizes the manifest declares, so editing one without regenerating fails
+  `npm test` rather than failing silently in a browser.
+- Two decisions on the alternatives: not `next-pwa` (unmaintained, pinned to older Next.js), not
+  Serwist (maintained, but a build-plugin dependency taken purely for convenience).
+
 ## Conventions
 
-- **TypeScript throughout.** No plain-JS source files.
+- **TypeScript throughout.** No plain-JS source files — **one documented exception**: `public/sw.js`.
+  A service worker is fetched by the browser as a static file and is not in the TypeScript build
+  graph; the alternatives are adding a compile step or serving the script as a string from a route
+  handler, and both are worse. It is an ES **module** worker, which is what lets
+  `tests/unit/sw-policy.test.ts` import its predicates and test the real rule rather than a copy.
+  Its types live in `types/sw.d.ts`, not in `public/` — everything in `public/` is fetchable.
+- **The app ships almost no client JavaScript, and that is deliberate.** Every page is a server
+  component; charts are server-rendered SVG. The only client components are Phase 2's forms and
+  delete buttons and the service-worker registration, and each earned it. Do not add a client
+  boundary casually.
 - **Mobile-first.** Design and test the small viewport first; desktop is secondary.
 - **Amounts are EUR only.** No multi-currency conversion logic — this is a deliberate decision, not an oversight.
 - **Every API route is scoped by the authenticated `userId`.** Users must only ever see their own cars, expenses, and attachments. Never expose a query that can be widened by passing someone else's ID.

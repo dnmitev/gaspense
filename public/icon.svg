@@ -1,0 +1,32 @@
+<!--
+  The single source of truth for every app icon.
+
+  Deliberately just the glyph on a transparent background, in a 100x100 box:
+  the background colour, the corner rounding and the safe-zone padding all
+  differ between the "any", "maskable" and Apple compositions, so they belong to
+  scripts/generate-icons.ts rather than being baked in here four times.
+
+  A droplet, and no text. Text is unreadable at 48px and would tie the icon to
+  one language.
+
+  Regenerate the PNGs after editing:  npm run icons:generate
+-->
+<!--
+  No width/height attributes on purpose: with them the glyph renders at its
+  intrinsic 100x100 wherever it is placed, which put it in the top-left corner
+  of every generated icon. viewBox alone lets the container size it.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <path
+    d="M50 6C50 6 20 42 20 62a30 30 0 0 0 60 0C80 42 50 6 50 6Z"
+    fill="#ffffff"
+  />
+  <path
+    d="M50 30c-9 12-15 22-15 30a15 15 0 0 0 8 13"
+    fill="none"
+    stroke="#171717"
+    stroke-width="6"
+    stroke-linecap="round"
+    opacity="0.35"
+  />
+</svg>

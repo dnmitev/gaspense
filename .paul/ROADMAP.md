@@ -32,7 +32,7 @@ be pulled forward. Phase 9 was pulled ahead of the rest of Phase 3 and is now co
 | 1 | CI/CD Pipeline | 1/1 | ✅ Complete | 2026-08-07 |
 | 2 | Foundations | 7/7 | ✅ Complete | 2026-08-08 |
 | 3 | Reporting | 3/3 | ✅ Complete | 2026-08-10 |
-| 4 | PWA & Mobile UX | TBD | Not started — **next** | - |
+| 4 | PWA & Mobile UX | 1/3 | In progress — **current** | - |
 | 5 | Bulgarian Integrations | TBD | Not started | - |
 | 6 | Google Drive Export | TBD | Not started | - |
 | 7 | Maintenance Reminders | TBD | Not started | - |
@@ -270,8 +270,76 @@ endpoints, distance, litres, rate), and `formatEurPerKm` exists for any rate the
 - Fast quick-add expense flow, responsive polish
 - Car/expense photo upload (Attachments + Supabase Storage)
 
+**Split into three plans at planning time (2026-08-10).** The scope bundles three genuinely
+separate concerns — an install/offline shell, a UI flow, and a schema change against an
+external storage service — and only the first has no blocker. PWA goes first because it
+touches neither the schema nor any external account, so it can land while the Supabase
+project for 04-03 is still being created.
+
+**Settled at 04-01 planning time (2026-08-10):**
+
+- **The service worker is hand-written**, a plain `public/sw.js`, per Next.js's own App
+  Router guidance. Not `next-pwa` (unmaintained, pinned to older Next.js) and not Serwist
+  (maintained, but a build-plugin dependency taken purely for convenience). Consistent with
+  hand-rolled Tailwind and hand-rolled SVG charts, and it keeps the caching rule readable
+  rather than configured.
+- **⚠️ The cache policy is a security boundary, not a performance setting.** Every page in
+  this app is behind a session and renders one user's rows, so a cached navigation response
+  would outlive the session that authorised it and survive sign-out. The worker caches
+  static assets only — never HTML, never `/api`, never a non-GET. Navigations are
+  network-only with a static `/offline.html` fallback, and 04-01 proves it by going offline
+  and asserting the user's data is **absent**, not merely that an offline page appears.
+- **Two standing rules are spent deliberately, and only these two.** `public/sw.js` is the
+  first plain-JS source file (a service worker is fetched as a static file and is not in the
+  TypeScript build graph; the alternatives are a compile step or a script-in-a-string route
+  handler, both worse), and the registration component is the first layout-level client
+  boundary (there is no server-side way to register a worker). It renders `null`.
+- **Icons are rasterised by the Chromium Playwright already installs**, via a tracked
+  `scripts/generate-icons.ts`, from one hand-authored SVG. No image library for four files.
+  The PNGs are committed — Vercel serves them statically and will not run the generator —
+  and a unit test parses their IHDR headers so a manifest that outgrows its files fails in
+  `npm test` rather than in a store review.
+- **No offline writes.** No background sync, no queued mutations. Offline means the shell
+  loads and says so honestly; anything more needs a conflict story this phase does not have.
+- **04-03 needs a real Supabase project**, which the user has taken on. It blocks neither
+  04-01 nor 04-02.
+
+**⚠️ For 04-02:** the accessibility audit belongs there, not in 04-01 — 04-01 changes no UI
+that a user reads. Contrast, focus order and keyboard navigation are still unverified
+project-wide.
+
 **Plans:**
-- [ ] TBD — defined during `/paul:plan`
+- [x] 04-01: Installable PWA — manifest, generated icons, a hand-written service worker whose
+      cache boundary is proven offline, and the `/offline.html` fallback
+- [ ] 04-02: Quick-add expense flow, responsive polish, and the first accessibility audit
+- [ ] 04-03: `Attachment` schema + Supabase Storage + car/expense photo upload
+
+**04-01 completed 2026-08-10.** ~47 minutes, 33 tests added (444 total). Installable with zero new
+dependencies; the cache boundary is demonstrated by an offline navigation returning the user's data
+**absent**, plus a direct read of Cache Storage showing no HTML key.
+
+**⚠️ Found in 04-01, and the reason two tests were rewritten:** the obvious "never caches a
+navigation" unit test passed with the guard deleted — `/` and `/cars/...` are refused by the
+*allowlist*, so the navigation check was doing nothing. The AC-4 e2e test had the same weakness: it
+loaded `/` once, before the worker controlled the page, so a worker that cached HTML *and* fell back
+to `/offline.html` would have passed. Both now exercise what they claim. **This is the third time
+mutation testing has overturned an assumption about which check is load-bearing** (03-01's pre-check,
+03-03's redundant filters, now this) — for 04-02 and 04-03, budget for it rather than treating it as
+optional polish.
+
+**⚠️ Also found in 04-01:** every automated check passed on a broken icon that rendered as a small
+glyph in the top-left corner. Only opening the PNG caught it. **Visual output needs looking at**, and
+no assertion substitutes.
+
+**⚠️ For 04-02 and 04-03:** the cache in `public/sw.js` is an allowlist and that is a security
+property, not a performance setting — widening it is a security change and needs the AC-4 tests
+re-run. `CACHE_VERSION` must be bumped by hand when the precache list changes; nothing enforces it.
+The app now ships one client component in the shell (the worker registration, rendering `null`) —
+that was the whole cost of installability and is not a precedent.
+
+**⚠️ Still open from 04-01:** no real home-screen install has been performed. Every requirement
+installability depends on is proven by test; the device install itself is not — the same shape of
+gap as the Google login that stayed open from 02-04 until 09-01.
 
 ### Phase 5: Bulgarian Integrations
 

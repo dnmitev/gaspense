@@ -36,6 +36,28 @@ export default tseslint.config(
   // Next.js: React, hooks, a11y, and framework-specific correctness rules.
   ...next,
 
+  // The service worker runs in ServiceWorkerGlobalScope, not the browser window
+  // and not Node — so `self`, `caches` and `clients` are undefined as far as
+  // no-undef is concerned, and `npm run lint` fails without this.
+  //
+  // This is the project's only plain-JS source file, by documented exception:
+  // a service worker is fetched as a static file and is not in the TypeScript
+  // build graph. See the header of public/sw.js.
+  {
+    files: ["public/sw.js"],
+    languageOptions: {
+      globals: {
+        self: "readonly",
+        caches: "readonly",
+        clients: "readonly",
+        fetch: "readonly",
+        Response: "readonly",
+        URL: "readonly",
+        Promise: "readonly",
+      },
+    },
+  },
+
   // Must stay last: turns off stylistic rules that Prettier owns.
   prettier,
 );

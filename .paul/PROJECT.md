@@ -20,7 +20,7 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 |-----------|-------|
 | Type | Application |
 | Version | 0.0.0 |
-| Status | Prototype — **Phases 0-3, 8 and 9 complete.** Log in, add a car, record expenses and mileage, and see what it all costs: by month, by year, by category, per kilometre, and litres per 100 km — with a dashboard on opening the app. The test suites now run against a database of their own and refuse to touch any other |
+| Status | Prototype — **Phases 0-3, 8 and 9 complete; Phase 4 in progress (1 of 3).** Log in, add a car, record expenses and mileage, and see what it all costs: by month, by year, by category, per kilometre, and litres per 100 km — with a dashboard on opening the app. The app now installs to a phone home screen and says so honestly when the network is gone. The test suites run against a database of their own and refuse to touch any other |
 | Last Updated | 2026-08-10 |
 
 **Production URLs:** none yet.
@@ -67,12 +67,14 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 - ✓ Dedicated test database — `npm run db:test:setup`, one resolver shared by Vitest and Playwright, and proof via `current_database()` that the connection is where it is believed to be — Phase 8 (08-01)
 - ✓ Destructive-operation guard — `resetDatabase` and `createTestClient` refuse any database that is not both local and `_test`-named, mutation-tested so both halves are proven load-bearing — Phase 8 (08-02)
 - ✓ **Phase 8 complete** — 2 plans, ~50 minutes, 27 tests added (411 total). Running the suites can no longer destroy the development database or a real one; both claims are demonstrated, not argued
+- ✓ Installable PWA — manifest, generated maskable icons, a hand-written service worker, and an offline fallback, with zero new dependencies — Phase 4 (04-01)
+- ✓ Service-worker cache boundary — static assets only; an offline navigation returns the user's data **absent**, and Cache Storage provably holds no HTML key — Phase 4 (04-01)
 
 ### Active (In Progress)
-- Nothing in progress — Phase 8 closed 2026-08-10; Phase 4 (PWA & Mobile UX) is next to plan
+- **Phase 4: PWA & Mobile UX** — 1 of 3 plans complete (04-01 installable PWA). Next: 04-02
+  quick-add expense flow + the first accessibility audit; then 04-03 `Attachment` + Supabase Storage
 
 ### Planned (Next)
-- Phase 4: PWA & Mobile UX — installable PWA, quick-add flow, photo upload
 - Phase 5: Bulgarian Integrations — research spike, then fines/vignette checks
 - Phase 6: Google Drive Export — OAuth consent, export/backup
 - Phase 7: Maintenance Reminders — service intervals per car with due/overdue indicators
@@ -202,6 +204,12 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 | No override flag for the guard, ever | A variable set once in `.env` is forgotten and stays true when the shell later points somewhere real — it detaches the permission from the target | 2026-08-10 | Active |
 | Guard client construction, not only truncation | Measured: guarding the truncate alone stopped the data loss but still let specs write rows into the development database before reaching the refusal | 2026-08-10 | Active |
 | A refusal test is aimed where a broken guard cannot do damage | Pointing it at `gaspense_dev` is the obvious test and the wrong one; the `postgres` maintenance database gives the same signal at no risk | 2026-08-10 | Active |
+| The service-worker cache is an allowlist of static assets — never HTML, never `/api` | A worker outlives the page that installed it, and every page renders one user's rows behind a session; a cached navigation would survive sign-out from a store the server cannot clear | 2026-08-10 | Active |
+| Hand-written service worker, not `next-pwa` and not Serwist | `next-pwa` is unmaintained and pinned to older Next.js; Serwist works but is a build-plugin dependency taken purely for convenience. The rule stays readable in one file | 2026-08-10 | Active |
+| `public/sw.js` is the one plain-JS source file, as an ES **module** worker | A service worker is fetched as a static file and is not in the TypeScript build graph. Module registration is what lets its predicates be unit-tested, so the browser and the test share one source | 2026-08-10 | Active |
+| Service-worker registration is production-only | `next dev` serves unhashed chunks, so a cache-first worker breaks hot reload in a way that reads as a compiler bug. e2e runs a production build, so coverage is unaffected | 2026-08-10 | Active |
+| Icons rasterised by Playwright's Chromium; the PNGs are committed | No image library for four files, and Vercel serves `public/` statically without ever running the generator. A unit test parses their IHDR headers against the manifest | 2026-08-10 | Active |
+| No offline writes — no background sync, no queued mutations | Queuing writes needs a conflict story this project does not have. Offline means the shell loads and says so | 2026-08-10 | Active |
 
 ## Success Metrics
 
@@ -209,10 +217,10 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 |--------|--------|---------|--------|
 | Docs/lint presence | CLAUDE.md, AGENTS.md, docs/ARCHITECTURE.md exist; markdownlint + ESLint/Prettier pass | `npm run check` green | **Achieved** (Phase 0) |
 | CI pipeline green | Lint + test + build pass on every push/PR; secret scanning active | All four run green: check, build, unit (Vitest), e2e (Playwright). Secret scanning + push protection active | **Achieved** (Phase 2, plan 02-02) |
-| Test coverage | Unit + integration + automation (e2e) tests for every phase | 411 tests: 187 unit, 136 integration, 88 e2e — all green in CI | **On track** |
+| Test coverage | Unit + integration + automation (e2e) tests for every phase | 444 tests: 206 unit, 136 integration, 102 e2e — all green | **On track** |
 | Security scan | Pass, every phase | - | Not started |
-| Accessibility | WCAG AA on frontend phases | - | Not started |
-| Performance | PWA installable, high Lighthouse PWA score | - | Not started |
+| Accessibility | WCAG AA on frontend phases | - | Not started — 04-02 |
+| Performance | PWA installable, high Lighthouse PWA score | Manifest, maskable icons and a fetch-handling service worker all proven by test; no real device install yet, no Lighthouse run | **Partly achieved** (04-01) |
 
 ## Tech Stack / Tools
 
