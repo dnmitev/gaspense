@@ -8,9 +8,9 @@
  * integration suite used to be able to truncate production.
  *
  * The fallback to `DATABASE_URL` exists so CI passes with no workflow change: the
- * workflow already points `DATABASE_URL` at `gaspense_test`. Plan 08-02 adds the
- * guard that refuses a target which is not demonstrably a test database, which is
- * what makes that fallback safe rather than merely convenient.
+ * workflow already points `DATABASE_URL` at `gaspense_test`. `assertTestDatabase`
+ * below is what makes that fallback safe rather than merely convenient — a
+ * fallback onto a production `DATABASE_URL` is refused.
  *
  * Imported by `tests/integration/setup.ts` and by `playwright.config.ts`, so both
  * suites resolve the same way from one place.
@@ -64,4 +64,74 @@ export function databaseNameFromUrl(url: string): string | null {
 
   const name = parsed.pathname.replace(/^\//, "");
   return name === "" ? null : name;
+}
+
+/**
+ * Hosts a destructive test operation is allowed to run against.
+ *
+ * Exported so the error message and the tests read the rule from one place
+ * instead of restating it and drifting apart.
+ */
+export const ALLOWED_TEST_HOSTS = ["localhost", "127.0.0.1", "::1"] as const;
+
+/** A database name must end in this to be considered a test database. */
+export const TEST_DATABASE_SUFFIX = "_test";
+
+/** The hostname, with the brackets `new URL()` leaves around IPv6 literals removed. */
+function hostnameOf(parsed: URL): string {
+  return parsed.hostname.replace(/^\[|\]$/g, "");
+}
+
+/**
+ * Refuses to proceed unless the URL is demonstrably a test database.
+ *
+ * A precondition for anything destructive — `resetDatabase()` truncates five
+ * tables and has no way of its own to know what it is aimed at.
+ *
+ * Two conditions, **both** required:
+ *   - the host is local (`localhost`, `127.0.0.1`, `::1`)
+ *   - the database name ends in `_test`
+ *
+ * Both rather than either, because a real database can satisfy one by accident.
+ * Checked against the four connection strings this project actually uses:
+ * CI (`localhost` + `gaspense_test`) and the local test database pass; the local
+ * development database fails on the name; a Supabase URL fails on both.
+ *
+ * There is deliberately no override flag. An `ALLOW_DESTRUCTIVE_TESTS`-style
+ * variable gets set once in `.env` and forgotten, so it stays true when the shell
+ * later points somewhere real — it detaches the permission from the target, which
+ * is the one thing this must not do. Safety is derived from the connection string
+ * because the connection string is what determines the danger.
+ */
+export function assertTestDatabase(url: string): void {
+  const refuse = (reason: string): never => {
+    throw new Error(
+      [
+        `Refusing a destructive operation: ${reason}`,
+        `URL host must be one of ${ALLOWED_TEST_HOSTS.join(", ")} and the database name must end in "${TEST_DATABASE_SUFFIX}".`,
+        "Set TEST_DATABASE_URL to your test database and run: npm run db:test:setup",
+        "There is no override — see tests/test-database.ts for why.",
+      ].join("\n"),
+    );
+  };
+
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return refuse(`"${url}" is not a usable connection URL`);
+  }
+
+  const host = hostnameOf(parsed);
+  if (!ALLOWED_TEST_HOSTS.includes(host as (typeof ALLOWED_TEST_HOSTS)[number])) {
+    return refuse(`host "${host}" is not local`);
+  }
+
+  const name = databaseNameFromUrl(url);
+  if (name === null) {
+    return refuse(`"${url}" names no database`);
+  }
+  if (!name.endsWith(TEST_DATABASE_SUFFIX)) {
+    return refuse(`database "${name}" is not a test database`);
+  }
 }

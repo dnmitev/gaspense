@@ -65,10 +65,22 @@ idempotent, so it is safe to re-run and safe on a fresh clone.
 - **`TEST_DATABASE_URL` selects it**, and the suites overwrite `DATABASE_URL` with that value for
   the duration of a run — so an exported production `DATABASE_URL` is never connected to.
 - **Unset, the suites fall back to `DATABASE_URL`.** That is how CI works, because CI already
-  points `DATABASE_URL` at a throwaway `gaspense_test`. Locally, leaving it unset means the suites
-  truncate your development database — keep it set.
+  points `DATABASE_URL` at a throwaway `gaspense_test`. Locally, leaving it unset makes the
+  integration suite **refuse to run** rather than truncate `gaspense_dev` — see the guard below.
 - **The integration suite truncates the test database on every run**, and nothing else. e2e shares
   the same database; it creates randomly-named users and deletes them rather than truncating.
+
+**The guard.** `resetDatabase()` refuses to truncate unless **both** hold: the host is local
+(`localhost`, `127.0.0.1`, `::1`) **and** the database name ends in `_test`. Both, not either — a
+real database can satisfy one by accident. CI's connection string satisfies the rule with no
+special casing, and that exact string is pinned in a unit test.
+
+When it refuses, it names the database and the rule that failed. The fix is to set
+`TEST_DATABASE_URL` and run `npm run db:test:setup`.
+
+**There is deliberately no override flag.** An `ALLOW_DESTRUCTIVE_TESTS`-style variable gets set
+once in `.env` and forgotten, so it stays true when your shell later points somewhere real — it
+detaches the permission from the target, which is the one thing a guard must not do.
 
 ### Demo data
 
