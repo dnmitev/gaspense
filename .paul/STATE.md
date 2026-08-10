@@ -132,17 +132,17 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 
 ## Session Continuity
 
-Last session: 2026-08-10
-Stopped at: **Phase 3 complete and closed.** Nothing committed yet.
-Next action: Commit the Phase 3 work, then `/paul:plan` for **Phase 4 (PWA & Mobile UX)**
-Resume file: `.paul/phases/03-reporting/03-03-SUMMARY.md`
-Git strategy: `main` (direct commits)
+Last session: 2026-08-10 — **paused** (see `.paul/HANDOFF-2026-08-10.md`)
+Stopped at: Phase 3 complete, closed, committed and pushed. CI green. Working tree clean.
+Next action: **Decide Phase 4 vs pulling Phase 8 forward**, then `/paul:plan`
+Resume file: `.paul/HANDOFF-2026-08-10.md`
+Git strategy: `main` (direct commits) · HEAD `5da7b3b` == `origin/main`
 Resume context:
-- **⚠️ Phase 3 is uncommitted.** Convention for a phase's last plan: `Create plan` / `Apply` commits, then one `feat(phase):` commit absorbing the SUMMARY and all `.paul/` bookkeeping.
-- **⚠️ The dev server is stopped and the database was truncated.** Sign in with Google again, then `npm run db:seed:demo -- --email <address>`.
-- **Consider pulling Phase 8 before Phase 4.** The truncation problem cost two re-logins in one session; it is no longer theoretical.
+- **Nothing is in progress.** No uncommitted work, no partial plan, no open checkpoint. This is a clean boundary.
+- **An open decision, the user's to make:** Phase 4 (PWA & Mobile UX) as the roadmap orders it, or pull Phase 8 (Test Environment Safety) forward first. Phase 8 is recommended — the integration suite wiped the signed-in Google account twice in one session, and Phase 4 means far more time in the running app.
+- **⚠️ Environment needs restoring before the app works:** `docker compose up -d`, `npm run dev`, sign in with Google (the account row was truncated), then `npm run db:seed:demo -- --email <address>`.
+- **⚠️ Port 3000 has blocked e2e three times**, always the user's `npm run dev`. Identify the process through its parent chain before killing anything.
 - **384 tests:** 167 unit, 129 integration, 88 e2e.
-- Local dev needs `docker compose up -d` (Postgres on **5433**) before `npm run test:integration`.
 - **Never read an exit code through a pipe** — this has caused a wrong conclusion three times.
 
 ---

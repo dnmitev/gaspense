@@ -282,3 +282,8 @@ at = "2026-08-10T07:47:52Z"
 action = "transition"
 phase = 3
 at = "2026-08-10T07:47:52Z"
+
+[[entry]]
+action = "pause"
+phase = 4
+at = "2026-08-10T07:55:32Z"
