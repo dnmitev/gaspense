@@ -77,7 +77,7 @@ about: "gaspense"
 | AC-3: Accepts both real test databases | **Pass** | CI's connection string pinned verbatim from `ci.yml`; 136 integration tests run unchanged |
 | AC-4: The refusal fires at the truncate site | **Pass** | `tests/integration/guard.test.ts`; mutation-testing confirms removing the precondition kills exactly 2 of its cases |
 | AC-5: A mismatched connection is refused | **Pass** | Client attached to `postgres` while `DATABASE_URL` names the test database → refused. Mutation-testing confirms removing the cross-check kills exactly this case |
-| AC-6: CI needs no workflow change | **Pass (local)** | `git diff --stat .github/workflows/ci.yml` empty; its exact URL is unit-tested. Real confirmation on push |
+| AC-6: CI needs no workflow change | **Pass** | `git diff --stat .github/workflows/ci.yml` empty; its exact URL is unit-tested. Confirmed on CI run 31387666897 — green with the guard active and the workflow unmodified |
 
 ## Verification Results
 
@@ -188,7 +188,6 @@ gaspense_dev after:  1 user, 1 car, 47 expenses, 30 readings
 - **The e2e helpers are not guarded**, by scope decision. They never truncate and delete only rows
   they created; a misconfigured e2e run would write scoped, self-cleaning rows to the wrong
   database rather than destroy anything.
-- **AC-6 is confirmed locally; the push confirms it for real.**
 
 **Blockers:** None.
 
