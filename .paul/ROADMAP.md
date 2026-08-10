@@ -14,7 +14,8 @@ From a graduated PLANNING.md to a working personal vehicle expense tracker: firs
 
 **v0.1 Initial Release** (v0.1.0)
 Status: In progress
-Phases: 5 of 10 complete (50%) — Phase 3 closed; **Phase 4 (PWA & Mobile UX) is next**
+Phases: 5 of 10 complete (50%) — Phase 3 closed; **Phase 8 (Test Environment Safety) pulled
+forward and in planning**, ahead of Phase 4
 
 ## Phases
 
@@ -31,11 +32,11 @@ be pulled forward. Phase 9 was pulled ahead of the rest of Phase 3 and is now co
 | 1 | CI/CD Pipeline | 1/1 | ✅ Complete | 2026-08-07 |
 | 2 | Foundations | 7/7 | ✅ Complete | 2026-08-08 |
 | 3 | Reporting | 3/3 | ✅ Complete | 2026-08-10 |
-| 4 | PWA & Mobile UX | TBD | Not started | - |
+| 4 | PWA & Mobile UX | TBD | Not started (deferred behind 8) | - |
 | 5 | Bulgarian Integrations | TBD | Not started | - |
 | 6 | Google Drive Export | TBD | Not started | - |
 | 7 | Maintenance Reminders | TBD | Not started | - |
-| 8 | Test Environment Safety | TBD | Not started | - |
+| 8 | Test Environment Safety | 1/2 | 🔵 In progress | - |
 | 9 | Demo Data Seed | 1/1 | ✅ Complete | 2026-08-09 |
 
 ## Phase Details
@@ -362,19 +363,49 @@ altogether. `lib/expenses.ts` opens its own interactive `prisma.$transaction`, s
 rollback wrapper would mean threading a transaction client through production signatures for
 the tests' benefit.
 
-**Open questions for `/paul:plan`:**
-- Is the guard host-and-name based, an explicit opt-in variable, or both?
-- Does e2e get its own database or share the integration one? They share today, and CI runs
-  integration immediately before e2e.
-- Does `npm run test:integration` create and migrate the test database on demand, or fail
-  loudly when it is absent?
-
 **Note on ordering:** placed last so numbering stays stable. There is no deployment yet, so
 nothing real is at risk today — but the exposure becomes real the moment one exists. Pull this
 before the first deploy, not after.
 
+**Pulled forward ahead of Phase 4 (2026-08-10).** The exposure stopped being theoretical:
+running the integration suite wiped the signed-in Google account twice in one session, each
+time costing a re-login and a re-seed. Phase 4 means far more time in the running app.
+
+**Split into two plans at planning time (2026-08-10).** The phase bundles two separable
+concerns — *aim the suites somewhere safe* and *refuse to fire when aimed somewhere unsafe* —
+and each half leaves the repository green on its own. The order matters and is not
+interchangeable: shipping the guard first would refuse `gaspense_dev` and leave the suite
+unrunnable until the second plan landed. 08-01 also delivers the relief that was actually felt.
+
+**Settled at 08-01 planning time — the three open questions, answered:**
+
+- **The guard is host-and-name, derived from the URL; no opt-in variable.** An
+  `ALLOW_DESTRUCTIVE_TESTS`-style flag is set once in `.env` and forgotten, so it stays true
+  when the shell later points at production — it decouples the permission from the target,
+  which is the one thing the guard must not do. Deriving safety from the connection string
+  keeps the permission attached to the thing that determines the danger. (08-02 implements it.)
+- **e2e shares the test database with integration**, as it shares `gaspense_dev` today. e2e
+  never calls `resetDatabase()` — it creates randomly-named users and deletes them — so it is
+  not the destructive actor, and a third database would mean a third migration target for no
+  isolation gain. The `ensureSystemCategories()` reasoning stays valid unchanged.
+- **`npm run db:test:setup` creates and migrates on demand, idempotently**, rather than
+  failing loudly with instructions. A `/docker-entrypoint-initdb.d/` script was rejected: it
+  runs only against a fresh volume, so on the existing one it would do nothing while reading
+  like it worked, and forcing it to take effect means `docker compose down -v` — wiping the
+  development data this phase exists to protect.
+
+**Also settled:** the suites read `TEST_DATABASE_URL`, **falling back to `DATABASE_URL`** when
+it is unset. The fallback is what lets CI pass with no workflow edit, and 08-02's guard is what
+makes the fallback safe — a fallback onto a production `DATABASE_URL` is refused on host and
+name. `tests/integration/setup.ts` *overwrites* `process.env.DATABASE_URL` with the resolved
+value, so the original is unreachable for the rest of the run rather than merely unused.
+
 **Plans:**
-- [ ] TBD — defined during `/paul:plan`
+- [x] 08-01: A dedicated test database, and every suite pointed at it — resolver,
+      `db:test:setup`, Playwright wiring, docs, and proof via `current_database()` that the
+      connection is where it is believed to be
+- [ ] 08-02: The guard — `resetDatabase()` refuses a database not demonstrably a test
+      database, with tests proving the refusal actually fires
 
 ### Phase 9: Demo Data Seed
 
@@ -458,4 +489,4 @@ error in either field.
 
 ---
 *Roadmap created: 2026-08-07*
-*Last updated: 2026-08-10*
+*Last updated: 2026-08-10 — Phase 8 pulled forward and split into two plans*
