@@ -96,7 +96,7 @@ returns 404 to everyone but its owner — including when there is no session at 
 | AC-3: Only the owner can fetch | **Pass** | 404 for another user and for no session, with an empty body. Data-layer isolation re-reads the victim's row afterwards |
 | AC-4: The browser shrinks before upload | **Pass** | A 4000×3000 image arrives re-encoded as JPEG. **This AC was not genuinely proven until the fixture was replaced — see Deviations** |
 | AC-5: No orphaned objects | **Pass** | Deleting the expense removes the row *and* the object; a refused delete leaves both intact |
-| AC-6: Nothing already green went red | **Pass** | All five gates exit 0, zero lint warnings. 249 unit, 153 integration, 144 e2e. CI confirmation pending push |
+| AC-6: Nothing already green went red | **Pass** | All five gates exit 0, zero lint warnings. 249 unit, 153 integration, 144 e2e. **Confirmed in CI on run 31417218764 — green, 144 passed, no flaky annotation** |
 
 ## Verification Results
 
