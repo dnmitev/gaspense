@@ -14,7 +14,7 @@ From a graduated PLANNING.md to a working personal vehicle expense tracker: firs
 
 **v0.1 Initial Release** (v0.1.0)
 Status: In progress
-Phases: 4 of 10 complete (40%) — Phase 3 at 2 of 3 plans; **03-03 closes it**
+Phases: 5 of 10 complete (50%) — Phase 3 closed; **Phase 4 (PWA & Mobile UX) is next**
 
 ## Phases
 
@@ -30,7 +30,7 @@ be pulled forward. Phase 9 was pulled ahead of the rest of Phase 3 and is now co
 | 0 | AI-Friendly Project Scaffolding | 2/2 | ✅ Complete | 2026-08-07 |
 | 1 | CI/CD Pipeline | 1/1 | ✅ Complete | 2026-08-07 |
 | 2 | Foundations | 7/7 | ✅ Complete | 2026-08-08 |
-| 3 | Reporting | 2/3 | 🔵 In progress | - |
+| 3 | Reporting | 3/3 | ✅ Complete | 2026-08-10 |
 | 4 | PWA & Mobile UX | TBD | Not started | - |
 | 5 | Bulgarian Integrations | TBD | Not started | - |
 | 6 | Google Drive Export | TBD | Not started | - |
@@ -191,10 +191,21 @@ becomes the dashboard's job in 03-03 rather than a second scoping shape in 03-01
       DB-free calculation module and a scoped query, at `/cars/[id]/report`
 - [x] 03-02: Fuel efficiency — litres per 100 km from full-tank pairs, and cost-per-km;
       must survive gaps, partial fills, and a non-ascending odometer series
-- [ ] 03-03: Dashboard — `/` becomes the dashboard with charts and the fleet roll-up;
-      updates `tests/e2e/home.spec.ts`. The chart approach (library vs hand-rolled SVG)
-      is decided at that plan, not before — no dependency is added in 03-01 or 03-02.
-      **This is the last plan of Phase 3; closing it triggers the phase transition.**
+- [x] 03-03: Dashboard — `/` becomes the dashboard with charts and the fleet roll-up;
+      updates `tests/e2e/home.spec.ts`
+
+**Completed 2026-08-10.** Three plans, ~83 minutes, 116 tests added (384 total). The phase goal
+was "fuel cost per month/year and cost breakdown by category" — met, and exceeded with
+cost-per-kilometre, litres per 100 km, and a dashboard.
+
+**⚠️ For Phase 4:** every page is a server component and the app ships almost no client
+JavaScript, which is the strongest possible starting point for a PWA. Do not casually introduce a
+client boundary; the only ones that exist are Phase 2's forms and delete buttons, and each earned
+it with genuine interactivity.
+
+**⚠️ Also for Phase 4:** no accessibility audit has been run project-wide. 03-01 added section
+landmarks and 03-03 added `role="img"`, `aria-label` and per-bar `<title>`, but contrast, focus
+order and keyboard navigation are unverified — and mobile UX is where that matters most.
 
 **⚠️ For 03-03, from 03-02:** the fleet roll-up will be the first query in the project *not*
 scoped to a single car id. The 03-01 mutation finding — that ownership is enforced by the
@@ -203,6 +214,24 @@ shape automatically. It needs its own ownership reasoning and its own isolation 
 
 **Already available to 03-03:** `intervals` from `getCarEfficiency` are chart-ready (dated
 endpoints, distance, litres, rate), and `formatEurPerKm` exists for any rate the dashboard shows.
+
+**Settled at 03-03 planning time (2026-08-10) — the chart question 03-01 and 03-02 deferred:**
+
+- **Hand-rolled inline SVG, no charting library.** Twelve rectangles do not justify a client
+  boundary or ~150KB of dependency, and every page in this app is a server component. Phase 4
+  turns it into a PWA, where bundle size is a stated concern. Consistent with the standing
+  "hand-rolled Tailwind, no component library" decision.
+- **No client components at all in this plan.** The chart renders without JavaScript.
+- **The dashboard shows** the fleet total, a twelve-month spend chart, and a card per car with
+  its total and consumption, each linking to that car's report. A per-car consumption trend chart
+  was considered and excluded — a second chart shape in the last plan of a phase.
+- **`/` redirects to `/signin` when signed out**, matching every other page. No public landing
+  page: nothing about a personal tool needs one, and it would add a second auth shape.
+- **⚠️ The scoping inversion.** `getFleetSummary` has no single car id, so the `getCarById`
+  pre-check that carried isolation in 03-01 and 03-02 has no analogue. Ownership is resolved via
+  `listActiveCars` and the resulting id set, *and* the relation filter is kept. 03-03 must
+  mutation-test **both independently** and record which is load-bearing — the answer surprised us
+  in 03-01 and must not be assumed here.
 
 **Settled at 03-02 planning time (2026-08-09):**
 
@@ -429,4 +458,4 @@ error in either field.
 
 ---
 *Roadmap created: 2026-08-07*
-*Last updated: 2026-08-09*
+*Last updated: 2026-08-10*

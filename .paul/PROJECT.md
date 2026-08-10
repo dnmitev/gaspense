@@ -20,8 +20,8 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 |-----------|-------|
 | Type | Application |
 | Version | 0.0.0 |
-| Status | Prototype — **Phases 0-2 and 9 complete; Phase 3 underway.** Log in, add a car, record expenses and mileage, and see what a car has cost by month, year and category. One command seeds a year of demo data to look at |
-| Last Updated | 2026-08-09 |
+| Status | Prototype — **Phases 0-3 and 9 complete.** Log in, add a car, record expenses and mileage, and see what it all costs: by month, by year, by category, per kilometre, and litres per 100 km — with a dashboard on opening the app |
+| Last Updated | 2026-08-10 |
 
 **Production URLs:** none yet.
 
@@ -61,13 +61,14 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 - ✓ Per-car cost reporting — all-time, yearly, monthly and by-category totals at `/cars/[id]/report`, over a database-free aggregation module — Phase 3 (03-01)
 - ✓ Real Google OAuth login performed and verified against a live provider, closing a concern open since 02-04 — Phase 9 (09-01)
 - ✓ **Phase 9 complete** — `npm run db:seed:demo` attaches twelve months of deterministic demo history to a signed-in account in about a second, carrying the odometer edge cases fuel reporting must survive
+- ✓ Fuel efficiency — litres per 100 km from full-to-full intervals, plus fuel and total cost per kilometre, over a series with gaps, partial fills and a reading that goes backwards — Phase 3 (03-02)
+- ✓ Dashboard — `/` shows the fleet total, a twelve-month spend chart in server-rendered SVG, and a card per car; zero client JavaScript — Phase 3 (03-03)
+- ✓ **Phase 3 complete** — 3 plans, 116 tests added, 384 total. The phase goal is exceeded: month/year and category costs were the target; cost-per-km, litres per 100 km and the dashboard shipped too
 
 ### Active (In Progress)
-- Phase 3 (Reporting) — 1 of 3 plans done. 03-01 shipped per-car cost totals; 03-02 (litres per
-  100 km, cost-per-km) and 03-03 (dashboard, charts, fleet roll-up) remain
+- Nothing in progress — Phase 3 closed 2026-08-10; Phase 4 (PWA & Mobile UX) is next to plan
 
 ### Planned (Next)
-- Phase 3 (resuming): 03-02 fuel efficiency, then 03-03 dashboard and charts
 - Phase 4: PWA & Mobile UX — installable PWA, quick-add flow, photo upload
 - Phase 5: Bulgarian Integrations — research spike, then fines/vignette checks
 - Phase 6: Google Drive Export — OAuth consent, export/backup
@@ -185,6 +186,14 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 | The demo seed writes through the real data layer, not `createMany` | The odometer↔expense pairing is owned by `createExpense`; duplicating it would let the seed build states the app never produces | 2026-08-09 | Active |
 | The demo seed hard-deletes its car, unlike normal car deletion | The soft-delete rule protects real history; undoing a seed is not that, and soft-deleting would accumulate hidden dead cars | 2026-08-09 | Active |
 | Demo fixtures are deliberately imperfect | A partial fill, a fill with no reading, and one decreasing reading. A tidy series hides exactly the bugs consumption maths must survive | 2026-08-09 | Active |
+| Consumption is full-to-full with partials absorbed | The fuel was burned over that distance; discarding partial fills undercounts by ~20% and reports a flatteringly low figure | 2026-08-10 | Active |
+| A partial fill is never an interval endpoint, even carrying a reading | The reading makes it look usable when the tank was not full — the specific trap in the calculation | 2026-08-10 | Active |
+| A backwards odometer reading invalidates its endpoint, not the series | Mis-keyed digits are commoner than replaced odometers, so the next fill rejoins the true series | 2026-08-10 | Active |
+| Consumption averages are weighted by distance | The mean of per-interval rates weights a 40 km interval like a 900 km one | 2026-08-10 | Active |
+| Money-derived rates round in integer space, never via `toFixed` | `toFixed` rounds by the double's actual value, so half-way cases are unpredictable per input | 2026-08-10 | Active |
+| Charts are hand-rolled server-rendered SVG | No charting library, no client boundary, no dependency; Phase 4's PWA makes bundle size a stated concern | 2026-08-10 | Active |
+| `/` requires a session; there is no public landing page | Matches every other page; a landing page would mean a second auth shape on a personal tool | 2026-08-10 | Active |
+| Which scope filter is load-bearing is measured per query shape | `getCarReport`'s pre-check did all the work; `getFleetSummary`'s two filters are redundant with each other. The answer does not transfer | 2026-08-10 | Active |
 
 ## Success Metrics
 
@@ -192,7 +201,7 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 |--------|--------|---------|--------|
 | Docs/lint presence | CLAUDE.md, AGENTS.md, docs/ARCHITECTURE.md exist; markdownlint + ESLint/Prettier pass | `npm run check` green | **Achieved** (Phase 0) |
 | CI pipeline green | Lint + test + build pass on every push/PR; secret scanning active | All four run green: check, build, unit (Vitest), e2e (Playwright). Secret scanning + push protection active | **Achieved** (Phase 2, plan 02-02) |
-| Test coverage | Unit + integration + automation (e2e) tests for every phase | 304 tests: 125 unit, 109 integration, 70 e2e — all green in CI | **On track** |
+| Test coverage | Unit + integration + automation (e2e) tests for every phase | 384 tests: 167 unit, 129 integration, 88 e2e — all green in CI | **On track** |
 | Security scan | Pass, every phase | - | Not started |
 | Accessibility | WCAG AA on frontend phases | - | Not started |
 | Performance | PWA installable, high Lighthouse PWA score | - | Not started |
@@ -219,4 +228,4 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-08-09 after Phase 9*
+*Last updated: 2026-08-10 after Phase 3*
