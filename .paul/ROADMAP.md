@@ -14,7 +14,7 @@ From a graduated PLANNING.md to a working personal vehicle expense tracker: firs
 
 **v0.1 Initial Release** (v0.1.0)
 Status: In progress
-Phases: 4 of 10 complete (40%) — Phase 9 done; **Phase 3 resumes at 03-02**
+Phases: 4 of 10 complete (40%) — Phase 3 at 2 of 3 plans; **03-03 closes it**
 
 ## Phases
 
@@ -23,14 +23,14 @@ urgent insertions later.
 
 **Numbering is not execution order.** Phases 7, 8 and 9 are all numbered after the existing work
 so numbering stays stable, not because they matter least — each depends only on Phase 2 and can
-be pulled forward. Phase 9 has been pulled to run **next**, ahead of the rest of Phase 3.
+be pulled forward. Phase 9 was pulled ahead of the rest of Phase 3 and is now complete.
 
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
 | 0 | AI-Friendly Project Scaffolding | 2/2 | ✅ Complete | 2026-08-07 |
 | 1 | CI/CD Pipeline | 1/1 | ✅ Complete | 2026-08-07 |
 | 2 | Foundations | 7/7 | ✅ Complete | 2026-08-08 |
-| 3 | Reporting | 1/3 | 🔵 In progress | - |
+| 3 | Reporting | 2/3 | 🔵 In progress | - |
 | 4 | PWA & Mobile UX | TBD | Not started | - |
 | 5 | Bulgarian Integrations | TBD | Not started | - |
 | 6 | Google Drive Export | TBD | Not started | - |
@@ -189,11 +189,45 @@ becomes the dashboard's job in 03-03 rather than a second scoping shape in 03-01
 **Plans:**
 - [x] 03-01: Cost aggregations — all-time/yearly/monthly/by-category totals over a
       DB-free calculation module and a scoped query, at `/cars/[id]/report`
-- [ ] 03-02: Fuel efficiency — litres per 100 km from full-tank pairs, and cost-per-km;
+- [x] 03-02: Fuel efficiency — litres per 100 km from full-tank pairs, and cost-per-km;
       must survive gaps, partial fills, and a non-ascending odometer series
 - [ ] 03-03: Dashboard — `/` becomes the dashboard with charts and the fleet roll-up;
       updates `tests/e2e/home.spec.ts`. The chart approach (library vs hand-rolled SVG)
       is decided at that plan, not before — no dependency is added in 03-01 or 03-02.
+      **This is the last plan of Phase 3; closing it triggers the phase transition.**
+
+**⚠️ For 03-03, from 03-02:** the fleet roll-up will be the first query in the project *not*
+scoped to a single car id. The 03-01 mutation finding — that ownership is enforced by the
+`getCarById` pre-check rather than the relation filter — does not transfer to a different query
+shape automatically. It needs its own ownership reasoning and its own isolation test.
+
+**Already available to 03-03:** `intervals` from `getCarEfficiency` are chart-ready (dated
+endpoints, distance, litres, rate), and `formatEurPerKm` exists for any rate the dashboard shows.
+
+**Settled at 03-02 planning time (2026-08-09):**
+
+- **Full-to-full method, partial fills absorbed.** An interval runs between two full tanks and
+  counts every litre put in between them, partial top-ups included. Discarding partials would
+  undercount fuel by ~20% on the demo fixture and report a flatteringly low figure that looks
+  entirely reasonable.
+- **A partial fill is never an endpoint even when it carries a reading.** That is the specific
+  trap: the reading makes it look usable.
+- **A backwards reading invalidates its own endpoint, not the series.** The interval stays open
+  and closes at the *next* credible reading, because the mis-keyed value is a transposed digit
+  and the following fill rejoins the true series. Two broken intervals would be the wrong answer.
+- **The average is weighted by distance**, computed from summed litres over summed kilometres —
+  not the mean of per-interval rates, which would weight a 40 km interval like a 900 km one.
+- **Both fuel cost per km and total ownership cost per km** are shown, distinctly labelled. The
+  gap between them is the insurance, tax, tyres and maintenance this project exists to surface.
+- **Cost-per-km divides by the span of *usable* readings**, so one mis-keyed low value cannot
+  become the series start and inflate the distance.
+- **`formatEurPerKm` is added to `lib/money.ts`**, at three decimal places. Two decimals would
+  collapse €0.128 and €0.13, and the division is a money conversion — putting it in the view
+  would be the first crack in the one-converter rule. 03-01's boundary forbade touching
+  `money.ts`; that was local to 03-01, and adding here upholds the standing rule rather than
+  breaking it.
+- **The intervals are listed in the UI**, not just the average. A summary figure alone is
+  precisely the plausible wrong number nobody can check.
 
 ### Phase 4: PWA & Mobile UX
 

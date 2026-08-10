@@ -11,49 +11,51 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-07)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release — Phase 2 complete; Phase 3 (Reporting) ready to plan
+**Current focus:** v0.1 Initial Release — Phase 3 (Reporting), 2 of 3 plans done; 03-03 is the last
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: **Phase 9 complete** → resuming Phase 3 (Reporting) at 03-02
-Plan: Not started
-Status: Ready to plan 03-02
-Last activity: 2026-08-09 — **Phase 9 closed** in ~20 min; 304 tests green (125 unit, 109 integration, 70 e2e)
+Phase: 3 of 10 (Reporting) — In progress
+Plan: 03-02 complete
+Status: Ready to plan 03-03 — the last plan of Phase 3
+Last activity: 2026-08-09 — **03-02 closed** in ~17 min; 345 tests green (151 unit, 120 integration, 74 e2e)
 
 Progress:
 - Milestone: [████░░░░░░] 40% (4 of 10 phases complete)
 - Phase 2: [██████████] 100% (7 of 7 plans) ✅
 - Phase 9: [██████████] 100% (1 of 1 plan) ✅
-- Phase 3: [███░░░░░░░] 33% (1 of 3 plans) — resumes at 03-02
+- Phase 3: [██████▓░░░] 67% (2 of 3 plans) — 03-03 next, then the phase transition
 
-**Next is Phase 3, not Phase 10.** Phase 9 was numbered last for stability and pulled forward in
-execution order; numbering and running order are deliberately not the same thing here.
+**⚠️ 03-03 is the LAST plan of Phase 3** — closing it triggers the mandatory phase transition.
+Note the plan-file count will read 2/2 until 03-03 is written; ROADMAP is the authority and says
+three. This same false signal was correctly ignored after 03-01 and 03-02.
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete — Phase 9 closed, ready for PLAN 03-02]
+  ✓        ✓        ✓     [Loop complete — ready for PLAN 03-03]
 ```
 
 ## Performance Metrics
 
-12 plans complete, ~8.2h total, ~41 min average.
+13 plans complete, ~8.5h total, ~39 min average.
 
 | Phase | Plans | Avg/Plan |
 |-------|-------|----------|
 | 00-ai-friendly-scaffolding | 2/2 ✅ | ~11 min |
 | 01-cicd-pipeline | 1/1 ✅ | ~29 min |
 | 02-foundations | 7/7 ✅ | ~57 min |
-| 03-reporting | 1/3 | ~21 min |
+| 03-reporting | 2/3 | ~19 min |
 | 09-demo-data-seed | 1/1 ✅ | ~20 min |
 
-**Trend:** 13, 9, 29, 33, 14, 35, 45, 28, 47, 195, **21**, **20** min. 02-07's 195 was three
-vertical slices plus a migration in one plan. The two since — one concern each — came in at 21
-and 20 while adding 36 and 40 tests respectively. Two data points, same result: a single-concern
-plan lands in roughly 20 minutes and tests *more*, not less. Keep splitting.
+**Trend:** 13, 9, 29, 33, 14, 35, 45, 28, 47, 195, **21**, **20**, **17** min. 02-07's 195 was
+three vertical slices plus a migration in one plan. The three since — one concern each — came in
+at 21, 20 and 17 while adding 36, 40 and 41 tests. Three data points, same result: a
+single-concern plan lands in under twenty minutes and tests *more*, not less. The trend is
+mildly downward as the patterns settle. Keep splitting.
 
 ## Accumulated Context
 
@@ -101,6 +103,10 @@ Only what constrains upcoming work. **Full log (28 entries): `.paul/PROJECT.md` 
 | **Added Phase 9: Demo Data Seed, pulled to run next** | Milestone is now 10 phases. Hand-building a car and a dozen expenses to eyeball a report is enough friction to stop the checking happening. Pulled ahead of 03-02 because its full-tank + odometer series is the exact fixture 03-02 needs — building it afterwards means hand-building that series twice |
 | **Demo data attaches to an existing user by email, never seeds the User** | With `@auth/prisma-adapter`, signing in with Google against a `User` that has no linked `Account` row is refused with `OAuthAccountNotLinked`. Seeding the user first would break login; attaching after first sign-in keeps the seed out of the auth path entirely |
 | **The demo seed does NOT solve the truncation clash** | `resetDatabase()` wipes `User`/`Car`/`Expense`/`Category`, so `npm run test:integration` destroys the demo data and it must be re-seeded. Left to Phase 8 on purpose — a partial guard here would mean two safety mechanisms to keep honest |
+| **Consumption is full-to-full, absorbing partials** | An interval spans two full tanks and counts every litre between them. A partial fill is never an endpoint *even carrying a reading*, and a backwards reading leaves the interval open to close at the next credible one. All four rules mutation-proven in 03-02 |
+| **`toFixed` rounding depends on the float, not on a rule** | `(21350/100/1000).toFixed(3)` gives `"0.213"`, not `"0.214"` — the nearest double sits below the half-way point. Round in integer space instead. `formatEur` was hand-rolled for this reason; `formatEurPerKm` had to be too |
+| **`formatEurPerKm` lives in `lib/money.ts` at 3 decimals** | Dividing money by distance is money changing unit, so it belongs with the other converters. Two decimals would collapse a fuel rate and a total-ownership rate that differ by a factor of two |
+| **An audit that matches nothing anywhere proves nothing** | 03-02's first money-division audit reported 0 hits in *every* file including the one containing the division. Always include a positive control — a file that must show a hit |
 
 ### Deferred Issues
 
@@ -150,17 +156,17 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-09
-Stopped at: Phase 9 complete and closed. **Nothing committed yet.**
-Next action: Commit the Phase 9 work, then run `/paul:plan` for **03-02** (fuel efficiency)
-Resume file: `.paul/phases/09-demo-data-seed/09-01-SUMMARY.md`
-Git strategy: `main` (direct commits)
+Stopped at: 03-02 loop closed. **Nothing committed yet** (03-02's work is uncommitted).
+Next action: Commit 03-02, then run `/paul:plan` for **03-03** — the last plan of Phase 3
+Resume file: `.paul/phases/03-reporting/03-02-SUMMARY.md`
+Git strategy: `main` (direct commits) — Phase 9 pushed, CI green (`a5155f2`)
 Resume context:
-- **⚠️ Phase 9 is uncommitted.** 9 files plus `.paul/` bookkeeping. The repo's convention is three loop commits (`Create plan` / `Apply` / `Close loop`) plus a `feat(phase):` transition commit.
-- **⚠️ The dev server was stopped** during 09-01's e2e verification and not restarted. `npm run dev` when needed.
+- **⚠️ 03-02 is uncommitted.** 9 changed/new files plus `.paul/`. Convention: `Create plan` / `Apply` / `Close loop` commits; the phase commit comes after 03-03.
+- **⚠️ The dev server was stopped** during 03-02's e2e verification. `npm run dev` when needed. This has now blocked e2e twice; a configurable Playwright port was offered and declined to keep scope clean, so expect it again.
+- **03-03 is the LAST plan of Phase 3** — closing it triggers the mandatory phase transition. Do not skip it.
+- **03-03's fleet roll-up is a NEW query shape** — the first not scoped to a single car id. The 03-01 mutation finding does not transfer automatically; it needs its own ownership reasoning and its own isolation test.
+- **The consumption series is chart-ready**: `intervals` carry dated endpoints, distance, litres and a rate. `formatEurPerKm` exists for any rate the dashboard shows.
 - **`npm run db:seed:demo -- --email <address>` populates an account in ~1s.** Re-run it after `npm run test:integration`, which truncates everything.
-- **03-02's fixture already exists.** `lib/demo-data.ts` exports `PARTIAL_FILL_INDEX`, `MISSING_READING_INDEX`, `DECREASING_READING_INDEX` — reference them rather than rediscovering the awkward rows.
-- **Phase 3 is three plans**: 03-01 aggregations ✅, 03-02 fuel efficiency, 03-03 dashboard. The split was confirmed by outcome — 21 min vs 02-07's 195. Keep one concern per plan.
-- **03-02 must carry its own ownership read.** Mutation-proven in 03-01: the `getCarById` pre-check is what isolates, not the relation filter. A new query that relies on the filter alone will not refuse a stranger's car — it will return an empty/zero result, leaking existence.
 - **The odometer series is not monotonic.** Readings may decrease, repeat, or be missing on a fill-up. `Expense.fullTank` marks usable endpoints; `OdometerReading.expenseId` links a reading to its fill-up.
 - **Prove timezone logic, do not assert it.** Node 24 re-reads `process.env.TZ`, so run date cases under `America/New_York` and `Asia/Tokyo` (restore in `afterEach`). CI is UTC, so a default-TZ assertion is vacuous.
 - **Grep for absence must strip comments first** — the plan's own verify command failed this in 03-01, matching prose that said the file imports no Prisma.
