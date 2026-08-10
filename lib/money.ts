@@ -63,6 +63,58 @@ export function formatAmountInput(cents: number): string {
   return `${sign}${major}.${minor}`;
 }
 
+/** Digits after the point for a per-kilometre rate. See {@link formatEurPerKm}. */
+const RATE_FRACTION_DIGITS = 3;
+
+/**
+ * A cost per kilometre: `formatEurPerKm(213_000, 1_000_000)` → `"€0.213"`.
+ *
+ * ## Why the division lives here
+ *
+ * Dividing money by a distance is money changing unit, and this module is the
+ * only place that may happen. Doing it in a report component would be the first
+ * crack in a rule that has held since 02-06 — and the rule is what makes a
+ * missed conversion findable, since a 100× error produces a plausible number
+ * and crashes nothing.
+ *
+ * ## Why three decimals rather than two
+ *
+ * Two decimals collapse €0.128 and €0.134 to the same €0.13, and round a €0.213
+ * total-cost figure to €0.21. The whole point of showing fuel cost and total
+ * ownership cost side by side is that they differ; rounding away the third
+ * digit makes small but real differences invisible. This is a rate rather than
+ * a payable amount, so it is not bound by the two-digit minor unit.
+ *
+ * Returns `null` for a non-positive or non-finite distance. The caller renders
+ * an explanation — `Infinity` or `NaN` reaching the page as "€NaN" would be a
+ * visible defect, and silently substituting €0.00 would be an invisible one.
+ *
+ * ## Why this rounds in integer space instead of calling `toFixed`
+ *
+ * `(21350 / 100 / 1000).toFixed(3)` returns `"0.213"`, not `"0.214"` — the
+ * double nearest 0.2135 sits just below it, so the half-way case rounds down.
+ * The result is not "round half up" or "round half even" but "whatever the
+ * binary representation happened to be", which is unpredictable per input.
+ *
+ * Rounding thousandths as an integer first removes the ambiguity: `cents * 10 /
+ * km` is exactly the rate in thousandths of a euro, and `Math.round` on it is a
+ * stated rule. Same reasoning that made {@link formatEur} hand-rolled.
+ */
+export function formatEurPerKm(cents: number, km: number): string | null {
+  if (!Number.isFinite(cents) || !Number.isFinite(km) || km <= 0) return null;
+
+  // Thousandths of a euro: cents / 100 / km * 1000 === cents * 10 / km.
+  const THOUSANDTHS_PER_EURO = 1_000;
+  const thousandths = Math.round((cents * 10) / km);
+  const absolute = Math.abs(thousandths);
+
+  const sign = thousandths < 0 ? "-" : "";
+  const major = Math.floor(absolute / THOUSANDTHS_PER_EURO);
+  const minor = String(absolute % THOUSANDTHS_PER_EURO).padStart(RATE_FRACTION_DIGITS, "0");
+
+  return `${sign}€${major}.${minor}`;
+}
+
 /**
  * Parses a user-entered amount into cents. Returns `null` when the input is not
  * a well-formed amount — the caller decides what message to show.

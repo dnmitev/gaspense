@@ -84,6 +84,37 @@ test.describe("demo seed", () => {
     await expect(categories.locator("li").first()).toContainText("Fuel");
   });
 
+  test("reports fuel consumption and cost per kilometre", async ({ page }) => {
+    // The seeded year contains a partial fill, a fill with no odometer reading,
+    // and one reading that goes backwards. Seeing a sane figure come out the
+    // far end is the point of this test.
+    await page.goto("/cars");
+    await page.getByRole("link", { name: "Expenses" }).click();
+    await page.getByRole("link", { name: "Report" }).click();
+
+    const efficiency = page.getByRole("region", { name: "Efficiency" });
+
+    // A plausible band rather than an exact figure: pinning the number here
+    // would make any future dataset tweak read as a regression.
+    const headline = await efficiency.locator("span.text-3xl").innerText();
+    const litersPer100Km = Number.parseFloat(headline);
+    expect(litersPer100Km).toBeGreaterThan(4);
+    expect(litersPer100Km).toBeLessThan(14);
+
+    // Both rates present, three decimals, and total strictly above fuel.
+    const fuelRate = await efficiency
+      .getByText(/^\u20ac\d+\.\d{3}$/)
+      .first()
+      .innerText();
+    expect(fuelRate).toMatch(/^\u20ac\d+\.\d{3}$/);
+
+    await expect(efficiency.getByText("Fuel per km")).toBeVisible();
+    await expect(efficiency.getByText("All costs per km")).toBeVisible();
+
+    // The intervals are listed, which is what makes the average checkable.
+    await expect(efficiency.getByText(/Show the \d+ intervals/)).toBeVisible();
+  });
+
   test("shows the fill-ups with their litres on the expense list", async ({ page }) => {
     await page.goto("/cars");
     await page.getByRole("link", { name: "Expenses" }).click();

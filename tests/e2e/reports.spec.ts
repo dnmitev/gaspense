@@ -111,6 +111,20 @@ test.describe("car report", () => {
     await expect(page.getByText(/Categories appear here/i)).toBeVisible();
   });
 
+  test("explains what is missing instead of claiming 0.0 L/100km", async ({ page }) => {
+    // AC-7. A car with no fill-ups has UNKNOWN consumption, which is a
+    // different statement from zero — and only one of them is true.
+    await addCarAndOpenExpenses(page);
+    await page.getByRole("link", { name: "Report" }).click();
+
+    const efficiency = page.getByRole("region", { name: "Efficiency" });
+
+    await expect(efficiency.getByText(/two or more full tank-ups/i)).toBeVisible();
+    await expect(efficiency.getByText(/cost per kilometre/i)).toBeVisible();
+    await expect(efficiency.getByText("0.0 L/100km")).toHaveCount(0);
+    await expect(efficiency.getByText(/\u20ac0\.000/)).toHaveCount(0);
+  });
+
   test("links back to the expense list", async ({ page }) => {
     await addCarAndOpenExpenses(page);
     await page.getByRole("link", { name: "Report" }).click();

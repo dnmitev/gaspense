@@ -8,6 +8,7 @@ import {
   type PeriodTotal,
 } from "@/lib/aggregation";
 import { getCarById } from "@/lib/cars";
+import { buildConsumption, type Consumption, type FuelFill, type Reading } from "@/lib/consumption";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -42,6 +43,16 @@ export type CarReport = {
 };
 
 /**
+ * The consumption picture plus the two cost totals the view divides by
+ * distance. The division itself happens in `lib/money.ts` — these are carried
+ * as plain cents so nothing upstream of the formatter turns money into a rate.
+ */
+export type CarEfficiency = Consumption & {
+  fuelCostCents: number;
+  totalCostCents: number;
+};
+
+/**
  * Everything the report page needs for one car, or `null` when that car is not
  * the caller's live car.
  *
@@ -72,8 +83,8 @@ export async function getCarReport(userId: string, carId: string): Promise<CarRe
 
   const expenses = await prisma.expense.findMany({
     // Scoped twice over: by the car id, and by that car belonging to the
-    // caller. The relation filter is what does the real work — `carId` alone
-    // would happily total a stranger's car.
+    // caller. The pre-check above is what actually refuses a stranger — see the
+    // mutation note — and this filter is the defence-in-depth layer behind it.
     where: { carId, car: ownedCar(userId) },
     select: {
       date: true,
@@ -97,5 +108,77 @@ export async function getCarReport(userId: string, carId: string): Promise<CarRe
     byYear: byYear(rows),
     byMonth: byMonth(rows),
     byCategory: byCategory(rows),
+  };
+}
+
+/**
+ * Everything the efficiency section needs for one car, or `null` when that car
+ * is not the caller's live car.
+ *
+ * ## Ownership is re-checked here, deliberately
+ *
+ * This repeats {@link getCarReport}'s `getCarById` pre-check rather than leaning
+ * on the relation filters below, for the reason 03-01 established by mutation:
+ * the filter alone does not *refuse* a stranger's car, it returns an empty
+ * result. Here that would render as "not enough data to show consumption" —
+ * which quietly confirms the car exists. A 404 is the honest answer.
+ */
+export async function getCarEfficiency(
+  userId: string,
+  carId: string,
+): Promise<CarEfficiency | null> {
+  const car = await getCarById(userId, carId);
+  if (!car) return null;
+
+  const [fuelExpenses, readingRows, totals] = await Promise.all([
+    // Fuel purchases are identified by carrying litres, not by their category
+    // name. Category names are user data — someone may rename "Fuel" or file a
+    // fill under a category of their own — but a row with litres on it is a
+    // fill-up by construction.
+    prisma.expense.findMany({
+      where: { carId, car: ownedCar(userId), liters: { not: null } },
+      select: {
+        date: true,
+        amountCents: true,
+        liters: true,
+        fullTank: true,
+        odometerReading: { select: { reading: true } },
+      },
+    }),
+    // Every reading, including MANUAL ones. They are real data points for the
+    // distance span even though they can never be interval endpoints.
+    prisma.odometerReading.findMany({
+      where: { carId, car: ownedCar(userId) },
+      select: { date: true, reading: true },
+    }),
+    prisma.expense.groupBy({
+      by: ["carId"],
+      where: { carId, car: ownedCar(userId) },
+      _sum: { amountCents: true },
+    }),
+  ]);
+
+  // Flattened to the plain shapes `lib/consumption.ts` accepts, so the maths
+  // never sees a Prisma type and stays reachable from unit tests.
+  const fills: FuelFill[] = fuelExpenses.map((expense) => ({
+    date: expense.date,
+    amountCents: expense.amountCents,
+    liters: expense.liters as number,
+    fullTank: expense.fullTank ?? false,
+    ...(expense.odometerReading === null ? {} : { odometer: expense.odometerReading.reading }),
+  }));
+
+  const readings: Reading[] = readingRows.map((row) => ({
+    date: row.date,
+    reading: row.reading,
+  }));
+
+  const fuelCostCents = fuelExpenses.reduce((sum, expense) => sum + expense.amountCents, 0);
+  const totalCostCents = totals[0]?._sum.amountCents ?? 0;
+
+  return {
+    ...buildConsumption(fills, readings),
+    fuelCostCents,
+    totalCostCents,
   };
 }

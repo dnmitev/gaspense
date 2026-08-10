@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatAmountInput, formatEur, parseAmountToCents } from "@/lib/money";
+import { formatAmountInput, formatEur, formatEurPerKm, parseAmountToCents } from "@/lib/money";
 
 describe("formatEur", () => {
   it("puts the decimal point two digits from the right", () => {
@@ -109,5 +109,52 @@ describe("round trip", () => {
     for (const cents of values) {
       expect(parseAmountToCents(formatAmountInput(cents)), `round trip for ${cents}`).toBe(cents);
     }
+  });
+});
+
+describe("formatEurPerKm", () => {
+  it("renders three decimals, not two", () => {
+    // €140.00 over 1,000 km = €0.14/km. The third digit is what keeps a fuel
+    // rate and a total-ownership rate distinguishable.
+    expect(formatEurPerKm(14_000, 1_000)).toBe("€0.140");
+  });
+
+  it("keeps figures apart that two decimals would collapse", () => {
+    const fuel = formatEurPerKm(12_800, 1_000);
+    const total = formatEurPerKm(13_400, 1_000);
+
+    expect(fuel).toBe("€0.128");
+    expect(total).toBe("€0.134");
+    expect(fuel).not.toBe(total);
+  });
+
+  it("rounds at the third decimal rather than truncating", () => {
+    expect(formatEurPerKm(21_349, 1_000)).toBe("€0.213");
+    expect(formatEurPerKm(21_350, 1_000)).toBe("€0.214");
+  });
+
+  it("still says something useful for a very cheap kilometre", () => {
+    expect(formatEurPerKm(100, 1_000)).toBe("€0.001");
+  });
+
+  it("returns null rather than Infinity or NaN for an unusable distance", () => {
+    // A zero distance reaching the page as "€NaN" would be a visible defect;
+    // silently rendering €0.00 would be an invisible one.
+    expect(formatEurPerKm(5_000, 0)).toBeNull();
+    expect(formatEurPerKm(5_000, -10)).toBeNull();
+    expect(formatEurPerKm(5_000, Number.NaN)).toBeNull();
+    expect(formatEurPerKm(Number.POSITIVE_INFINITY, 10)).toBeNull();
+  });
+
+  it("places the sign before the symbol, as formatEur does", () => {
+    expect(formatEurPerKm(-14_000, 1_000)).toBe("-€0.140");
+  });
+
+  it("does not depend on the machine's locale", () => {
+    const formatted = formatEurPerKm(100_000, 1_000) as string;
+
+    expect(formatted).toBe("€1.000");
+    expect(formatted).not.toContain(" ");
+    expect(formatted).not.toContain(",");
   });
 });
