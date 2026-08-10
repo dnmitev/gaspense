@@ -11,31 +11,33 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-10)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release — Phase 3 closed; Phase 4 (PWA & Mobile UX) ready to plan
+**Current focus:** v0.1 Initial Release — Phase 8 (Test Environment Safety), pulled forward ahead
+of Phase 4; 08-01 closed, 08-02 (the guard) ready to plan
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 4 of 10 (PWA & Mobile UX) — Not started
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-08-10 — **Phase 3 complete** (3 plans, 116 tests); transitioned to Phase 4
+Phase: 8 of 10 (Test Environment Safety) — In progress
+Plan: 08-01 complete
+Status: Loop closed — ready to plan 08-02
+Last activity: 2026-08-10 — **08-01 closed** (~36 min, 11 tests). Dev database now provably
+survives a full suite run
 
 Progress:
 - Milestone: [█████░░░░░] 50% (5 of 10 phases complete)
-- Phase 3: [██████████] 100% (3 of 3 plans) ✅
-- Phase 4: [░░░░░░░░░░] 0% (not started)
+- Phase 8: [█████░░░░░] 50% (1 of 2 plans)
+- Phase 4: [░░░░░░░░░░] 0% (deferred behind Phase 8)
 
 ## Loop Position
 
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete — Phase 3 closed, ready for next PLAN]
+  ✓        ✓        ✓     [Loop complete — 08-01 closed, ready for next PLAN]
 ```
 
 ## Performance Metrics
 
-14 plans complete, ~9.2h total, ~40 min average.
+15 plans complete, ~9.8h total, ~39 min average.
 
 | Phase | Plans | Avg/Plan |
 |-------|-------|----------|
@@ -43,13 +45,13 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | 01-cicd-pipeline | 1/1 ✅ | ~29 min |
 | 02-foundations | 7/7 ✅ | ~57 min |
 | 03-reporting | 3/3 ✅ | ~28 min |
+| 08-test-environment-safety | 1/2 | ~36 min |
 | 09-demo-data-seed | 1/1 ✅ | ~20 min |
 
-**Trend:** …195, **21**, **20**, **17**, **45** min. The single-concern split held at 21/20/17
-while adding 36/40/41 tests. 03-03's 45 was not implementation difficulty: a test outside the
-plan's scope broke and needed replacing, a mutation comment needed correcting after measurement,
-and the dev server blocked e2e a third time. Keep splitting; expect the last plan of a phase to
-cost more than its siblings.
+**Trend:** …**21**, **20**, **17**, **45**, **36** min. 08-01's 36 was one thing: the plan
+under-specified the e2e wiring, so the first full e2e run failed 88/88 and had to be diagnosed.
+The plan was wrong, not the code — **infrastructure plans need a task per *process* that touches
+the resource**, not per file. Playwright alone has two (server, workers).
 
 ## Accumulated Context
 
@@ -76,7 +78,10 @@ Only what constrains upcoming work. **Full log: `.paul/PROJECT.md` → Key Decis
 | **`/` requires a session** | It is a server component reading auth, so it cannot be unit-tested under jsdom. Page coverage is e2e; jsdom renders only auth-free components |
 | **Unit tests DB-free; integration separate** | `npm test` must keep passing with Docker stopped. Pure modules (`aggregation`, `consumption`, `chart`, `demo-data`) import nothing |
 | **Vitest does not type-check; `next build` does** | Run both. Also: a failed test *file* reports "all passed" — read the exit code, not the summary |
-| **Verify e2e with `CI=true`** | `reuseExistingServer` can silently reuse a stale dev server |
+| **Two databases: `gaspense_dev` and `gaspense_test`** | `TEST_DATABASE_URL` wins and *overwrites* `DATABASE_URL` for the run; unset, it falls back to `DATABASE_URL` (how CI works). 08-02's guard is what makes that fallback safe |
+| **Assert connection reality, not configuration** | `current_database()`, never reading the env var back — the latter only proves setup ran, not that setupFiles beat module-scope clients |
+| **Infrastructure plans need a task per *process*, not per file** | 08-01's plan wired Playwright's server and forgot its workers; 88/88 e2e failed. Ask which processes touch the resource |
+| **`reuseExistingServer` is off** | A reused `npm run dev` serves `gaspense_dev` while helpers write `gaspense_test`. Local e2e needs port 3000 free and fails loudly if not |
 | **e2e suites seed their own global fixtures** | `npm run test:integration` truncates `Category`, and CI runs it immediately before e2e |
 | **Assert against comment-stripped source, with a positive control** | Grep for absence matches prose otherwise. An audit reporting zero hits *everywhere* proves nothing |
 | **Prove timezone logic, do not assert it** | Node re-reads `process.env.TZ` at runtime; CI is UTC so a default-TZ assertion is vacuous |
@@ -96,13 +101,14 @@ Only what constrains upcoming work. **Full log: `.paul/PROJECT.md` → Key Decis
 | Fines/vignette check cadence undecided | Ideation | S | After the Phase 5 spike |
 | Licence unsettled — `UNLICENSED` avoids npm's default ISC grant | Phase 0 | S | User's call, any time |
 | Non-provider secret-scanning patterns unavailable | Phase 1 | — | Only under org licensing |
-| Playwright's port is hard-coded to 3000 | 03-02 | S | Offered and declined twice; has now blocked e2e three times |
+| Playwright's port is hard-coded to 3000 | 03-02 | S | Now **fails loudly** rather than silently reusing a dev server (08-01). Still worth making configurable |
 
 ### Blockers/Concerns
 
 | Concern | Impact | Resolution Path |
 |---------|--------|-----------------|
-| **The integration suite truncates the dev database** | It wiped the signed-in Google account twice in one session, costing a re-login and a re-seed each time | **Phase 8 owns this. Consider pulling it before Phase 4** — the cost is now real, not theoretical |
+| **`resetDatabase()` truncates without checking its target** | It no longer *aims* at the dev database (08-01), but nothing stops it firing at a wrong one — e.g. an exported production URL with `TEST_DATABASE_URL` unset | **08-02 owns this.** Host-and-name guard derived from the URL, with tests proving the refusal fires |
+| **AC-6 (CI unedited) is proven locally, not in CI** | `ci.yml` was deliberately untouched and relies on the `DATABASE_URL` fallback | Confirmed by the next push — watch that run |
 | No accessibility audit has been run | WCAG AA is a stated goal. Landmarks and chart labelling exist; contrast, focus order and keyboard nav are unverified | Phase 4 is where this matters most — mobile UX |
 | System categories exist only if `db:seed` ran | A fresh production database gives a new user an empty category select | Decide whether the app self-heals or deployment must seed |
 | Next.js owns a section of AGENTS.md | Hand-edits inside `nextjs-agent-rules` are overwritten on `next dev` | Edit only outside the markers |
@@ -132,17 +138,23 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 
 ## Session Continuity
 
-Last session: 2026-08-10 — **paused** (see `.paul/HANDOFF-2026-08-10.md`)
-Stopped at: Phase 3 complete, closed, committed and pushed. CI green. Working tree clean.
-Next action: **Decide Phase 4 vs pulling Phase 8 forward**, then `/paul:plan`
-Resume file: `.paul/HANDOFF-2026-08-10.md`
-Git strategy: `main` (direct commits) · HEAD `5da7b3b` == `origin/main`
+Last session: 2026-08-10 — 08-01 planned, applied and closed
+Stopped at: 08-01 loop closed and committed
+Next action: `/paul:plan` for **08-02 — the guard**
+Resume file: `.paul/phases/08-test-environment-safety/08-01-SUMMARY.md`
+Git strategy: `main` (direct commits)
 Resume context:
-- **Nothing is in progress.** No uncommitted work, no partial plan, no open checkpoint. This is a clean boundary.
-- **An open decision, the user's to make:** Phase 4 (PWA & Mobile UX) as the roadmap orders it, or pull Phase 8 (Test Environment Safety) forward first. Phase 8 is recommended — the integration suite wiped the signed-in Google account twice in one session, and Phase 4 means far more time in the running app.
-- **⚠️ Environment needs restoring before the app works:** `docker compose up -d`, `npm run dev`, sign in with Google (the account row was truncated), then `npm run db:seed:demo -- --email <address>`.
-- **⚠️ Port 3000 has blocked e2e three times**, always the user's `npm run dev`. Identify the process through its parent chain before killing anything.
-- **384 tests:** 167 unit, 129 integration, 88 e2e.
+- **08-02 is the rest of the phase:** `resetDatabase()` must refuse a target that is not
+  demonstrably a test database — host-and-name derived from the URL, no opt-in flag. CI already
+  satisfies such a guard (`localhost` + `gaspense_test`); **verify that, do not assume it.**
+- **⚠️ The phase directory holds 1 PLAN and 1 SUMMARY**, which the file-count heuristic reads as
+  "phase complete". It is not — ROADMAP says 2 plans and is the authority. Third occurrence of
+  this false signal in this project.
+- **⚠️ `.env` now carries `TEST_DATABASE_URL`** (appended, gitignored). A fresh clone needs it
+  from `.env.example` plus `npm run db:test:setup`.
+- **⚠️ Local e2e needs port 3000 free** — `reuseExistingServer` is off, so it fails rather than
+  reusing the wrong server. Identify a process through its parent chain before killing anything.
+- **395 tests:** 176 unit, 131 integration, 88 e2e.
 - **Never read an exit code through a pipe** — this has caused a wrong conclusion three times.
 
 ---

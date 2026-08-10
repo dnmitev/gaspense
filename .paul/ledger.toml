@@ -287,3 +287,21 @@ at = "2026-08-10T07:47:52Z"
 action = "pause"
 phase = 4
 at = "2026-08-10T07:55:32Z"
+
+[[entry]]
+action = "plan"
+phase = 8
+plan = "08-01"
+at = "2026-08-10T10:15:04Z"
+
+[[entry]]
+action = "apply"
+phase = 8
+plan = "08-01"
+at = "2026-08-10T10:39:59Z"
+
+[[entry]]
+action = "unify"
+phase = 8
+plan = "08-01"
+at = "2026-08-10T10:57:52Z"
