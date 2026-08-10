@@ -69,10 +69,12 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 - ✓ **Phase 8 complete** — 2 plans, ~50 minutes, 27 tests added (411 total). Running the suites can no longer destroy the development database or a real one; both claims are demonstrated, not argued
 - ✓ Installable PWA — manifest, generated maskable icons, a hand-written service worker, and an offline fallback, with zero new dependencies — Phase 4 (04-01)
 - ✓ Service-worker cache boundary — static assets only; an offline navigation returns the user's data **absent**, and Cache Storage provably holds no HTML key — Phase 4 (04-01)
+- ✓ One-tap expense entry — dashboard card actions plus a car-agnostic `/expenses/new` reachable from the installed app's shortcuts; three taps became one — Phase 4 (04-02)
+- ✓ First accessibility gate — axe-core over WCAG 2 A/AA on four pages and two viewports, zero serious or critical, with the gate's two blind spots measured rather than assumed — Phase 4 (04-02)
 
 ### Active (In Progress)
-- **Phase 4: PWA & Mobile UX** — 1 of 3 plans complete (04-01 installable PWA). Next: 04-02
-  quick-add expense flow + the first accessibility audit; then 04-03 `Attachment` + Supabase Storage
+- **Phase 4: PWA & Mobile UX** — 2 of 3 plans complete (04-01 installable PWA, 04-02 quick-add +
+  the first accessibility audit). Remaining: 04-03 `Attachment` + Supabase Storage + photo upload
 
 ### Planned (Next)
 - Phase 5: Bulgarian Integrations — research spike, then fines/vignette checks
@@ -210,6 +212,11 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 | Service-worker registration is production-only | `next dev` serves unhashed chunks, so a cache-first worker breaks hot reload in a way that reads as a compiler bug. e2e runs a production build, so coverage is unaffected | 2026-08-10 | Active |
 | Icons rasterised by Playwright's Chromium; the PNGs are committed | No image library for four files, and Vercel serves `public/` statically without ever running the generator. A unit test parses their IHDR headers against the manifest | 2026-08-10 | Active |
 | No offline writes — no background sync, no queued mutations | Queuing writes needs a conflict story this project does not have. Offline means the shell loads and says so | 2026-08-10 | Active |
+| `/expenses/new` accepts no `carId` parameter | Per-car adds have their own route; a stale or foreign id would force a choice between 404, silent fallback and error, all worse than not offering it | 2026-08-10 | Active |
+| The quick-add default car is the most recently **added** | `listActiveCars` already orders `createdAt: "desc"`. "Most recently used" needs a new scoped query shape, and by standing rule that means its own isolation and mutation tests — to buy a preselected `<option>` | 2026-08-10 | Active |
+| The accessibility gate fails on serious/critical only | A gate that fails the build on an advisory gets switched off within a month, and then nothing is gated at all. Moderate and minor are printed and recorded | 2026-08-10 | Active |
+| A new gate is not trusted until it has been made to fail | 04-02's planned control could not fire — a `placeholder` satisfies axe's accessible-name rules — so "zero violations" and "the gate is broken" were indistinguishable until a contrast regression proved it works | 2026-08-10 | Active |
+| `autoFocus` only on the quick-add path | Most accessibility guidance rejects it flatly; justified for a single-purpose form opened to type one number, and deliberately not spread further | 2026-08-10 | Active |
 
 ## Success Metrics
 
@@ -217,9 +224,9 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 |--------|--------|---------|--------|
 | Docs/lint presence | CLAUDE.md, AGENTS.md, docs/ARCHITECTURE.md exist; markdownlint + ESLint/Prettier pass | `npm run check` green | **Achieved** (Phase 0) |
 | CI pipeline green | Lint + test + build pass on every push/PR; secret scanning active | All four run green: check, build, unit (Vitest), e2e (Playwright). Secret scanning + push protection active | **Achieved** (Phase 2, plan 02-02) |
-| Test coverage | Unit + integration + automation (e2e) tests for every phase | 444 tests: 206 unit, 136 integration, 102 e2e — all green | **On track** |
+| Test coverage | Unit + integration + automation (e2e) tests for every phase | 490 tests: 218 unit, 142 integration, 130 e2e — all green | **On track** |
 | Security scan | Pass, every phase | - | Not started |
-| Accessibility | WCAG AA on frontend phases | - | Not started — 04-02 |
+| Accessibility | WCAG AA on frontend phases | axe-core gates serious/critical on 4 of 9 routes, both viewports — zero found. Five routes unaudited; two blind spots measured (a placeholder satisfies accessible-name rules; nested `<a>` is parser-repaired) | **Partly achieved** (04-02) — a gate, not a certification |
 | Performance | PWA installable, high Lighthouse PWA score | Manifest, maskable icons and a fetch-handling service worker all proven by test; no real device install yet, no Lighthouse run | **Partly achieved** (04-01) |
 
 ## Tech Stack / Tools

@@ -125,8 +125,16 @@ test.describe("dashboard — with a populated account", () => {
 
   test("links each car card to that car's report", async ({ page }) => {
     // AC-9.
+    //
+    // Locator narrowed in 04-02, and expected: the card now carries "Add fuel",
+    // "Add an expense" and "All expenses" links alongside the report one, so
+    // `getByRole("link").first()` is no longer unambiguous. Naming the report
+    // link is what the test always meant.
     await page.goto("/");
-    await page.getByRole("region", { name: "Your cars" }).getByRole("link").first().click();
+    await page
+      .getByRole("region", { name: "Your cars" })
+      .getByRole("link", { name: "Report for DEMO-0001" })
+      .click();
 
     await expect(page).toHaveURL(/\/cars\/[^/]+\/report$/);
     await expect(page.getByRole("heading", { level: 1, name: "Demo car" })).toBeVisible();

@@ -159,6 +159,44 @@ navigations are routed through the cache.
 - Not `next-pwa` (unmaintained, pinned to older Next.js) and not Serwist (maintained, but a
   build-plugin dependency taken purely for convenience).
 
+## Adding an Expense — Two Entry Points
+
+`/cars/[id]/expenses/new?type=fuel` when the car is known (the dashboard card actions link here),
+and `/expenses/new?type=fuel` when it is not — the car-agnostic route a home-screen shortcut or deep
+link can point at.
+
+`/expenses/new` **takes no `carId` parameter, deliberately**: per-car adds have their own route, and
+deciding what to do with a stale or foreign id (404, silent fallback, error) is worse than not
+offering the parameter. It resolves the car via `resolveQuickAddTarget` in `lib/quick-add.ts` — no
+picker with one car, a select defaulting to the **most recently added** with several, a redirect to
+`/cars/new` with none.
+
+- The default is the newest car because `listActiveCars` already orders `createdAt: "desc"`. "Most
+  recently used" would need a new scoped query shape, which by the standing rule needs its own
+  isolation and mutation test — to buy a pre-selected `<option>`. Deferred.
+- `ExpenseForm` serves both entry points: a `cars` prop renders a `<select name="carId">` as the
+  first field, otherwise the hidden input stays. `carId` is untrusted either way and `createExpense`
+  verifies ownership in the database, which is what makes the select safe.
+
+## Accessibility
+
+`tests/e2e/accessibility.spec.ts` runs `@axe-core/playwright` over WCAG 2 A/AA on both viewports, as
+part of `npm run test:e2e`.
+
+- **Gate: zero `serious` and zero `critical`.** Moderate/minor are printed and recorded, not gated —
+  a gate that fails on an advisory gets switched off, and then nothing is gated.
+- **Audited:** `/signin`, `/`, `/expenses/new?type=fuel`, `/cars/[id]/expenses/new?type=fuel`.
+  **Not yet audited:** `/cars`, `/cars/new`, the edit pages, `/categories`, the report and odometer
+  pages.
+- **⚠️ Measured limits of the gate:** a `placeholder` satisfies the accessible-name rules, so a lost
+  `htmlFor` on the amount field produces no axe violation (the Tab-order e2e test and
+  `tests/unit/expense-form.test.tsx` cover it); and nested `<a>` is silently repaired by the HTML
+  parser, so `nested-interactive` never fires for a link inside a link.
+- The audit waits on `#amount`, never `getByLabel` — a precondition that depends on the association
+  being audited cannot report on it.
+- Chromium's `<input type="date">` has internal tab stops, so the keyboard test asserts order as a
+  subsequence rather than one `Tab` per field.
+
 ## Code Conventions
 
 - **TypeScript throughout.** No plain-JS source files — **one documented exception**: `public/sw.js`.

@@ -68,14 +68,25 @@ export default async function DashboardPage() {
 
             <ul className="flex flex-col gap-3">
               {fleet.cars.map((car) => (
-                <li key={car.id}>
+                <li
+                  key={car.id}
+                  className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800"
+                >
+                  {/*
+                    The card is no longer one big link. The add actions below are
+                    links too, and a link inside a link is invalid HTML that no
+                    browser handles predictably — axe reports it as a nested
+                    interactive control. So the report link wraps only the
+                    summary it describes.
+                  */}
                   <Link
                     href={`/cars/${car.id}/report`}
-                    className="flex flex-col gap-1 rounded-lg border border-neutral-200 p-4 dark:border-neutral-800"
+                    aria-label={`Report for ${car.licensePlate}`}
+                    className="flex flex-col gap-1"
                   >
                     <span className="font-mono text-sm font-semibold">{car.licensePlate}</span>
                     {car.nickname ? (
-                      <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                      <span className="text-sm text-neutral-700 dark:text-neutral-300">
                         {car.nickname}
                       </span>
                     ) : null}
@@ -90,6 +101,36 @@ export default async function DashboardPage() {
                         : ` · ${consumption(car.averageLitersPer100Km)}`}
                     </span>
                   </Link>
+
+                  {/*
+                    The point of the whole plan: one tap from here to a form that
+                    already knows the car. Names include the plate because a
+                    screen reader hears these out of the card's visual context,
+                    where four identical "Add fuel" links are useless.
+                  */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      href={`/cars/${car.id}/expenses/new?type=fuel`}
+                      aria-label={`Add fuel for ${car.licensePlate}`}
+                      className="flex min-h-11 items-center rounded-lg bg-neutral-900 px-4 text-sm font-medium text-white dark:bg-white dark:text-neutral-900"
+                    >
+                      Add fuel
+                    </Link>
+                    <Link
+                      href={`/cars/${car.id}/expenses/new`}
+                      aria-label={`Add an expense for ${car.licensePlate}`}
+                      className="flex min-h-11 items-center rounded-lg border border-neutral-300 px-4 text-sm font-medium dark:border-neutral-700"
+                    >
+                      Add expense
+                    </Link>
+                    <Link
+                      href={`/cars/${car.id}/expenses`}
+                      aria-label={`All expenses for ${car.licensePlate}`}
+                      className="flex min-h-11 items-center px-1 text-sm underline"
+                    >
+                      History
+                    </Link>
+                  </div>
                 </li>
               ))}
             </ul>

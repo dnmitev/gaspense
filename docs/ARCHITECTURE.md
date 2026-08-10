@@ -248,6 +248,25 @@ a CRUD write. There are no public endpoints — the app is authenticated end to 
 NextAuth v5 with the Google provider and **database sessions** (a `Session` row means a live login,
 which makes sessions revocable). Input is validated with Zod at every action boundary.
 
+### Expense entry points
+
+Two routes reach the same `ExpenseForm` and the same `createExpenseAction`:
+
+| Route                                 | Car          | Purpose                                              |
+| ------------------------------------- | ------------ | ---------------------------------------------------- |
+| `/cars/[id]/expenses/new[?type=fuel]` | From the URL | The dashboard's per-card actions; the car is known   |
+| `/expenses/new[?type=fuel]`           | Resolved     | Car-agnostic — a home-screen shortcut or a deep link |
+
+The car-agnostic route accepts **no `carId` parameter**. It calls `listActiveCars` and passes the
+result to `resolveQuickAddTarget` (`lib/quick-add.ts`), which returns one of three cases: `no-cars`
+(redirect to `/cars/new`), `single` (use it, render no picker), or `choose` (render a `<select>`
+defaulting to the most recently added). The three cases are distinguished by a tag rather than by a
+nullable id, so there is no empty string for a caller to mistake for one.
+
+`carId` therefore arrives from the form on both routes, untrusted, and `createExpense` verifies
+ownership in the same query that writes. That is what makes offering a car `<select>` safe rather
+than a privilege-escalation surface.
+
 ---
 
 ## PWA and the Service Worker Cache Boundary

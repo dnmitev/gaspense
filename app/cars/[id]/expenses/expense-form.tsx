@@ -18,11 +18,28 @@ type ExpenseFormValues = {
   odometer?: number | null;
 };
 
+type CarOption = { id: string; label: string };
+
 type Props = {
   action: (prev: ActionResult | null, formData: FormData) => Promise<ActionResult>;
   submitLabel: string;
   carId: string;
   categories: CategoryOption[];
+  /**
+   * Supplied only by the car-agnostic route, which does not know the car yet.
+   *
+   * Given cars, the form renders a `<select name="carId">` as its first field.
+   * Given none, it keeps the hidden input — the per-car routes are unchanged.
+   *
+   * Either way `carId` is untrusted input that `createExpense` verifies against
+   * the database, which is exactly why offering a select is safe. Proven in
+   * tests/integration/quick-add.test.ts rather than assumed.
+   */
+  cars?: CarOption[];
+  /** Where Cancel goes. Defaults to the car's expense list, which has no analogue on the quick-add route. */
+  cancelHref?: string;
+  /** Focus the amount field on arrival. On for quick-add; off when editing, where it would fight the browser's scroll restoration. */
+  focusAmount?: boolean;
   expense?: ExpenseFormValues;
   /**
    * Fuel entry shows the fuel fields outright; other entry tucks the same
@@ -78,18 +95,40 @@ export function ExpenseForm({
   submitLabel,
   carId,
   categories,
+  cars,
+  cancelHref,
+  focusAmount = false,
   expense,
   showFuelFields = false,
   defaultCategoryId,
 }: Props) {
   const [state, formAction, pending] = useActionState(action, null);
   const errors = state?.ok === false ? state.errors : {};
-  const backHref = `/cars/${carId}/expenses`;
+  const backHref = cancelHref ?? `/cars/${carId}/expenses`;
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
-      {/* Untrusted like every other field — the data layer verifies ownership. */}
-      <input type="hidden" name="carId" value={carId} />
+      {cars?.length ? (
+        // First field on purpose: the car is the thing you would notice being
+        // wrong, and burying it under the amount invites filing a fill-up
+        // against the wrong vehicle.
+        <div className="flex flex-col gap-1">
+          <label htmlFor="carId" className="text-sm font-medium">
+            Car
+          </label>
+          <select id="carId" name="carId" required defaultValue={carId} className={inputClass}>
+            {cars.map((car) => (
+              <option key={car.id} value={car.id}>
+                {car.label}
+              </option>
+            ))}
+          </select>
+          <FieldError messages={errors.carId} />
+        </div>
+      ) : (
+        /* Untrusted like every other field — the data layer verifies ownership. */
+        <input type="hidden" name="carId" value={carId} />
+      )}
 
       {state?.ok === false && state.formError ? (
         <p
@@ -110,12 +149,20 @@ export function ExpenseForm({
           Deliberately type="text": type="number" would let the browser's own
           locale rules reject or reformat "12,34" before the schema ever sees it.
         */}
+        {/*
+          autoFocus is most of what "adding an expense takes seconds" means on a
+          phone: the numeric keypad is already up and the amount is the reason
+          the page was opened. Off when editing, where it would fight scroll
+          restoration and move focus away from whatever the user came to change.
+        */}
+        {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
         <input
           id="amount"
           name="amount"
           type="text"
           inputMode="decimal"
           required
+          autoFocus={focusAmount}
           placeholder="45.20"
           defaultValue={expense?.amount ?? ""}
           className={inputClass}

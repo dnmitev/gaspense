@@ -33,6 +33,24 @@ export default function manifest(): MetadataRoute.Manifest {
     // matched: the installed app's status bar and the browser's chrome tinting
     // the same page differently reads as a bug.
     theme_color: "#ffffff",
+    // Long-pressing the installed icon offers these. Added in 04-02: the
+    // car-agnostic /expenses/new exists precisely so a shortcut can point at it,
+    // and without this entry nothing in the app ever reaches that route — it
+    // would be a page with no consumer.
+    shortcuts: [
+      {
+        name: "Add fuel",
+        short_name: "Fuel",
+        url: "/expenses/new?type=fuel",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+      },
+      {
+        name: "Add an expense",
+        short_name: "Expense",
+        url: "/expenses/new",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+      },
+    ],
     icons: [
       {
         src: "/icons/icon-192.png",

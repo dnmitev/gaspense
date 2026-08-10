@@ -165,6 +165,53 @@ navigations are routed through the cache.
 - Two decisions on the alternatives: not `next-pwa` (unmaintained, pinned to older Next.js), not
   Serwist (maintained, but a build-plugin dependency taken purely for convenience).
 
+## Adding an Expense — Two Entry Points
+
+| Route                               | When                                                             |
+| ----------------------------------- | ---------------------------------------------------------------- |
+| `/cars/[id]/expenses/new?type=fuel` | The car is already known — the dashboard card actions link here  |
+| `/expenses/new?type=fuel`           | Car-agnostic. What a home-screen shortcut or deep link points at |
+
+`/expenses/new` **takes no `carId` parameter, deliberately.** Per-car adds already have their own
+route; accepting an id here would mean deciding what to do with a stale or someone else's, and 404,
+silent fallback and error are all worse than not offering it. It resolves the car itself via
+`resolveQuickAddTarget` in [lib/quick-add.ts](lib/quick-add.ts): no picker with one car, a select
+defaulting to the **most recently added** with several, and a redirect to `/cars/new` with none.
+
+- **The default is the newest car, not the most recently used.** `listActiveCars` already orders
+  `createdAt: "desc"`, so this costs no query. "Most recently used" would need a new scoped query
+  shape — which by the standing rule needs its own isolation _and_ mutation test, to buy a
+  pre-selected `<option>`. Deferred, not forgotten.
+- **`ExpenseForm` serves both.** Given a `cars` prop it renders a `<select name="carId">` as the
+  first field; given none it keeps the hidden input. `carId` is untrusted either way and
+  `createExpense` verifies ownership in the database — which is exactly why offering a select is
+  safe, proven in `tests/integration/quick-add.test.ts`.
+
+## Accessibility
+
+`tests/e2e/accessibility.spec.ts` runs `@axe-core/playwright` against WCAG 2 A and AA rules on both
+the mobile and desktop viewports. It is part of `npm run test:e2e`.
+
+- **The gate is zero `serious` and zero `critical`.** Moderate and minor findings are printed and
+  recorded, not gated — a gate that fails the build on an advisory gets switched off within a month,
+  and then nothing is gated at all.
+- **Four pages are audited:** `/signin`, `/` (populated), `/expenses/new?type=fuel`, and
+  `/cars/[id]/expenses/new?type=fuel`. **Five are not yet:** `/cars`, `/cars/new`, the edit pages,
+  `/categories`, and the report and odometer pages. Stated so the gap is visible rather than implied
+  by a file called "accessibility".
+- **⚠️ What axe does not catch here, measured rather than assumed:**
+  - A **placeholder satisfies the accessible-name rules**, so removing the amount field's
+    `htmlFor` produces _no_ axe violation. `tests/e2e/quick-add.spec.ts`'s Tab-order test and
+    `tests/unit/expense-form.test.tsx` are what cover that.
+  - **Nested `<a>` is silently repaired by the HTML parser**, so `nested-interactive` never fires
+    for a link inside a link. The dashboard card is still structured to avoid it — the markup should
+    be right, not merely undetectably wrong.
+- The audit's own preconditions wait on `#amount`, never `getByLabel` — a setup step that depends on
+  the association being audited cannot report on it, which is how the first positive-control run
+  failed for the wrong reason.
+- **Chromium's `<input type="date">` has internal day/month/year tab stops**, so one `Tab` moves
+  within the control. The keyboard test collects a sequence and asserts order as a subsequence.
+
 ## Conventions
 
 - **TypeScript throughout.** No plain-JS source files — **one documented exception**: `public/sw.js`.

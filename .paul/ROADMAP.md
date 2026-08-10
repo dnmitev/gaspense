@@ -311,7 +311,8 @@ project-wide.
 **Plans:**
 - [x] 04-01: Installable PWA — manifest, generated icons, a hand-written service worker whose
       cache boundary is proven offline, and the `/offline.html` fallback
-- [ ] 04-02: Quick-add expense flow, responsive polish, and the first accessibility audit
+- [x] 04-02: Quick-add — one tap from the dashboard, a car-agnostic `/expenses/new`, and the
+      project's first accessibility audit over that path
 - [ ] 04-03: `Attachment` schema + Supabase Storage + car/expense photo upload
 
 **04-01 completed 2026-08-10.** ~47 minutes, 33 tests added (444 total). Installable with zero new
@@ -340,6 +341,61 @@ that was the whole cost of installability and is not a precedent.
 **⚠️ Still open from 04-01:** no real home-screen install has been performed. Every requirement
 installability depends on is proven by test; the device install itself is not — the same shape of
 gap as the Google login that stayed open from 02-04 until 09-01.
+
+**Settled at 04-02 planning time (2026-08-10):**
+
+- **Two entry points, because one does not cover both cases.** Dashboard car cards get "Add fuel" /
+  "Add expense" (one tap, car already known — the common single-car case), and a new car-agnostic
+  `/expenses/new` resolves the car itself: no picker at all with one car, a select defaulting to the
+  newest with several, and a redirect to `/cars/new` with none. The car-agnostic route is what a
+  home-screen shortcut or deep link can point at, which a per-card button cannot be.
+- **The route takes no `carId` parameter.** Per-car adds already have `/cars/[id]/expenses/new`.
+  Accepting an id here would raise the question of what to do with a foreign or stale one, and every
+  answer — 404, silent fallback, error — is worse than not offering the parameter.
+- **The default car is the most recently ADDED, not the most recently used.** `listActiveCars`
+  already orders `createdAt: "desc"`, so this costs no new query. "Most recently used" is marginally
+  better UX and would cost a new scoped query shape, which by the standing rule needs its own
+  isolation test and its own mutation test — for a *default*. Deferred, not silently dropped.
+- **`@axe-core/playwright`, gating on serious and critical only.** The first dependency taken purely
+  for testing since Playwright, and justified: hand-computing contrast ratios and reasoning about
+  accessible names is what a tool does reliably and a person does not. Moderate and minor findings
+  are recorded, not gated — a gate that fails on an advisory gets switched off, and then nothing is
+  gated at all.
+- **Four pages audited, five explicitly not.** `/signin`, `/`, and both add forms, on both
+  viewports. `/cars`, `/cars/new`, the edit pages, `/categories`, and the report and odometer pages
+  are named in the docs as unaudited so the gap is visible rather than implied.
+- **No persistent navigation in this plan.** The app has none today and every page hand-rolls its own
+  back link — a real gap, but a nav shell touches all nine routes and would swamp both the quick-add
+  work and the audit. Deferred, to be decided after the audit says what is actually broken.
+
+**⚠️ For 04-02, and expected rather than a regression:** `tests/e2e/home.spec.ts`'s "links each car
+card to that car's report" selects `getByRole("link").first()` inside the cars region. Adding card
+actions makes `.first()` ambiguous, so that locator must become specific. Same shape as the `/`
+placeholder assertion that 03-03 had to update.
+
+**04-02 completed 2026-08-10.** ~85 minutes, 46 tests added (490 total). Adding a fuel expense went
+from three taps to one; `/expenses/new` resolves the car itself and is reachable from the installed
+app's shortcuts; and the project has an accessibility gate for the first time — zero serious and
+zero critical across four pages on both viewports.
+
+**⚠️ The most valuable finding in 04-02 was that its planned accessibility control could not fire.**
+Stripping the amount label's `htmlFor` produced **no** axe violation, because `placeholder="45.20"`
+satisfies the accessible-name computation. A real contrast regression is what proved the gate works.
+A second check showed the HTML parser silently unnests `<a>` inside `<a>`, so `nested-interactive`
+can never fire either. **Both blind spots are documented; the gate is a gate, not a WCAG AA
+certification.** Also: the audit's own preconditions originally waited on `getByLabel`, so when
+labels broke, the test failed on the wait and axe never ran — a control that looks like it works and
+does not.
+
+**⚠️ For 04-03 and every later UI plan:** add new pages to `tests/e2e/accessibility.spec.ts` — one
+line each. Five routes remain unaudited (`/cars`, `/cars/new`, the edit pages, `/categories`, and
+the report and odometer pages), and a new UI that skips the gate is the gap reopening rather than
+merely not closing.
+
+**Deferred out of 04-02:** "most recently used" as the default car (needs a new scoped query shape
+and therefore its own isolation and mutation tests, to buy a preselected `<option>`), and a
+persistent navigation — every page still hand-rolls its own back link. The audit surfaced no urgent
+reason to revisit the latter.
 
 ### Phase 5: Bulgarian Integrations
 
