@@ -20,7 +20,7 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 |-----------|-------|
 | Type | Application |
 | Version | 0.0.0 |
-| Status | Prototype — **Phases 0-3 and 9 complete.** Log in, add a car, record expenses and mileage, and see what it all costs: by month, by year, by category, per kilometre, and litres per 100 km — with a dashboard on opening the app |
+| Status | Prototype — **Phases 0-3, 8 and 9 complete.** Log in, add a car, record expenses and mileage, and see what it all costs: by month, by year, by category, per kilometre, and litres per 100 km — with a dashboard on opening the app. The test suites now run against a database of their own and refuse to touch any other |
 | Last Updated | 2026-08-10 |
 
 **Production URLs:** none yet.
@@ -64,16 +64,18 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 - ✓ Fuel efficiency — litres per 100 km from full-to-full intervals, plus fuel and total cost per kilometre, over a series with gaps, partial fills and a reading that goes backwards — Phase 3 (03-02)
 - ✓ Dashboard — `/` shows the fleet total, a twelve-month spend chart in server-rendered SVG, and a card per car; zero client JavaScript — Phase 3 (03-03)
 - ✓ **Phase 3 complete** — 3 plans, 116 tests added, 384 total. The phase goal is exceeded: month/year and category costs were the target; cost-per-km, litres per 100 km and the dashboard shipped too
+- ✓ Dedicated test database — `npm run db:test:setup`, one resolver shared by Vitest and Playwright, and proof via `current_database()` that the connection is where it is believed to be — Phase 8 (08-01)
+- ✓ Destructive-operation guard — `resetDatabase` and `createTestClient` refuse any database that is not both local and `_test`-named, mutation-tested so both halves are proven load-bearing — Phase 8 (08-02)
+- ✓ **Phase 8 complete** — 2 plans, ~50 minutes, 27 tests added (411 total). Running the suites can no longer destroy the development database or a real one; both claims are demonstrated, not argued
 
 ### Active (In Progress)
-- Nothing in progress — Phase 3 closed 2026-08-10; Phase 4 (PWA & Mobile UX) is next to plan
+- Nothing in progress — Phase 8 closed 2026-08-10; Phase 4 (PWA & Mobile UX) is next to plan
 
 ### Planned (Next)
 - Phase 4: PWA & Mobile UX — installable PWA, quick-add flow, photo upload
 - Phase 5: Bulgarian Integrations — research spike, then fines/vignette checks
 - Phase 6: Google Drive Export — OAuth consent, export/backup
 - Phase 7: Maintenance Reminders — service intervals per car with due/overdue indicators
-- Phase 8: Test Environment Safety — stop the integration suite truncating a database that matters
 
 ### Out of Scope
 - Multi-currency support — EUR only, by explicit decision
@@ -194,6 +196,12 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 | Charts are hand-rolled server-rendered SVG | No charting library, no client boundary, no dependency; Phase 4's PWA makes bundle size a stated concern | 2026-08-10 | Active |
 | `/` requires a session; there is no public landing page | Matches every other page; a landing page would mean a second auth shape on a personal tool | 2026-08-10 | Active |
 | Which scope filter is load-bearing is measured per query shape | `getCarReport`'s pre-check did all the work; `getFleetSummary`'s two filters are redundant with each other. The answer does not transfer | 2026-08-10 | Active |
+| Development and tests use separate databases on one container | The integration suite truncates on every run; sharing one database wiped the signed-in account twice in a single session | 2026-08-10 | Active |
+| `TEST_DATABASE_URL` wins over `DATABASE_URL` and overwrites it for the run | The exported production URL then becomes unreachable rather than merely unpreferred; falling back keeps CI passing with no workflow edit | 2026-08-10 | Active |
+| Destructive test paths require a local host **and** a `_test` database name | Both, because a real database can satisfy one by accident; production fails both. A legitimately remote test database would be refused, which is the safe direction | 2026-08-10 | Active |
+| No override flag for the guard, ever | A variable set once in `.env` is forgotten and stays true when the shell later points somewhere real — it detaches the permission from the target | 2026-08-10 | Active |
+| Guard client construction, not only truncation | Measured: guarding the truncate alone stopped the data loss but still let specs write rows into the development database before reaching the refusal | 2026-08-10 | Active |
+| A refusal test is aimed where a broken guard cannot do damage | Pointing it at `gaspense_dev` is the obvious test and the wrong one; the `postgres` maintenance database gives the same signal at no risk | 2026-08-10 | Active |
 
 ## Success Metrics
 
@@ -201,7 +209,7 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 |--------|--------|---------|--------|
 | Docs/lint presence | CLAUDE.md, AGENTS.md, docs/ARCHITECTURE.md exist; markdownlint + ESLint/Prettier pass | `npm run check` green | **Achieved** (Phase 0) |
 | CI pipeline green | Lint + test + build pass on every push/PR; secret scanning active | All four run green: check, build, unit (Vitest), e2e (Playwright). Secret scanning + push protection active | **Achieved** (Phase 2, plan 02-02) |
-| Test coverage | Unit + integration + automation (e2e) tests for every phase | 384 tests: 167 unit, 129 integration, 88 e2e — all green in CI | **On track** |
+| Test coverage | Unit + integration + automation (e2e) tests for every phase | 411 tests: 187 unit, 136 integration, 88 e2e — all green in CI | **On track** |
 | Security scan | Pass, every phase | - | Not started |
 | Accessibility | WCAG AA on frontend phases | - | Not started |
 | Performance | PWA installable, high Lighthouse PWA score | - | Not started |
@@ -228,4 +236,4 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-08-10 after Phase 3*
+*Last updated: 2026-08-10 after Phase 8*

@@ -11,33 +11,32 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-10)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release — Phase 8 (Test Environment Safety), pulled forward ahead
-of Phase 4; 08-01 closed, 08-02 (the guard) ready to plan
+**Current focus:** v0.1 Initial Release — Phase 8 closed; Phase 4 (PWA & Mobile UX) ready to plan,
+resuming the roadmap order
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 8 of 10 (Test Environment Safety) — In progress
-Plan: 08-01 complete
-Status: Loop closed — ready to plan 08-02
-Last activity: 2026-08-10 — **08-01 closed** (~36 min, 11 tests). Dev database now provably
-survives a full suite run
+Phase: 4 of 10 (PWA & Mobile UX) — Not started
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-08-10 — **Phase 8 complete** (2 plans, 27 tests); transitioned to Phase 4
 
 Progress:
-- Milestone: [█████░░░░░] 50% (5 of 10 phases complete)
-- Phase 8: [█████░░░░░] 50% (1 of 2 plans)
-- Phase 4: [░░░░░░░░░░] 0% (deferred behind Phase 8)
+- Milestone: [██████░░░░] 60% (6 of 10 phases complete)
+- Phase 8: [██████████] 100% (2 of 2 plans) ✅
+- Phase 4: [░░░░░░░░░░] 0% (not started)
 
 ## Loop Position
 
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete — 08-01 closed, ready for next PLAN]
+  ✓        ✓        ✓     [Loop complete — Phase 8 closed, ready for next PLAN]
 ```
 
 ## Performance Metrics
 
-15 plans complete, ~9.8h total, ~39 min average.
+16 plans complete, ~10h total, ~38 min average.
 
 | Phase | Plans | Avg/Plan |
 |-------|-------|----------|
@@ -45,13 +44,13 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | 01-cicd-pipeline | 1/1 ✅ | ~29 min |
 | 02-foundations | 7/7 ✅ | ~57 min |
 | 03-reporting | 3/3 ✅ | ~28 min |
-| 08-test-environment-safety | 1/2 | ~36 min |
+| 08-test-environment-safety | 2/2 ✅ | ~25 min |
 | 09-demo-data-seed | 1/1 ✅ | ~20 min |
 
-**Trend:** …**21**, **20**, **17**, **45**, **36** min. 08-01's 36 was one thing: the plan
-under-specified the e2e wiring, so the first full e2e run failed 88/88 and had to be diagnosed.
-The plan was wrong, not the code — **infrastructure plans need a task per *process* that touches
-the resource**, not per file. Playwright alone has two (server, workers).
+**Trend:** …**20**, **17**, **45**, **36**, **14** min. 08-02's 14 is the fastest plan since
+Phase 0, and it was the *harder* of the two — because 08-01 had already paid for the resolver, the
+test database and the wiring. The lesson holds twice over: **the second plan of a split phase is
+cheap precisely because the first one was scoped narrowly.** Keep splitting.
 
 ## Accumulated Context
 
@@ -78,7 +77,9 @@ Only what constrains upcoming work. **Full log: `.paul/PROJECT.md` → Key Decis
 | **`/` requires a session** | It is a server component reading auth, so it cannot be unit-tested under jsdom. Page coverage is e2e; jsdom renders only auth-free components |
 | **Unit tests DB-free; integration separate** | `npm test` must keep passing with Docker stopped. Pure modules (`aggregation`, `consumption`, `chart`, `demo-data`) import nothing |
 | **Vitest does not type-check; `next build` does** | Run both. Also: a failed test *file* reports "all passed" — read the exit code, not the summary |
-| **Two databases: `gaspense_dev` and `gaspense_test`** | `TEST_DATABASE_URL` wins and *overwrites* `DATABASE_URL` for the run; unset, it falls back to `DATABASE_URL` (how CI works). 08-02's guard is what makes that fallback safe |
+| **Two databases: `gaspense_dev` and `gaspense_test`** | `TEST_DATABASE_URL` wins and *overwrites* `DATABASE_URL` for the run; unset, it falls back to `DATABASE_URL` (how CI works), and the guard makes that fallback safe |
+| **Destructive test paths are guarded: local host AND `_test` name** | Covers `resetDatabase` and `createTestClient`. **A new mass-destruction path needs its own `assertTestDatabase` call** — nothing enforces this automatically |
+| **Aim a refusal test where a broken guard cannot do damage** | Never at `gaspense_dev`. Use `postgres` — local, reachable, wrong-named, holding none of the app's tables |
 | **Assert connection reality, not configuration** | `current_database()`, never reading the env var back — the latter only proves setup ran, not that setupFiles beat module-scope clients |
 | **Infrastructure plans need a task per *process*, not per file** | 08-01's plan wired Playwright's server and forgot its workers; 88/88 e2e failed. Ask which processes touch the resource |
 | **`reuseExistingServer` is off** | A reused `npm run dev` serves `gaspense_dev` while helpers write `gaspense_test`. Local e2e needs port 3000 free and fails loudly if not |
@@ -107,15 +108,15 @@ Only what constrains upcoming work. **Full log: `.paul/PROJECT.md` → Key Decis
 
 | Concern | Impact | Resolution Path |
 |---------|--------|-----------------|
-| **`resetDatabase()` truncates without checking its target** | It no longer *aims* at the dev database (08-01), but nothing stops it firing at a wrong one — e.g. an exported production URL with `TEST_DATABASE_URL` unset | **08-02 owns this.** Host-and-name guard derived from the URL, with tests proving the refusal fires |
 | No accessibility audit has been run | WCAG AA is a stated goal. Landmarks and chart labelling exist; contrast, focus order and keyboard nav are unverified | Phase 4 is where this matters most — mobile UX |
 | System categories exist only if `db:seed` ran | A fresh production database gives a new user an empty category select | Decide whether the app self-heals or deployment must seed |
 | Next.js owns a section of AGENTS.md | Hand-edits inside `nextjs-agent-rules` are overwritten on `next dev` | Edit only outside the markers |
 | e2e step rebuilds the app, duplicating the Build step | Slower CI runs | Accepted; optimising means touching 01-01's verified structure |
 
-**Resolved:** the integration suite wiping the dev database (08-01 — proven by identical row
-counts across a full run); the `DATABASE_URL` fallback in CI, confirmed green on run 31382960251
-with `ci.yml` unedited; CI metric + stale agent docs (02-02); `.env.example` + ARCHITECTURE schema (02-03);
+**Resolved:** **the whole Phase 8 exposure** — the suite can destroy neither the dev database
+(08-01, identical row counts across a full run) nor any other (08-02, the misconfiguration now
+exits refusing); the `DATABASE_URL` fallback in CI, green on run 31382960251 with `ci.yml`
+unedited; CI metric + stale agent docs (02-02); `.env.example` + ARCHITECTURE schema (02-03);
 `@auth/prisma-adapter`/Prisma 7 compatibility (02-04); real Google login, never previously
 exercised (09-01); the `/` placeholder assertion in `tests/e2e/home.spec.ts` (03-03).
 
@@ -139,23 +140,24 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 
 ## Session Continuity
 
-Last session: 2026-08-10 — 08-01 planned, applied and closed
-Stopped at: 08-01 loop closed and committed
-Next action: `/paul:plan` for **08-02 — the guard**
-Resume file: `.paul/phases/08-test-environment-safety/08-01-SUMMARY.md`
+Last session: 2026-08-10 — Phase 8 planned, applied and closed across two loops
+Stopped at: Phase 8 complete, committed and pushed
+Next action: `/paul:plan` for **Phase 4 — PWA & Mobile UX**
+Resume file: `.paul/ROADMAP.md`
 Git strategy: `main` (direct commits)
 Resume context:
-- **08-02 is the rest of the phase:** `resetDatabase()` must refuse a target that is not
-  demonstrably a test database — host-and-name derived from the URL, no opt-in flag. CI already
-  satisfies such a guard (`localhost` + `gaspense_test`); **verify that, do not assume it.**
-- **⚠️ The phase directory holds 1 PLAN and 1 SUMMARY**, which the file-count heuristic reads as
-  "phase complete". It is not — ROADMAP says 2 plans and is the authority. Third occurrence of
-  this false signal in this project.
-- **⚠️ `.env` now carries `TEST_DATABASE_URL`** (appended, gitignored). A fresh clone needs it
-  from `.env.example` plus `npm run db:test:setup`.
+- **Phase 4 is next, and it is a big one:** installable PWA manifest/service worker, a quick-add
+  expense flow, and photo upload — which means `Attachment`, **the first schema change since
+  02-07**, plus Supabase Storage. Expect to split it.
+- **⚠️ Phase 4's starting position is the app's best asset:** every page is a server component and
+  the app ships almost no client JavaScript. Do not casually add a client boundary.
+- **⚠️ No accessibility audit has ever been run.** WCAG AA is a stated goal and mobile UX is where
+  it matters most — Phase 4 is the place.
+- **⚠️ `.env` carries `TEST_DATABASE_URL`** (gitignored). A fresh clone needs it from
+  `.env.example` plus `npm run db:test:setup`, or the suites refuse to run.
 - **⚠️ Local e2e needs port 3000 free** — `reuseExistingServer` is off, so it fails rather than
   reusing the wrong server. Identify a process through its parent chain before killing anything.
-- **395 tests:** 176 unit, 131 integration, 88 e2e.
+- **411 tests:** 187 unit, 136 integration, 88 e2e.
 - **Never read an exit code through a pipe** — this has caused a wrong conclusion three times.
 
 ---

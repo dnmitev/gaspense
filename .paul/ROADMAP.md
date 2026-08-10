@@ -14,8 +14,8 @@ From a graduated PLANNING.md to a working personal vehicle expense tracker: firs
 
 **v0.1 Initial Release** (v0.1.0)
 Status: In progress
-Phases: 5 of 10 complete (50%) — Phase 3 closed; **Phase 8 (Test Environment Safety) pulled
-forward and in planning**, ahead of Phase 4
+Phases: 6 of 10 complete (60%) — Phase 8 closed after being pulled forward; **Phase 4 (PWA &
+Mobile UX) is next**, resuming the roadmap order
 
 ## Phases
 
@@ -32,11 +32,11 @@ be pulled forward. Phase 9 was pulled ahead of the rest of Phase 3 and is now co
 | 1 | CI/CD Pipeline | 1/1 | ✅ Complete | 2026-08-07 |
 | 2 | Foundations | 7/7 | ✅ Complete | 2026-08-08 |
 | 3 | Reporting | 3/3 | ✅ Complete | 2026-08-10 |
-| 4 | PWA & Mobile UX | TBD | Not started (deferred behind 8) | - |
+| 4 | PWA & Mobile UX | TBD | Not started — **next** | - |
 | 5 | Bulgarian Integrations | TBD | Not started | - |
 | 6 | Google Drive Export | TBD | Not started | - |
 | 7 | Maintenance Reminders | TBD | Not started | - |
-| 8 | Test Environment Safety | 1/2 | 🔵 In progress | - |
+| 8 | Test Environment Safety | 2/2 | ✅ Complete | 2026-08-10 |
 | 9 | Demo Data Seed | 1/1 | ✅ Complete | 2026-08-09 |
 
 ## Phase Details
@@ -404,8 +404,30 @@ value, so the original is unreachable for the rest of the run rather than merely
 - [x] 08-01: A dedicated test database, and every suite pointed at it — resolver,
       `db:test:setup`, Playwright wiring, docs, and proof via `current_database()` that the
       connection is where it is believed to be
-- [ ] 08-02: The guard — `resetDatabase()` refuses a database not demonstrably a test
+- [x] 08-02: The guard — `resetDatabase()` refuses a database not demonstrably a test
       database, with tests proving the refusal actually fires
+
+**Completed 2026-08-10.** Two plans, ~50 minutes, 27 tests added (411 total). The phase goal —
+"running the integration suite cannot destroy data that matters, neither a real deployment nor the
+local development database" — is met, and demonstrated rather than argued: the old
+misconfiguration now exits non-zero naming the database, with `gaspense_dev` byte-identical
+afterwards.
+
+**Found in 08-02, and the reason the guard sits at two call sites:** guarding only the destructive
+truncate stopped the data loss but still permitted *pollution* — specs wrote rows into
+`gaspense_dev` before ever reaching the refusal. `createTestClient()` is guarded too, which moves
+the failure to module scope where a spec cannot load at all against the wrong database. This was
+found by running the misconfiguration on purpose, not by review.
+
+**⚠️ For any future phase adding a destructive test path:** the guard covers `resetDatabase` and
+`createTestClient`. The e2e helpers are deliberately unguarded — they never truncate and delete
+only rows they created — as is `db:seed:demo --clear`, which is pinned to the `DEMO-0001` marker.
+A new mass-destruction path would need its own `assertTestDatabase` call.
+
+**⚠️ CI's connection string is pinned verbatim in `tests/unit/test-database.test.ts`.** Changing
+`DATABASE_URL` in `.github/workflows/ci.yml` without re-checking the guard breaks a unit test
+rather than breaking CI. If CI ever moves off a localhost service container, the host rule needs
+revisiting — a legitimately remote test database is refused today, deliberately.
 
 ### Phase 9: Demo Data Seed
 
