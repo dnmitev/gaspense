@@ -79,7 +79,7 @@ re-logins in one session can no longer happen.**
 | AC-3: An ambient production `DATABASE_URL` cannot reach the suite | **Pass** | With `DATABASE_URL` exported at an unreachable host the suite passes (14 tests); with the *preferred* variable pointed there it fails naming `db.unreachable-host.invalid` |
 | AC-4: Test database creatable from nothing with one command | **Pass** | `dropdb` → `db:test:setup` created + migrated 4 migrations; second run reported "already exists" / "No pending migrations", exit 0 both times |
 | AC-5: e2e exercises the test database, never development | **Pass** | 88 e2e tests green under `CI=true`, after the deviation below was fixed |
-| AC-6: CI needs no workflow change | **Pass (local)** | `.github/workflows/ci.yml` untouched (`git diff` empty); the fallback it relies on is unit-tested. **Real confirmation lands on the next push** |
+| AC-6: CI needs no workflow change | **Pass** | `.github/workflows/ci.yml` untouched (`git diff` empty). Confirmed on CI run 31382960251 — all six steps green including 88 e2e, with the workflow relying on the `DATABASE_URL` fallback |
 
 ## Verification Results
 
@@ -190,8 +190,6 @@ review. No scope creep.
 
 **Concerns:**
 
-- **AC-6 is proven locally but not yet in CI.** `ci.yml` was deliberately not edited; the next
-  push is what confirms the fallback works in the real workflow.
 - **`resetDatabase()` still truncates without asking what it is aimed at.** This plan moved the
   target; nothing yet stops it firing at the wrong one. That is 08-02, and it is the reason this
   phase is not finished.

@@ -108,13 +108,14 @@ Only what constrains upcoming work. **Full log: `.paul/PROJECT.md` → Key Decis
 | Concern | Impact | Resolution Path |
 |---------|--------|-----------------|
 | **`resetDatabase()` truncates without checking its target** | It no longer *aims* at the dev database (08-01), but nothing stops it firing at a wrong one — e.g. an exported production URL with `TEST_DATABASE_URL` unset | **08-02 owns this.** Host-and-name guard derived from the URL, with tests proving the refusal fires |
-| **AC-6 (CI unedited) is proven locally, not in CI** | `ci.yml` was deliberately untouched and relies on the `DATABASE_URL` fallback | Confirmed by the next push — watch that run |
 | No accessibility audit has been run | WCAG AA is a stated goal. Landmarks and chart labelling exist; contrast, focus order and keyboard nav are unverified | Phase 4 is where this matters most — mobile UX |
 | System categories exist only if `db:seed` ran | A fresh production database gives a new user an empty category select | Decide whether the app self-heals or deployment must seed |
 | Next.js owns a section of AGENTS.md | Hand-edits inside `nextjs-agent-rules` are overwritten on `next dev` | Edit only outside the markers |
 | e2e step rebuilds the app, duplicating the Build step | Slower CI runs | Accepted; optimising means touching 01-01's verified structure |
 
-**Resolved:** CI metric + stale agent docs (02-02); `.env.example` + ARCHITECTURE schema (02-03);
+**Resolved:** the integration suite wiping the dev database (08-01 — proven by identical row
+counts across a full run); the `DATABASE_URL` fallback in CI, confirmed green on run 31382960251
+with `ci.yml` unedited; CI metric + stale agent docs (02-02); `.env.example` + ARCHITECTURE schema (02-03);
 `@auth/prisma-adapter`/Prisma 7 compatibility (02-04); real Google login, never previously
 exercised (09-01); the `/` placeholder assertion in `tests/e2e/home.spec.ts` (03-03).
 
