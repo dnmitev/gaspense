@@ -91,7 +91,7 @@ of failing, with two blind spots measured rather than assumed.**
 | AC-3: Cannot write to someone else's car | **Pass** | `createExpense` returns null and the victim's list is unchanged on re-read. **Mutation-checked**: swapping in the attacker's own car turns it red |
 | AC-4: Zero serious/critical a11y violations | **Pass** | 4 pages × 2 viewports, **zero serious, zero critical, zero advisories**. Gate proven able to fail via a real contrast regression |
 | AC-5: Usable by keyboard alone | **Pass** | Amount focused on arrival; Tab reaches Amount → Category → Date → Notes → Litres → Full tank → submit, in order; Enter submits |
-| AC-6: Nothing already green went red | **Pass** | All five gates exit 0. 218 unit, 142 integration, 130 e2e. CI confirmation pending push |
+| AC-6: Nothing already green went red | **Pass** | All five gates exit 0. 218 unit, 142 integration, 130 e2e. **Confirmed in CI on run 31410957740 — green, 130 passed, no flaky annotation** (the check 04-01 taught us to read) |
 
 ## Verification Results
 
