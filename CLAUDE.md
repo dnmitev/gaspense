@@ -37,23 +37,38 @@ It is a personal project shared with trusted friends and family, each with their
 
 Run `npm install` once, then these all work:
 
-| Purpose                  | Command                |
-| ------------------------ | ---------------------- |
-| **All gates (this one)** | **`npm run check`**    |
-| Dev server               | `npm run dev`          |
-| Production build         | `npm run build`        |
-| Serve production build   | `npm start`            |
-| Unit + integration tests | `npm test`             |
-| End-to-end tests         | `npm run test:e2e`     |
-| Lint code                | `npm run lint`         |
-| Lint markdown            | `npm run lint:md`      |
-| Format                   | `npm run format`       |
-| Check formatting         | `npm run format:check` |
-| Seed system categories   | `npm run db:seed`      |
-| Seed demo data (dev)     | `npm run db:seed:demo` |
+| Purpose                  | Command                 |
+| ------------------------ | ----------------------- |
+| **All gates (this one)** | **`npm run check`**     |
+| Dev server               | `npm run dev`           |
+| Production build         | `npm run build`         |
+| Serve production build   | `npm start`             |
+| Unit + integration tests | `npm test`              |
+| End-to-end tests         | `npm run test:e2e`      |
+| Lint code                | `npm run lint`          |
+| Lint markdown            | `npm run lint:md`       |
+| Format                   | `npm run format`        |
+| Check formatting         | `npm run format:check`  |
+| Seed system categories   | `npm run db:seed`       |
+| Seed demo data (dev)     | `npm run db:seed:demo`  |
+| Create the test database | `npm run db:test:setup` |
 
 `npm run check` is the docs + style gate: it verifies the agent docs exist, then runs
 `format:check`, `lint`, and `lint:md`. Run it before committing — the pre-push hook runs it anyway.
+
+### Test database
+
+There are **two databases on the one container**: `gaspense_dev` for development and
+`gaspense_test` for the suites. `npm run db:test:setup` creates and migrates the test one and is
+idempotent, so it is safe to re-run and safe on a fresh clone.
+
+- **`TEST_DATABASE_URL` selects it**, and the suites overwrite `DATABASE_URL` with that value for
+  the duration of a run — so an exported production `DATABASE_URL` is never connected to.
+- **Unset, the suites fall back to `DATABASE_URL`.** That is how CI works, because CI already
+  points `DATABASE_URL` at a throwaway `gaspense_test`. Locally, leaving it unset means the suites
+  truncate your development database — keep it set.
+- **The integration suite truncates the test database on every run**, and nothing else. e2e shares
+  the same database; it creates randomly-named users and deletes them rather than truncating.
 
 ### Demo data
 
@@ -66,8 +81,9 @@ user, because seeding a `User` row with no linked `Account` makes Google sign-in
 - `--anchor YYYY-MM-DD` pins the end date for reproducible output; it defaults to today so the
   current month always has data.
 - `--clear` removes the demo car and everything on it.
-- **`npm run test:integration` truncates the tables and wipes this data.** Re-run the command
-  afterwards. Phase 8 (Test Environment Safety) fixes the underlying problem.
+- **This data survives a test run.** The suites truncate `gaspense_test`, never `gaspense_dev` —
+  see [Test database](#test-database) above. Until Phase 8 that was not true, and running
+  `npm run test:integration` wiped the seeded account along with everything else.
 
 The dataset deliberately contains a partial fill, a fill with no odometer reading, and one
 reading lower than its predecessor — the awkward cases fuel-consumption reporting has to
@@ -90,6 +106,9 @@ survive. Do not "tidy" them away.
   `npm run build && npm start`. This is deliberate: `next dev` regenerates the
   `nextjs-agent-rules` block in `AGENTS.md`, which would leave the working tree dirty after every
   test run.
+- **`reuseExistingServer` is off**, so a local e2e run needs port 3000 free and will fail loudly if
+  it is not. Reuse was removed deliberately: `npm run dev` serves `gaspense_dev` while the e2e
+  helpers write to `gaspense_test`, so a reused server would test the wrong database and pass.
 - **Unit tests use Vitest with `globals: false`**, so Testing Library's cleanup is wired manually in
   `tests/unit/setup.ts`. Without it each test's DOM leaks into the next and queries start matching
   elements from earlier tests.
