@@ -92,7 +92,7 @@ confirmed by three mutations that each turn the relevant test red.**
 | AC-3: Worker registers and takes control | **Pass** | `navigator.serviceWorker.ready` resolves with `active.state === "activated"` and a non-null `controller` |
 | AC-4: Authenticated HTML never served from cache | **Pass** | Two independent proofs — Cache Storage holds no `/`, `/cars*` or `/api*` entry, and an offline navigation returns `/offline.html` with `DEMO-0001`, "Total across" and any `€` amount absent |
 | AC-5: Static assets served offline from cache | **Pass** | `fetch("/icons/icon-192.png")` returns 200 with the context offline |
-| AC-6: Nothing already green went red | **Pass** | All five gates exit 0. 206 unit (+19), 136 integration (unchanged), 102 e2e (+14) across both projects. CI confirmation pending the push |
+| AC-6: Nothing already green went red | **Pass** | All five gates exit 0. 206 unit (+19), 136 integration (unchanged), 102 e2e (+14) across both projects. **Confirmed in CI on run 31390263403** — which also surfaced a flaky test of this plan's own; fixed, see Deviations |
 
 ## Verification Results
 
@@ -149,11 +149,12 @@ Exit codes read directly, never through a pipe:
 
 | Type | Count | Impact |
 |------|-------|--------|
-| Auto-fixed | 2 | Both essential; one was a real test-quality defect |
+| Auto-fixed | 3 | All essential; two were defects in this plan's own tests |
 | Scope additions | 1 | `types/sw.d.ts`, unavoidable |
 | Deferred | 1 | Logged below |
 
-**Total impact:** No scope creep. One auto-fix materially improved the plan's own proof.
+**Total impact:** No scope creep. Two of the three auto-fixes repaired the plan's own proof — one
+test that passed for the wrong reason, and one that passed unreliably.
 
 ### Auto-fixed Issues
 
@@ -181,6 +182,24 @@ Exit codes read directly, never through a pipe:
   worker controlled the page, so a worker that cached HTML *and* fell back to `/offline.html` would
   have passed. A second, controlled visit was added before going offline; mutation B now fails on
   the leak assertion rather than on a navigation error
+
+**3. [flaky-test] AC-3 read `state === "activating"` on the first CI run**
+
+- **Found during:** AC-6's CI confirmation, run 31390263403 — the job went green and reported
+  **1 flaky**, masked by `retries: 1`. It passed every local run before the push
+- **Issue:** `navigator.serviceWorker.ready` resolves as soon as an *active* worker exists,
+  including one still `activating`. The `activate` handler awaits cache eviction and then calls
+  `clients.claim()` — and claim sets `controller` from *inside* activate, so `controller` becomes
+  non-null strictly **before** the state flips to `activated`. Waiting on controller alone raced
+  with the tail of activation
+- **Fix:** the wait helper now requires `active.state === "activated"` as well as a controller. AC-3
+  additionally asserts the controlling script really is `/sw.js` and its scope is `/` — facts the
+  wait does not imply, so the test still discovers something rather than restating its own
+  precondition
+- **Verification:** `--repeat-each=4 --retries=0` over the spec, 56/56; then the full suite with no
+  retries, 102/102; `npm run check` exit 0
+- **Worth keeping:** a green CI job with a flaky annotation is not a green test. Read the
+  annotations, not just the checkmark
 
 ### Deferred Items
 

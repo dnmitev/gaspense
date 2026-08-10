@@ -22,11 +22,23 @@ import {
 
 const ANCHOR = new Date("2026-06-15T00:00:00.000Z");
 
-/** Resolves once the worker is not merely registered but actually controlling the page. */
+/**
+ * Resolves once the worker is controlling the page AND has finished activating.
+ *
+ * ⚠️ Both halves are needed, and the second one was learned the hard way — this
+ * test was flaky on its first CI run, reading `state === "activating"`.
+ *
+ * `navigator.serviceWorker.ready` resolves as soon as there is an *active*
+ * worker, which includes one still in the `activating` state. Our `activate`
+ * handler awaits cache eviction and then calls `clients.claim()` — and claim is
+ * what sets `controller`, from *inside* activate. So `controller` becomes
+ * non-null strictly before the state flips to `activated`, and waiting on
+ * controller alone races with the tail of activation.
+ */
 async function waitForServiceWorkerControl(page: import("@playwright/test").Page) {
   await page.waitForFunction(async () => {
     const registration = await navigator.serviceWorker.ready;
-    return !!registration.active && !!navigator.serviceWorker.controller;
+    return registration.active?.state === "activated" && !!navigator.serviceWorker.controller;
   });
 }
 
@@ -97,12 +109,22 @@ test.describe("service worker", () => {
     await page.goto("/");
     await waitForServiceWorkerControl(page);
 
-    const active = await page.evaluate(async () => {
-      const registration = await navigator.serviceWorker.ready;
-      return registration.active?.state ?? null;
+    const registration = await page.evaluate(async () => {
+      const reg = await navigator.serviceWorker.ready;
+      return {
+        state: reg.active?.state ?? null,
+        scriptURL: reg.active?.scriptURL ?? null,
+        scope: reg.scope,
+        controlling: !!navigator.serviceWorker.controller,
+      };
     });
 
-    expect(active).toBe("activated");
+    expect(registration.state).toBe("activated");
+    expect(registration.controlling).toBe(true);
+    // Not implied by the wait above: that the worker controlling the page is OUR
+    // script, and that its scope covers the whole app rather than one directory.
+    expect(registration.scriptURL).toMatch(/\/sw\.js$/);
+    expect(new URL(registration.scope).pathname).toBe("/");
   });
 
   test("never puts an HTML document in the cache", async ({ page }) => {

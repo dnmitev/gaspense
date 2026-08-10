@@ -64,6 +64,8 @@ Only what constrains upcoming work. **Full log: `.paul/PROJECT.md` → Key Decis
 | **Isolation is app-layer, not RLS** | Every new query path needs a test proving one user cannot read another's rows. No database backstop exists |
 | **Which check is load-bearing is measured, never inferred — three for three** | `getCarReport`'s pre-check did all the work and its relation filter none; `getFleetSummary`'s two filters are redundant; 04-01's `isNavigation` guard did **nothing** because the allowlist already refused those paths. Every time, the obvious test passed for the wrong reason. Mutation-test the guard you just wrote |
 | **Look at visual output; no assertion substitutes** | 04-01's icons passed every automated check while rendering as a small glyph in the top-left corner. Opening the PNG is what caught it |
+| **A green CI job with a flaky annotation is not a green test** | `retries: 1` hid 04-01's AC-3 race entirely — the job reported success. Read `gh run view`'s ANNOTATIONS block, not just the checkmark |
+| **`serviceWorker.ready` resolves while the worker is still `activating`** | `clients.claim()` sets `controller` from inside `activate`, so controller precedes `activated`. Wait on `active.state === "activated"` too, or the test races |
 | **`lib/session.ts` is the only way to learn the caller** | `requireUserId()` throws rather than returning falsy — Prisma reads `undefined` in `where` as "no filter" |
 | **Data-layer functions take `userId` explicitly; writes use scoped `updateMany`** | Never findUnique-then-update. Scoping visible at the call site |
 | **`Expense` has no `userId`** — scoped via `carId → Car.userId` | `create` has no WHERE, so ownership there is an explicit pre-check |
