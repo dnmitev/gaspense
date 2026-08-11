@@ -80,6 +80,18 @@ function describe(violations: Violation[]): string {
 }
 
 async function expectAccessible(page: Page, label: string) {
+  // ⚠️ Wait for the document title before auditing anything.
+  //
+  // Next's App Router applies <title> asynchronously after a client-side
+  // navigation, so axe can run in the window where the new content is on screen
+  // and the title is not yet set — and report `document-title`, a *serious*
+  // violation, against a page that is perfectly fine a tick later.
+  //
+  // Found on CI run 31462152345, which went green with a flaky annotation while
+  // every local run passed. Waiting on an element being visible is not enough:
+  // the content arrives before the metadata does.
+  await expect.poll(() => page.title()).not.toBe("");
+
   const { blocking, advisory } = await audit(page);
 
   if (advisory.length) {

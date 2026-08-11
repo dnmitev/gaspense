@@ -86,7 +86,7 @@ have crashed the serving route.**
 | AC-3: Car photos added and removed from the form | **Pass** | Attach on create or edit, render, remove; the URL then 404s |
 | AC-4: No orphaned objects on hard delete | **Pass** | `db:seed:demo --clear` deletes objects before the row. A soft-deleted car keeps its object and stops serving it |
 | AC-5: The adapter works against real Supabase | **Pass — verified for real** | Upload, download with matching bytes, missing-object null, delete, delete-twice. **The bucket is private**, confirmed by unauthenticated requests to both the public and object URLs returning 400 |
-| AC-6: Nothing already green went red | **Pass** | All five gates exit 0, zero warnings. 265 unit, 164 integration, 152 e2e |
+| AC-6: Nothing already green went red | **Pass** | All five gates exit 0, zero warnings. 265 unit, 164 integration, 152 e2e. **CI run 31462152345 green — but with a flaky annotation on this plan's own new audit; fixed, see Deviations** |
 
 ## Verification Results
 
@@ -146,7 +146,7 @@ soft-deleted car ceasing to resolve while its object survives, and delete removi
 
 | Type | Count | Impact |
 |------|-------|--------|
-| Auto-fixed | 2 | One product defect found only by real verification; one hazard this plan created |
+| Auto-fixed | 3 | One product defect found only by real verification, one hazard this plan created, one flaky test only CI saw |
 | Scope additions | 2 | `playwright.config.ts`, `tests/integration/setup.ts` — both required for safety |
 | Deferred | 1 | EXIF, unchanged |
 
@@ -181,6 +181,21 @@ soft-deleted car ceasing to resolve while its object survives, and delete removi
   `DATABASE_URL`, and for the same reason
 - **Verification:** objects in the real bucket **before** a full 316-test run: 1. **After**: 1. The
   guard is proven against a suite that performs about thirty photo uploads
+
+**3. [flaky-test] The new car-edit audit reported a missing document title**
+
+- **Found during:** AC-6's CI confirmation, run 31462152345 — green, with a flaky annotation.
+  Every local run had passed, including three consecutive repeats
+- **Issue:** `[serious] document-title`. Next's App Router applies `<title>` **asynchronously**
+  after a client-side navigation, so axe could run in the window where the new content was on
+  screen and the title was not yet set. Waiting for an element to be visible is not enough — the
+  content arrives before the metadata does
+- **Fix:** `expectAccessible` now polls for a non-empty `page.title()` before running axe. Applied
+  in the shared helper rather than the one test, because every audited page has the same race and
+  the others were simply lucky
+- **Verification:** `--repeat-each=3 --retries=0` across the suite, 36/36
+- **Worth keeping:** this is the second time in the phase that a green CI job with a flaky
+  annotation hid a real defect. Read the ANNOTATIONS block, not the tick
 
 ### Scope Additions
 
