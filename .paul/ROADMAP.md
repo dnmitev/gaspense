@@ -14,8 +14,9 @@ From a graduated PLANNING.md to a working personal vehicle expense tracker: firs
 
 **v0.1 Initial Release** (v0.1.0)
 Status: In progress
-Phases: 6 of 10 complete (60%) — Phase 8 closed after being pulled forward; **Phase 4 (PWA &
-Mobile UX) is next**, resuming the roadmap order
+Phases: 7 of 10 complete (70%) — Phase 4 closed 2026-08-10. **Phase 5 (Bulgarian Integrations) is
+next and is research-gated**: no confirmed public API exists for the fines or vignette lookups, so
+it needs a `/paul:discover` spike before it can be planned
 
 ## Phases
 
@@ -32,7 +33,7 @@ be pulled forward. Phase 9 was pulled ahead of the rest of Phase 3 and is now co
 | 1 | CI/CD Pipeline | 1/1 | ✅ Complete | 2026-08-07 |
 | 2 | Foundations | 7/7 | ✅ Complete | 2026-08-08 |
 | 3 | Reporting | 3/3 | ✅ Complete | 2026-08-10 |
-| 4 | PWA & Mobile UX | 3/4 | In progress — **current** | - |
+| 4 | PWA & Mobile UX | 4/4 | ✅ Complete | 2026-08-10 |
 | 5 | Bulgarian Integrations | TBD | Not started | - |
 | 6 | Google Drive Export | TBD | Not started | - |
 | 7 | Maintenance Reminders | TBD | Not started | - |
@@ -315,7 +316,62 @@ project-wide.
       project's first accessibility audit over that path
 - [x] 04-03: `Attachment` schema, a storage interface with a local adapter, expense photo upload
       with browser-side downscaling, and ownership-checked serving
-- [ ] 04-04: The Supabase Storage adapter, car photos, and the deployment wiring
+- [x] 04-04: Car photos on the same ownership terms as expense photos, plus a Supabase Storage
+      adapter behind the existing interface
+
+**Phase 4 completed 2026-08-10.** 4 plans, ~275 minutes, 170 tests added (581 total). The goal —
+"the app installs on a phone home screen and adding an expense (with an optional photo) takes
+seconds" — is met on every clause, and each claim is demonstrated rather than argued.
+
+**⚠️ The through-line of this phase, in four plans: every single one contained something that was
+believed, tested, and wrong until it was executed for real.** 04-01 rewrote two tests that passed
+for the wrong reason. 04-02's planned accessibility control could not fire at all. 04-03's AC-4
+fixture could not have failed, and replacing it exposed Next's silent 1 MB server-action body limit.
+04-04's Supabase adapter passed its stub-based tests while mishandling every missing object, because
+real Supabase reports not-found as HTTP 400 with the status in the body — which would have turned a
+missing object into a 500 from the serving route. **None were caught by review. All were caught by
+deliberately breaking things, by looking at output, or by running against the real service.**
+
+**⚠️ Also found in 04-04, and worth carrying:** adding a `STORAGE_DRIVER` seam gave the test suites
+a path into production storage, because `.env` reaches them through `dotenv/config`. Every
+attachment test would have written real objects into a real bucket. Both paths now force
+`STORAGE_DRIVER=local`, overwritten rather than defaulted — the same two-place fix 08-01 needed for
+`DATABASE_URL`. **Adding a driver seam adds a way for tests to reach production; close it in the
+same plan.**
+
+**Still open after Phase 4:** no EXIF/GPS stripping on uploaded photos (the item with a privacy
+dimension, and deployment is now possible); five routes unaudited for accessibility; no real
+home-screen install performed; and the Supabase adapter is verified once, by hand — nothing in CI
+exercises it, so an API change would surface in production.
+
+**Found at 04-04 planning time, and it is the reason car photos are a correctness job rather than a
+UI job:** every query in `lib/attachments.ts` scopes through `expense`, so an attachment whose
+`expenseId` is null can match nothing. `/api/attachments/[id]` would return **404 for the owner's own
+car photo**. 04-03's design only looks complete because car attachments do not exist yet. The filter
+becomes an OR over both ownership paths — a new query shape, so each half gets mutation-tested
+independently.
+
+**Also settled at 04-04 planning time:**
+
+- **`deletedAt: null` on both sides of the OR.** A soft-deleted car's photos must stop being served,
+  exactly as its expenses do. The objects survive, because soft delete preserves history.
+- **`db:seed:demo --clear` is the project's only hard delete of a car**, so it is the only path
+  where the cascade orphans objects. It gets the same read-keys-then-delete treatment
+  `deleteExpense` got in 04-03.
+- **No `@supabase/supabase-js`.** Three REST calls (`put`/`get`/`delete` against
+  `/storage/v1/object/{bucket}/{key}`) do not justify the project's first runtime dependency since
+  Phase 2, and an SDK could not be verified any more easily than fetch can.
+- **The resolver fails loudly when `STORAGE_DRIVER=supabase` and configuration is missing.** A
+  silent fall back to local storage in production is precisely the failure that loses photos while
+  appearing to work.
+- **⚠️ The bucket must be PRIVATE.** A public Supabase bucket serves every object at a guessable URL
+  with no session check, bypassing `/api/attachments/[id]` and undoing the whole ownership design.
+
+**⚠️ Verified before planning: there is still no Supabase project, credentials, SDK or CLI.** The
+adapter is therefore written and unit-tested against a stubbed transport, and real verification is a
+**blocking checkpoint placed last**, after everything else is done and green. If the project does not
+exist when it is reached, **AC-5 is recorded as unverified and carried forward** rather than quietly
+claimed — the code ships, the claim does not.
 
 **04-01 completed 2026-08-10.** ~47 minutes, 33 tests added (444 total). Installable with zero new
 dependencies; the cache boundary is demonstrated by an offline navigation returning the user's data

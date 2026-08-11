@@ -20,7 +20,7 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 |-----------|-------|
 | Type | Application |
 | Version | 0.0.0 |
-| Status | Prototype — **Phases 0-3, 8 and 9 complete; Phase 4 in progress (3 of 4).** Log in, add a car, record expenses and mileage, and see what it all costs: by month, by year, by category, per kilometre, and litres per 100 km — with a dashboard on opening the app. The app now installs to a phone home screen and says so honestly when the network is gone. The test suites run against a database of their own and refuse to touch any other |
+| Status | Prototype — **Phases 0-4, 8 and 9 complete.** Log in, add a car, record expenses and mileage, and see what it all costs: by month, by year, by category, per kilometre, and litres per 100 km — with a dashboard on opening the app. It installs to a phone home screen, logging a fill-up is one tap, a photo can be attached to any car or expense, and it says so honestly when the network is gone. The test suites run against a database and an object store of their own, and refuse to touch any other |
 | Last Updated | 2026-08-10 |
 
 **Production URLs:** none yet.
@@ -72,15 +72,16 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 - ✓ One-tap expense entry — dashboard card actions plus a car-agnostic `/expenses/new` reachable from the installed app's shortcuts; three taps became one — Phase 4 (04-02)
 - ✓ First accessibility gate — axe-core over WCAG 2 A/AA on four pages and two viewports, zero serious or critical, with the gate's two blind spots measured rather than assumed — Phase 4 (04-02)
 - ✓ Expense photo attachments — `Attachment` with a CHECK constraint, browser-side downscaling, and serving that returns 404 to everyone but the owner — Phase 4 (04-03)
+- ✓ Car photos and a verified Supabase Storage adapter — ownership covering both owners with every branch mutation-proven, and the adapter run against a real private bucket — Phase 4 (04-04)
+- ✓ **Phase 4 complete** — 4 plans, ~275 minutes, 170 tests added (581 total). The app installs to a phone, logging a fill-up costs one tap instead of three, four pages are gated against WCAG A/AA, and photos attach to cars and expenses with storage that can actually be deployed
 
 ### Active (In Progress)
-- **Phase 4: PWA & Mobile UX** — 3 of 4 plans complete (04-01 installable PWA, 04-02 quick-add +
-  the first accessibility audit, 04-03 expense photo attachments). Remaining: 04-04, the Supabase
-  Storage adapter and car photos — **required before attachments can be deployed at all**, since
-  the local adapter cannot survive Vercel's ephemeral filesystem
+- Nothing in progress — Phase 4 closed 2026-08-10. **Phase 5 (Bulgarian Integrations) is next, and
+  is gated on a `/paul:discover` research spike**: no confirmed public API exists for either the
+  КАТ/МВР fines lookup or the vignette check
 
 ### Planned (Next)
-- Phase 5: Bulgarian Integrations — research spike, then fines/vignette checks
+- Phase 5: Bulgarian Integrations — research spike, then fines/vignette checks (**research-gated**)
 - Phase 6: Google Drive Export — OAuth consent, export/backup
 - Phase 7: Maintenance Reminders — service intervals per car with due/overdue indicators
 
@@ -225,6 +226,12 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 | Exactly one of `Attachment.carId`/`expenseId`, enforced by a hand-written CHECK | Prisma cannot express a CHECK; the same precedent as the category partial unique indexes. Without it the rule is a comment, and comments do not reject rows | 2026-08-10 | Active |
 | Three layered upload limits, discovered by measurement | Browser downscale (1600px) → validation (2 MB) → Next's server-action body (3 MB). **The Next default is 1 MB and rejects uploads silently**, stricter than Vercel's 4.5 MB | 2026-08-10 | Active |
 | `deleteExpense` deletes stored objects before the row | `Attachment.expenseId` cascades, so afterwards nothing knows the storage keys — every object would be orphaned invisibly | 2026-08-10 | Active |
+| Attachment ownership is an OR over car and expense, each requiring `deletedAt: null` | An attachment belongs to one or the other; scoping through `expense` alone cannot match a null `expenseId`, so a car photo 404s to its own owner. All three branches mutation-proven | 2026-08-10 | Active |
+| Supabase Storage over `fetch`, with no SDK | Three REST calls do not justify the first runtime dependency since Phase 2, and an SDK would have needed the same real-service verification anyway | 2026-08-10 | Active |
+| A missing Supabase variable is a hard failure, never a fall back to local | Silently reverting to local storage on Vercel's ephemeral filesystem loses every photo while each screen looks like it worked | 2026-08-10 | Active |
+| The Supabase bucket must be **private** | A public bucket serves every object at a guessable URL with no session check, bypassing `/api/attachments/[id]` entirely | 2026-08-10 | Active |
+| The test suites force `STORAGE_DRIVER=local`, overwritten not defaulted | `.env` reaches them through `dotenv/config`, so a developer's `supabase` driver would send every test upload into a real bucket — Phase 8's failure mode with an object store instead of a database | 2026-08-10 | Active |
+| An adapter is not trusted until it has run against the real service | The Supabase adapter's stub-based tests passed while the adapter was wrong: real Supabase reports a missing object as HTTP 400 with the status in the body, so `get` threw where it had to return null and the serving route would have 500ed | 2026-08-10 | Active |
 
 ## Success Metrics
 
@@ -232,7 +239,7 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 |--------|--------|---------|--------|
 | Docs/lint presence | CLAUDE.md, AGENTS.md, docs/ARCHITECTURE.md exist; markdownlint + ESLint/Prettier pass | `npm run check` green | **Achieved** (Phase 0) |
 | CI pipeline green | Lint + test + build pass on every push/PR; secret scanning active | All four run green: check, build, unit (Vitest), e2e (Playwright). Secret scanning + push protection active | **Achieved** (Phase 2, plan 02-02) |
-| Test coverage | Unit + integration + automation (e2e) tests for every phase | 546 tests: 249 unit, 153 integration, 144 e2e — all green | **On track** |
+| Test coverage | Unit + integration + automation (e2e) tests for every phase | 581 tests: 265 unit, 164 integration, 152 e2e — all green | **On track** |
 | Security scan | Pass, every phase | - | Not started |
 | Accessibility | WCAG AA on frontend phases | axe-core gates serious/critical on 4 of 9 routes, both viewports — zero found. Five routes unaudited; two blind spots measured (a placeholder satisfies accessible-name rules; nested `<a>` is parser-repaired) | **Partly achieved** (04-02) — a gate, not a certification |
 | Performance | PWA installable, high Lighthouse PWA score | Manifest, maskable icons and a fetch-handling service worker all proven by test; no real device install yet, no Lighthouse run | **Partly achieved** (04-01) |
@@ -259,4 +266,4 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 
 ---
 *PROJECT.md — Updated when requirements or context change*
-*Last updated: 2026-08-10 after Phase 8*
+*Last updated: 2026-08-10 after Phase 4*

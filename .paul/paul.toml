@@ -15,10 +15,10 @@ status = "in_progress"
 phases = 10
 
 [phase]
-number = 4
-name = "PWA & Mobile UX"
-status = "in_progress"
-plans_completed = 3
+number = 5
+name = "Bulgarian Integrations"
+status = "not_started"
+plans_completed = 0
 
 [loop]
 position = "IDLE"
@@ -28,6 +28,6 @@ position = "IDLE"
 groom = true
 
 [stats]
-total_plans = 19
-total_phases = 6
-last_activity = "2026-08-10T19:35:00Z"
+total_plans = 20
+total_phases = 7
+last_activity = "2026-08-10T21:10:00Z"
