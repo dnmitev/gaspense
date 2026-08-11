@@ -4,7 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { attachPostedPhoto } from "@/lib/attach-posted-photo";
 import { createAttachmentForCar, deleteAttachment } from "@/lib/attachments";
-import { createCar, softDeleteCar, updateCar } from "@/lib/cars";
+import { createCar, getCarById, softDeleteCar, updateCar } from "@/lib/cars";
+import {
+  getLastVignetteAttempt,
+  recordVignetteCheck,
+  vignetteCooldownRemaining,
+} from "@/lib/vignette-checks";
+import { getVignetteClient } from "@/lib/vignette";
 import { requireUserId } from "@/lib/session";
 import { carInputSchema } from "@/lib/validation/car";
 
@@ -126,6 +132,46 @@ export async function deleteCarAction(formData: FormData): Promise<void> {
     // Soft delete: the car leaves the list, its expense history stays.
     await softDeleteCar(userId, carId);
   }
+
+  revalidatePath("/cars");
+}
+
+/**
+ * Checks one car's Bulgarian vignette and stores the result.
+ *
+ * Returns `void`, like the other plain-form actions here — a `<form action>` may
+ * not return a value. The page renders the outcome from the stored row on the
+ * next request, and **decides server-side whether to offer the button at all**
+ * from the cooldown, so a refusal is something the user never has to be told
+ * because they were never offered the action.
+ *
+ * ⚠️ **The cooldown is still enforced HERE, before the outbound request.** The
+ * page hiding the button is UX; this is the rule. A form post can be replayed,
+ * and without this check a replay would reach the service every time — the one
+ * thing the limit exists to prevent.
+ *
+ * ⚠️ **An unreachable service is recorded as UNAVAILABLE, never as "no
+ * vignette".** `lib/vignette.ts` keeps those apart and this must not undo it:
+ * telling someone their vignette is gone because a government endpoint was down
+ * is the worst output this feature can produce.
+ */
+export async function checkVignetteAction(formData: FormData): Promise<void> {
+  const userId = await requireUserId();
+  const carId = String(formData.get("carId") ?? "");
+  if (!carId) return;
+
+  // Scoped read: someone else's car resolves to null, so no request is made and
+  // nothing is written.
+  const lastAttempt = await getLastVignetteAttempt(userId, carId);
+
+  if (vignetteCooldownRemaining(lastAttempt?.checkedAt ?? null, new Date()) > 0) return;
+
+  // Scoped too, so a forged carId never reaches the outbound call.
+  const car = await getCarById(userId, carId);
+  if (!car) return;
+
+  const result = await getVignetteClient().check(car.licensePlate);
+  await recordVignetteCheck(userId, carId, result);
 
   revalidatePath("/cars");
 }

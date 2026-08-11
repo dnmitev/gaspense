@@ -29,3 +29,14 @@ process.env.DATABASE_URL = resolveTestDatabaseUrl(process.env);
 // Overwritten rather than defaulted, so the unsafe value is unreachable for the
 // rest of the run.
 process.env.STORAGE_DRIVER = "local";
+
+// ⚠️ And never let the suites call the real vignette service.
+//
+// `check.bgtoll.bg` is a public government endpoint. A test run that depends on
+// it is flaky and rude, and the МВР service in the same family is throttled.
+// Unlike STORAGE_DRIVER — whose safe value is the default — VIGNETTE_DRIVER
+// defaults to `live`, because a stub default would show fabricated vignette
+// dates in production. So the suites must opt IN to the stub, here and in
+// playwright.config.ts. Overwritten rather than defaulted, so a value from .env
+// is unreachable for the rest of the run.
+process.env.VIGNETTE_DRIVER = "stub";

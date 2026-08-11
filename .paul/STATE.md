@@ -11,32 +11,32 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-10)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release — Phase 4 complete; **Phase 5 discovery done and its one
-blocking decision made**. Ready to plan 05
+**Current focus:** v0.1 Initial Release — Phase 5 (Bulgarian Integrations); 05-01 (vignette)
+complete, 05-02 (fines, encrypted identifiers) remains
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 5 of 10 (Bulgarian Integrations) — Discovery complete, decision made
-Plan: Not started
-Status: Discovery complete and the ЕГН decision made — ready to plan 05
-Last activity: 2026-08-11 — 05 discovery + ЕГН storage decision (encrypted, opt-in)
+Phase: 5 of 10 (Bulgarian Integrations) — In progress
+Plan: 05-01 complete ✅ — all 7 ACs pass, 46 tests added
+Status: Loop closed, ready to plan 05-02
+Last activity: 2026-08-11 — **05-01 complete**: vignette status per car, verified live
 
 Progress:
 - Milestone: [███████░░░] 70% (7 of 10 phases complete)
 - Phase 4: [██████████] 100% (4 of 4 plans) ✅
-- Phase 5: [░░░░░░░░░░] 0% (unblocked — discovery done, ЕГН storage decided)
+- Phase 5: [█████░░░░░] 50% (1 of 2 plans) — 05-02 fines remains
 
 ## Loop Position
 
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete — Phase 4 closed; 05 discovery done, ready to PLAN]
+  ✓        ✓        ✓     [Loop complete — ready for 05-02]
 ```
 
 ## Performance Metrics
 
-20 plans complete, ~14h total, ~44 min average.
+21 plans complete, ~15h total, ~44 min average.
 
 | Phase | Plans | Avg/Plan |
 |-------|-------|----------|
@@ -45,6 +45,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 | 02-foundations | 7/7 ✅ | ~57 min |
 | 03-reporting | 3/3 ✅ | ~28 min |
 | 04-pwa-mobile-ux | 4/4 ✅ | ~69 min |
+| 05-bulgarian-integrations | 1/2 | ~55 min |
 | 08-test-environment-safety | 2/2 ✅ | ~25 min |
 | 09-demo-data-seed | 1/1 ✅ | ~20 min |
 
@@ -84,7 +85,12 @@ Only what constrains upcoming work. **Full log: `.paul/PROJECT.md` → Key Decis
 | **Soft-delete cars only (`deletedAt`)** | Every car query filters `deletedAt: null`. Expenses/odometer hard-delete. The demo seed's `--clear` is a documented exception |
 | **Money is `amountCents Int`; `lib/money.ts` is the only converter** | Includes `formatEurPerKm` — dividing money by distance is money changing unit. Enforced by comment-stripped audit |
 | **Money-derived rates round in integer space, never `toFixed`** | `toFixed` rounds by the double's actual value, so half-way cases are unpredictable per input |
-| **Schema is 6 entities** — `Attachment` landed in 04-03 | Phase 5 adds Fine/Vignette after the research spike. `Attachment.carId` and its CHECK constraint already exist, so car photos need no migration |
+| **Schema is 7 entities** — `Attachment` (04-03), `VignetteCheck` (05-01) | `Fine` follows in 05-02, once the currency question is settled against a real fine |
+| **Both Bulgarian services answer HTTP 200 for logical failures** | Parse the body and check the content type. МВР returns a 429 KB HTML page when throttled; the vignette returns `ok:false` with an embedded 500 for "no vignette" |
+| **A definite negative and an unavailable service are different results** | Never merge them. "No vignette" during an outage tells someone their vignette expired. `UNAVAILABLE` rows are stored, and the status shown comes from the latest *successful* check |
+| **The vignette cooldown IS its rate limit** — six hours from `checkedAt` | No counter table, no in-memory map a serverless process cannot share. The page hides the button; **the action enforces it anyway**, because a form post can be replayed |
+| **`VIGNETTE_DRIVER` defaults to `live`, unlike `STORAGE_DRIVER`** | A stub default would show *fabricated* vignette dates a user would trust. The suites force `stub` in two places — Playwright workers and the server under test |
+| **A malformed plate is indistinguishable from "no vignette"** | The service returns the same body for both, and there is no plate regex by standing decision |
 | **Attachment bytes live behind `lib/storage.ts`; `STORAGE_DRIVER` picks local or Supabase** | `.storage/` is gitignored and **never under `public/`**. A missing Supabase variable is a **hard failure**, never a fall back — Vercel's filesystem is ephemeral. **The Supabase bucket must be private.** Verified once by hand; nothing in CI exercises it |
 | **Attachment ownership is an OR over car and expense, `deletedAt: null` on both** | All three branches mutation-proven. Scoping through `expense` alone made a car photo 404 to its own owner |
 | **The suites force `STORAGE_DRIVER=local`, overwritten not defaulted** | `.env` reaches them via `dotenv/config`, so a developer's `supabase` driver would send every test upload into the real bucket. Two places: Playwright workers **and** the server under test |
@@ -168,41 +174,38 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 
 ## Session Continuity
 
-Last session: 2026-08-11 — Phase 5 discovery; both Bulgarian endpoints verified live
-Stopped at: Phase 5 discovery complete, ЕГН storage decided (encrypted, opt-in)
-Next action: `/paul:plan 05`. Phases 6 and 7 also unblocked
-Resume file: `.paul/ROADMAP.md`
+Last session: 2026-08-11 — Phase 5 discovery, then 05-01 planned, applied and closed
+Stopped at: 05-01 complete, committed and pushed
+Next action: `/paul:plan 05` for **05-02 — fines** (encrypted identifiers, the МВР client, `Fine`)
+Resume file: `.paul/phases/05-bulgarian-integrations/05-01-SUMMARY.md`
 Git strategy: `main` (direct commits)
 Resume context:
-- **Phase 5 discovery is done** (`.paul/phases/05-bulgarian-integrations/DISCOVERY.md`). Both
-  endpoints verified live: no auth, server-side only, and **both answer HTTP 200 for logical
-  failures** — МВР returns a 429 KB HTML page when throttled. Parse the body, never the status.
-- **⚠️ Fines are per PERSON, not per car** — the roadmap said per-car and that is wrong. The request
-  takes ЕГН + driving licence; each fine carries `additionalData.vehicleNumber` for attribution.
-- **Decided: ЕГН and driving licence are stored ENCRYPTED and opt-in** (option B, owner's call
-  2026-08-11). AES-256-GCM, server-only key, nullable columns, write-only in the UI, a working
-  "forget" action, a key-version prefix, and never logged. **⚠️ This protects against a database
-  dump, not against host compromise — the key lives beside the DB credentials, and an ЕГН cannot be
-  rotated after a breach.** Full requirement list in DISCOVERY.md.
-- **⚠️ Three high-impact unknowns remain**: the currency of a fine amount (Bulgaria adopted EUR in
-  2026; the only fixtures are from 2024 and carry no currency), the МВР rate-limit threshold and
-  whether it is per-IP, and whether МВР is reachable from Vercel's egress at all.
-- **⚠️ `.env` now holds REAL Supabase credentials** (gitignored). First time real credentials for a
-  hosted service exist here. `.env.example` carries placeholders only, and the repo is public.
-- **⚠️ No EXIF/GPS stripping on uploaded photos** — the open item with a privacy dimension, and
-  deployment is now possible. A canvas re-encode drops it as a side effect, not a guarantee.
-- **⚠️ The Supabase adapter is verified once, by hand.** Nothing in CI touches it, deliberately —
-  so an API change surfaces in production, not in a test run.
-- **⚠️ Five routes are unaudited for accessibility** (`/cars`, `/cars/new`, the edit pages,
-  `/categories`, report and odometer). Add each to `tests/e2e/accessibility.spec.ts` — one line.
+- **05-02 is the fines half, and it carries all the risk this phase has.** Encrypted opt-in ЕГН and
+  driving licence (AES-256-GCM, decided 2026-08-11), the МВР client, a `Fine` entity attributed to
+  cars by the plate each fine carries, and throttle handling.
+- **⚠️ 05-02 inherits two things from 05-01 and should not rebuild them**: body-first parsing for a
+  service that answers 200 for everything, and the `*_DRIVER` seam pattern the suites force to a
+  stub. МВР is *confirmed* throttled, so the cooldown matters more there.
+- **⚠️ Three unknowns discovery could not close**, all high impact: the **currency** of a fine
+  `amount` (Bulgaria adopted EUR in 2026; the only fixtures are from 2024 and carry none), the МВР
+  **throttle threshold** and whether it is per-IP (serverless egress is shared), and whether МВР is
+  **reachable from Vercel** at all — untestable from here, and it would invalidate the fines half.
+- **⚠️ The fine object's shape has never been observed live** — the verifying account has no fines.
+  Field names come from a third party's 2024 fixtures. Treat them as unverified.
+- **⚠️ Encryption requirements are pinned in DISCOVERY.md** and must not be trimmed: server-only key,
+  nullable opt-in columns, a working "forget" action, write-only in the UI, a key-version prefix,
+  never logged, and tests proving a tampered ciphertext is *rejected* rather than decrypted.
+- **⚠️ Three routes remain unaudited** for accessibility: `/cars/new`, `/categories`, and the report
+  and odometer pages. `/cars` was audited in 05-01.
+- **⚠️ No EXIF/GPS stripping on uploaded photos**, carried from 04-03.
 - **⚠️ No real home-screen install has been performed**, carried from 04-01.
-- **⚠️ `.env` also carries `TEST_DATABASE_URL`.** A fresh clone needs it from `.env.example` plus
-  `npm run db:test:setup`, or the suites refuse to run.
+- **⚠️ `.env` holds real Supabase credentials** (gitignored) and `TEST_DATABASE_URL`. A fresh clone
+  needs the latter from `.env.example` plus `npm run db:test:setup`, or the suites refuse to run.
 - **⚠️ Local e2e needs port 3000 free** — `reuseExistingServer` is off.
-- **581 tests:** 265 unit, 164 integration, 152 e2e.
+- **627 tests:** 285 unit, 176 integration, 166 e2e.
 - **Never read an exit code through a pipe** — this has caused a wrong conclusion three times.
-- **`.agents/` and `skills-lock.json` are untracked and predate this work** — kept out of all
-  twelve Phase 4 commits. Decide what they are before something sweeps them in.
+- **`.agents/` and `skills-lock.json` are untracked and predate this work** — kept out of every
+  commit so far. Decide what they are before something sweeps them in.
 
 ---
 *STATE.md — Updated after every significant action*

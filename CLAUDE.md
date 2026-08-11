@@ -37,22 +37,23 @@ It is a personal project shared with trusted friends and family, each with their
 
 Run `npm install` once, then these all work:
 
-| Purpose                  | Command                  |
-| ------------------------ | ------------------------ |
-| **All gates (this one)** | **`npm run check`**      |
-| Dev server               | `npm run dev`            |
-| Production build         | `npm run build`          |
-| Serve production build   | `npm start`              |
-| Unit + integration tests | `npm test`               |
-| End-to-end tests         | `npm run test:e2e`       |
-| Lint code                | `npm run lint`           |
-| Lint markdown            | `npm run lint:md`        |
-| Format                   | `npm run format`         |
-| Check formatting         | `npm run format:check`   |
-| Seed system categories   | `npm run db:seed`        |
-| Seed demo data (dev)     | `npm run db:seed:demo`   |
-| Create the test database | `npm run db:test:setup`  |
-| Regenerate the PWA icons | `npm run icons:generate` |
+| Purpose                    | Command                   |
+| -------------------------- | ------------------------- |
+| **All gates (this one)**   | **`npm run check`**       |
+| Dev server                 | `npm run dev`             |
+| Production build           | `npm run build`           |
+| Serve production build     | `npm start`               |
+| Unit + integration tests   | `npm test`                |
+| End-to-end tests           | `npm run test:e2e`        |
+| Lint code                  | `npm run lint`            |
+| Lint markdown              | `npm run lint:md`         |
+| Format                     | `npm run format`          |
+| Check formatting           | `npm run format:check`    |
+| Seed system categories     | `npm run db:seed`         |
+| Seed demo data (dev)       | `npm run db:seed:demo`    |
+| Create the test database   | `npm run db:test:setup`   |
+| Regenerate the PWA icons   | `npm run icons:generate`  |
+| Verify the vignette client | `npm run verify:vignette` |
 
 `npm run check` is the docs + style gate: it verifies the agent docs exist, then runs
 `format:check`, `lint`, and `lint:md`. Run it before committing — the pre-push hook runs it anyway.
@@ -256,6 +257,44 @@ error to show the user.** If the downscale target or quality changes, re-check `
   guarantee, and the no-canvas fallback preserves it. ⚠️ Settle this before any deployment carries
   real photos.
 
+## Bulgarian Vignette Check
+
+Per car, on `/cars`. `check.bgtoll.bg` needs **no credentials** — the endpoint is keyed by licence
+plate alone.
+
+| File                         | What it is                                                    |
+| ---------------------------- | ------------------------------------------------------------- |
+| `lib/vignette.ts`            | The client, and `VIGNETTE_DRIVER` resolution                  |
+| `lib/vignette-stub.ts`       | The test double — the suites must never call the real service |
+| `lib/vignette-checks.ts`     | Scoped data access, and the cooldown                          |
+| `scripts/verify-vignette.ts` | `npm run verify:vignette -- --plate XX0000XX`                 |
+
+- **⚠️ The body is the signal, never the HTTP status.** Every response is HTTP 200 — including "no
+  vignette", which carries an embedded `status.code: 500` while nothing is wrong. Use
+  `statusBoolean`, never the `status` string (it is Bulgarian display text).
+- **⚠️ `none` and `unavailable` must never collapse.** Reporting "no vignette" because the service
+  was unreachable tells someone their vignette expired when it did not. `UNAVAILABLE` rows are
+  stored, and the UI reads the latest _successful_ check for the status and the latest row of any
+  kind for "last tried" — an outage never overwrites a known-good result.
+- **A malformed plate is indistinguishable from a plate with no vignette** — the service returns the
+  same body for both. There is no plate regex here, by standing decision.
+- **The country is hardcoded `BG`.** `Car` has no country column, so a foreign-plated car reports "no
+  active Bulgarian vignette" — literally true, and labelled that way in the UI.
+- **The cooldown IS the rate limit.** `VIGNETTE_COOLDOWN_MS` is six hours, derived from `checkedAt`
+  on a row already stored — no counter table, no in-memory map a serverless process cannot share,
+  and it survives a cold start. The page hides the button within the window; **the action enforces it
+  regardless**, because a form post can be replayed.
+- **⚠️ `VIGNETTE_DRIVER` defaults to `live`** — deliberately the opposite of `STORAGE_DRIVER`'s safe
+  default. A storage driver falling back to local merely loses photos; a vignette client falling back
+  to a stub would show _fabricated_ vignette dates that the user would trust. **The suites force
+  `stub` in two places** — `tests/integration/setup.ts` and `playwright.config.ts` (workers _and_ the
+  server under test).
+- `VignetteCheck` is a **log, not columns on `Car`** — the `OdometerReading` shape. The latest row is
+  the current state, and it also answers "when did we last look".
+- **The unit fixtures are observed, not invented**, and one was corrected from a live run: a real
+  exempt vignette returns `vignetteNumber: null` and a sentinel `validFrom` of 1980-01-01. Re-run
+  `npm run verify:vignette` when the client changes rather than trusting them.
+
 ## Accessibility
 
 `tests/e2e/accessibility.spec.ts` runs `@axe-core/playwright` against WCAG 2 A and AA rules on both
@@ -264,10 +303,10 @@ the mobile and desktop viewports. It is part of `npm run test:e2e`.
 - **The gate is zero `serious` and zero `critical`.** Moderate and minor findings are printed and
   recorded, not gated — a gate that fails the build on an advisory gets switched off within a month,
   and then nothing is gated at all.
-- **Four pages are audited:** `/signin`, `/` (populated), `/expenses/new?type=fuel`, and
-  `/cars/[id]/expenses/new?type=fuel`. **Five are not yet:** `/cars`, `/cars/new`, the edit pages,
+- **Six pages are audited:** `/signin`, `/` (populated), both add forms, the expense edit page with
+  a photo, `/cars`, and the car edit page with a photo. **Three are not yet:** `/cars/new`,
   `/categories`, and the report and odometer pages. Stated so the gap is visible rather than implied
-  by a file called "accessibility".
+  by a file called "accessibility" — and every plan that adds a page should shorten the list.
 - **⚠️ What axe does not catch here, measured rather than assumed:**
   - A **placeholder satisfies the accessible-name rules**, so removing the amount field's
     `htmlFor` produces _no_ axe violation. `tests/e2e/quick-add.spec.ts`'s Tab-order test and

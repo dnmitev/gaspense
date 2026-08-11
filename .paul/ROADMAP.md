@@ -15,8 +15,8 @@ From a graduated PLANNING.md to a working personal vehicle expense tracker: firs
 **v0.1 Initial Release** (v0.1.0)
 Status: In progress
 Phases: 7 of 10 complete (70%) — Phase 4 closed 2026-08-10. **Phase 5 (Bulgarian Integrations) is
-next and is research-gated**: no confirmed public API exists for the fines or vignette lookups, so
-it needs a `/paul:discover` spike before it can be planned
+in progress, 1 of 2 plans**: discovery done 2026-08-11 (both endpoints verified live), the vignette
+check shipped in 05-01, and fines remain in 05-02
 
 ## Phases
 
@@ -34,7 +34,7 @@ be pulled forward. Phase 9 was pulled ahead of the rest of Phase 3 and is now co
 | 2 | Foundations | 7/7 | ✅ Complete | 2026-08-08 |
 | 3 | Reporting | 3/3 | ✅ Complete | 2026-08-10 |
 | 4 | PWA & Mobile UX | 4/4 | ✅ Complete | 2026-08-10 |
-| 5 | Bulgarian Integrations | TBD | Not started | - |
+| 5 | Bulgarian Integrations | 1/2 | In progress — **current** | - |
 | 6 | Google Drive Export | TBD | Not started | - |
 | 7 | Maintenance Reminders | TBD | Not started | - |
 | 8 | Test Environment Safety | 2/2 | ✅ Complete | 2026-08-10 |
@@ -528,15 +528,115 @@ rather than implied to be proven.
 
 **Goal:** A user can check whether a car has outstanding fines or a valid vignette from within the app.
 **Depends on:** Phase 2 (needs Car entities to check against)
-**Research:** Likely — no confirmed public API exists yet for either the fines lookup or the vignette check
-**Research topics:** Actual callable endpoint/mechanism, required identifiers, auth, and rate-limit behavior for both the КАТ/МВР fines lookup and the vignette validity check. Run `/paul:discover` before implementation.
+**Research:** ✅ **Done 2026-08-11** — `.paul/phases/05-bulgarian-integrations/DISCOVERY.md`
 
 **Scope:**
-- Research spike to confirm callable mechanisms
-- `/api/fines/check` and `/api/vignette/check` with rate limiting
+- Vignette validity per car, and КАТ/МВР fines per person, attributed to cars
+- Both called server-side, with rate limiting
+
+**Discovery outcome (2026-08-11).** Two endpoints supplied from browser network tabs, both called
+live. The gate that has blocked this phase since ideation is closed.
+
+- **Vignette** — `GET check.bgtoll.bg/check/vignette/plate/BG/{PLATE}`. No auth, ~120 ms, keyed by
+  plate, **no personal data needed**.
+- **Fines** — `GET e-uslugi.mvr.bg/api/Obligations/AND?…`. No auth, keyed by **ЕГН + driving
+  licence**, returning two `unitGroup`s that must be merged.
+
+**⚠️ Three findings that shape the plans more than the endpoints do:**
+
+1. **Both services answer HTTP 200 for logical failures.** The vignette returns `ok:false` with an
+   embedded `status.code: 500` for "no vignette", and returns *exactly that* for a malformed plate
+   too. МВР returns a **429 KB HTML page** when throttled, so a naive `.json()` throws. **Parse the
+   body, check the content type, never trust the status** — the same trap as 04-04's Supabase
+   adapter, met twice in consecutive phases.
+2. **Fines are per PERSON, not per car.** The original per-car framing was wrong: the request takes
+   a person's identifiers and returns fines across all their vehicles, each carrying
+   `additionalData.vehicleNumber` for attribution.
+3. **The fine object's shape is from a third party's 2024 fixtures, not observed** — the verifying
+   account has no fines. Field names are known; the currency is not, and Bulgaria adopted the euro
+   in 2026.
+
+**Decided 2026-08-11 (owner's call, after the alternative was recommended):** the ЕГН and driving
+licence are **stored encrypted, opt-in** — AES-256-GCM, server-only key, nullable columns, write-only
+in the UI, a working "forget" action, a key-version prefix, never logged. **⚠️ This protects a
+database dump, not host compromise: the key lives beside the DB credentials and an ЕГН cannot be
+rotated after a breach.** Full requirements pinned in DISCOVERY.md.
+
+**Split into two plans at 05-01 planning time (2026-08-11).** The two halves share almost nothing:
+the vignette needs no personal data, no encryption and no new trust boundary, while fines need all
+three. Bundling them would hide which risk belongs to which feature — and Phase 4 demonstrated four
+times that the plan carrying a *guarantee* costs more than the plan carrying a *feature*. The
+vignette goes first because it delivers user-visible value with the smallest blast radius, and it
+builds the two things fines will need anyway: a body-first client and a test seam.
+
+**Settled at 05-01 planning time:**
+
+- **`VignetteCheck` is a log, not columns on `Car`** — the same shape as `OdometerReading`. The
+  latest row *is* the current state, and it also answers "when did we last look", which five
+  denormalised columns would not.
+- **`UNAVAILABLE` results are stored too**, so "we tried and could not reach it" is visible rather
+  than looking like "never checked". The UI reads the latest *successful* check for the status and
+  the latest row of any kind for "last tried".
+- **⚠️ `none` and `unavailable` must never collapse.** Reporting "no vignette" because the service
+  was down tells someone their vignette expired when it did not.
+- **The cooldown IS the rate limit.** Derived from `checkedAt` on data already stored — no new
+  table, no in-memory counter a serverless process cannot share, per car, and it survives a cold
+  start. Six hours; a vignette's validity changes at most daily.
+- **`VIGNETTE_DRIVER` defaults to `live`, the opposite of `STORAGE_DRIVER`'s safe default — on
+  purpose.** A storage driver defaulting to local loses photos if misconfigured; a vignette client
+  defaulting to stub would show *fabricated* vignette data in production, which is worse than an
+  error. **The suites force the stub in two places** — Playwright workers and the server under test —
+  which is 04-04's lesson applied before it can bite.
+- **The country segment is hardcoded `BG`** and `Car` has no country field, so a foreign-plated car
+  returns "no active Bulgarian vignette", which is literally true. Labelled that way in the UI rather
+  than fixed with a schema change or a plate regex — both stand as decisions.
+- **No `/api/vignette/check` route.** The roadmap sketched REST endpoints; the standing decision is
+  that mutations are server actions and the app is its own only client. A route would be a second
+  shape with no caller.
+- **No scheduled checking.** Manual only — cadence remains a deferred issue and a background job
+  needs a scheduler this project does not have.
+
+**⚠️ Three high-impact unknowns carried into 05-02:** the currency of a fine `amount`, the МВР
+rate-limit threshold and whether it is per-IP (serverless egress is shared), and whether МВР is
+reachable from Vercel's egress at all — untestable from here, and it would invalidate the fines half.
+
+**05-01 completed 2026-08-11.** ~55 minutes, 46 tests added (627 total). Each car's vignette status
+sits on `/cars`, one tap from a refresh, and an unreachable service never reads as an expired
+vignette — proven in the client, the data model, e2e, and by eye.
+
+**Verified against the real service, and it corrected an invented fixture.** `npm run verify:vignette`
+exercised both paths live, and the response showed that a real *exempt* vignette returns
+`vignetteNumber: null` and a sentinel `validFrom` of 1980-01-01, where the unit test had made up a
+plausible number and start date. The client handled both correctly, so nothing was broken — but the
+test was asserting against fiction, which is precisely the state 04-04's adapter was in when its
+stub-based tests passed while it was wrong.
+
+**Mutation testing: a second consecutive clean sweep.** All four scope filters load-bearing — the
+ownership pre-check on write, both relation filters on read, and `deletedAt` on the car. Six askings
+across the project, six different answers.
+
+**Two design points worth carrying:**
+- **`<form action>` cannot return a value**, and honouring that produced a better answer than the
+  plan had: the cooldown is computed server-side and the button is simply **not rendered** inside the
+  window, rather than offered and refused. The action enforces the cooldown regardless, because
+  hiding a button does not stop a form post being replayed.
+- **A throwaway screenshot script made the feature look broken** — it navigated immediately after
+  clicking and aborted the in-flight submit. The app was correct. Worth remembering that "looking"
+  can also produce a false negative.
+
+**⚠️ Still open from 05-01:** the endpoint is unofficial and only `npm run verify:vignette` would
+reveal a change, since nothing in CI touches it; a **malformed plate is indistinguishable from a
+plate with no vignette**, so a typo reads as "no vignette"; and a foreign-plated car reports "no
+active Bulgarian vignette" — true, but easy to misread if the word "Bulgarian" is skimmed.
+
+**Accessibility:** `/cars` audited in 05-01. Three routes remain — `/cars/new`, `/categories`, and
+the report and odometer pages.
 
 **Plans:**
-- [ ] TBD — defined during `/paul:plan`
+- [x] 05-01: Vignette status per car — a body-first client, a stored check log, a cooldown that is
+      the rate limit, and the test seam that keeps the suites off a government service
+- [ ] 05-02: Fines — encrypted opt-in identifiers, the МВР client, a `Fine` entity attributed to
+      cars by plate, and throttle handling
 
 ### Phase 6: Google Drive Export
 
@@ -762,4 +862,4 @@ error in either field.
 
 ---
 *Roadmap created: 2026-08-07*
-*Last updated: 2026-08-10 — Phase 8 pulled forward and split into two plans*
+*Last updated: 2026-08-11 — 05-01 (vignette) complete; 05-02 (fines) remains*

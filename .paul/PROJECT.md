@@ -20,7 +20,7 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 |-----------|-------|
 | Type | Application |
 | Version | 0.0.0 |
-| Status | Prototype — **Phases 0-4, 8 and 9 complete.** Log in, add a car, record expenses and mileage, and see what it all costs: by month, by year, by category, per kilometre, and litres per 100 km — with a dashboard on opening the app. It installs to a phone home screen, logging a fill-up is one tap, a photo can be attached to any car or expense, and it says so honestly when the network is gone. The test suites run against a database and an object store of their own, and refuse to touch any other |
+| Status | Prototype — **Phases 0-4, 8 and 9 complete; Phase 5 in progress (1 of 2).** Log in, add a car, record expenses and mileage, and see what it all costs: by month, by year, by category, per kilometre, and litres per 100 km — with a dashboard on opening the app. It installs to a phone home screen, logging a fill-up is one tap, a photo can be attached to any car or expense, and it says so honestly when the network is gone. Each car's Bulgarian vignette status is one tap from a refresh. The test suites run against a database and an object store of their own, and refuse to touch any other |
 | Last Updated | 2026-08-11 |
 
 **Production URLs:** none yet.
@@ -74,10 +74,11 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 - ✓ Expense photo attachments — `Attachment` with a CHECK constraint, browser-side downscaling, and serving that returns 404 to everyone but the owner — Phase 4 (04-03)
 - ✓ Car photos and a verified Supabase Storage adapter — ownership covering both owners with every branch mutation-proven, and the adapter run against a real private bucket — Phase 4 (04-04)
 - ✓ **Phase 4 complete** — 4 plans, ~275 minutes, 170 tests added (581 total). The app installs to a phone, logging a fill-up costs one tap instead of three, four pages are gated against WCAG A/AA, and photos attach to cars and expenses with storage that can actually be deployed
+- ✓ Bulgarian vignette check — per-car status on `/cars` from a body-first client, a check log, and a cooldown that doubles as the rate limit; verified against the live service — Phase 5 (05-01)
 
 ### Active (In Progress)
-- **Phase 5: Bulgarian Integrations** — discovery complete 2026-08-11 (both endpoints verified live)
-  and the ЕГН storage question decided (encrypted, opt-in). Ready to plan
+- **Phase 5: Bulgarian Integrations** — 1 of 2 plans complete (05-01, the vignette check).
+  Remaining: 05-02, fines — encrypted opt-in identifiers, the МВР client, and a `Fine` entity
 
 ### Planned (Next)
 - Phase 6: Google Drive Export — OAuth consent, export/backup
@@ -231,6 +232,10 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 | The test suites force `STORAGE_DRIVER=local`, overwritten not defaulted | `.env` reaches them through `dotenv/config`, so a developer's `supabase` driver would send every test upload into a real bucket — Phase 8's failure mode with an object store instead of a database | 2026-08-10 | Active |
 | ЕГН and driving licence stored **encrypted and opt-in**, never plaintext | The fines lookup cannot run without them. Owner's decision for a personal tool, taken after the no-storage alternative was recommended. AES-256-GCM, server-only key, write-only in the UI, working delete. **Protects a database dump, not host compromise — the key lives beside the DB credentials** | 2026-08-11 | Active |
 | Fines are per PERSON, the vignette per CAR | The МВР request takes a person's identifiers and returns fines across all their vehicles, each carrying `additionalData.vehicleNumber`. The original "per car" framing was wrong for fines | 2026-08-11 | Active |
+| A definite negative and an unavailable service are separate results, never merged | Reporting "no vignette" during an outage tells a user their vignette expired when it did not. `UNAVAILABLE` rows are stored, and the displayed status comes from the latest *successful* check | 2026-08-11 | Active |
+| The vignette cooldown is its rate limit — six hours from `checkedAt` | No counter table and no in-memory map, which separate serverless invocations cannot share; it survives a cold start, and it is per car. Hiding the button is UX; the action enforces it, because a form post can be replayed | 2026-08-11 | Active |
+| `VIGNETTE_DRIVER` defaults to `live`, unlike `STORAGE_DRIVER`'s safe default | A stub default would show fabricated vignette dates that a user would trust — worse than an error. The suites force `stub` in two places instead | 2026-08-11 | Active |
+| `VignetteCheck` is a check log, not columns on `Car` | The `OdometerReading` shape: the latest row is the current state, and it also answers "when did we last look" | 2026-08-11 | Active |
 | Both Bulgarian services answer HTTP 200 for logical failures | The vignette returns `ok:false` with an embedded 500 for "no vignette", and МВР returns a 429 KB HTML page when throttled. Parse the body and check the content type; never trust the status | 2026-08-11 | Active |
 | An adapter is not trusted until it has run against the real service | The Supabase adapter's stub-based tests passed while the adapter was wrong: real Supabase reports a missing object as HTTP 400 with the status in the body, so `get` threw where it had to return null and the serving route would have 500ed | 2026-08-10 | Active |
 
@@ -240,9 +245,9 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 |--------|--------|---------|--------|
 | Docs/lint presence | CLAUDE.md, AGENTS.md, docs/ARCHITECTURE.md exist; markdownlint + ESLint/Prettier pass | `npm run check` green | **Achieved** (Phase 0) |
 | CI pipeline green | Lint + test + build pass on every push/PR; secret scanning active | All four run green: check, build, unit (Vitest), e2e (Playwright). Secret scanning + push protection active | **Achieved** (Phase 2, plan 02-02) |
-| Test coverage | Unit + integration + automation (e2e) tests for every phase | 581 tests: 265 unit, 164 integration, 152 e2e — all green | **On track** |
+| Test coverage | Unit + integration + automation (e2e) tests for every phase | 627 tests: 285 unit, 176 integration, 166 e2e — all green | **On track** |
 | Security scan | Pass, every phase | - | Not started |
-| Accessibility | WCAG AA on frontend phases | axe-core gates serious/critical on 4 of 9 routes, both viewports — zero found. Five routes unaudited; two blind spots measured (a placeholder satisfies accessible-name rules; nested `<a>` is parser-repaired) | **Partly achieved** (04-02) — a gate, not a certification |
+| Accessibility | WCAG AA on frontend phases | axe-core gates serious/critical on 6 of 9 routes, both viewports — zero found. Three routes unaudited; two blind spots measured (a placeholder satisfies accessible-name rules; nested `<a>` is parser-repaired) | **Partly achieved** (04-02) — a gate, not a certification |
 | Performance | PWA installable, high Lighthouse PWA score | Manifest, maskable icons and a fetch-handling service worker all proven by test; no real device install yet, no Lighthouse run | **Partly achieved** (04-01) |
 
 ## Tech Stack / Tools

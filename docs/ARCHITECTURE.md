@@ -25,9 +25,9 @@ A single Next.js application serves both the UI and the API routes, deployed on 
         ┌──────────────────┼──────────────────┐
         ▼                  ▼                  ▼
   ┌───────────┐   ┌────────────────┐   ┌──────────────┐
-  │ Supabase  │   │ Google         │   │ КАТ/МВР +    │
-  │ Postgres  │   │ OAuth + Drive  │   │ vignette     │
-  │ + Storage │   │                │   │ (unconfirmed)│
+  │ Supabase  │   │ Google         │   │ vignette ✓   │
+  │ Postgres  │   │ OAuth + Drive  │   │ КАТ/МВР ✓    │
+  │ + Storage │   │                │   │ (unofficial) │
   └───────────┘   └────────────────┘   └──────────────┘
 ```
 
@@ -37,8 +37,8 @@ There is no separate backend service, no cache layer, and no real-time transport
 
 ## Data Model
 
-**Implemented: six entities.** `Attachment` landed in 04-03 with expense photo upload. Two more are
-designed but deliberately deferred — see
+**Implemented: seven entities.** `Attachment` landed in 04-03; `VignetteCheck` in 05-01. `Fine`
+follows in 05-02 — see
 [Deferred entities](#deferred-entities) below. The authoritative source is
 [`prisma/schema.prisma`](../prisma/schema.prisma); this section describes it.
 
@@ -46,7 +46,8 @@ designed but deliberately deferred — see
 User ──< Car ──< Expense >── Category
          │       └─< OdometerReading
          │       └─< Attachment
-         └─< Attachment
+         ├─< Attachment
+         └─< VignetteCheck
 ```
 
 | Entity              | Key fields                                                                                                                                                       | Relationships                                                    |
@@ -57,13 +58,15 @@ User ──< Car ──< Expense >── Category
 | **Expense**         | `id`, `carId`, `categoryId`, `date`, **`amountCents`** (Int), `notes?` — fuel expenses additionally carry `liters?` (Float), `station?`, `fullTank?`, timestamps | belongs to Car and Category                                      |
 | **OdometerReading** | `id`, `carId`, `date`, `reading` (Int, km), `source` (enum `MANUAL` \| `EXPENSE`), **`expenseId?`** (unique, cascade), timestamps                                | belongs to Car; optionally to the Expense it was captured with   |
 | **Attachment**      | `id`, **`carId?`**, **`expenseId?`** (exactly one set, CHECK-enforced), `storageKey` (unique), `mimeType`, `sizeBytes`, `width?`, `height?`, `createdAt`         | belongs to a Car **or** an Expense, never both and never neither |
+| **VignetteCheck**   | `id`, `carId`, `checkedAt`, `outcome` (`ACTIVE` \| `NONE` \| `UNAVAILABLE`), `validFrom?`, `validUntil?`, `vignetteNumber?`, `exempt?`, `failureReason?`         | belongs to Car. A log — the latest row is the current state      |
 
 **Enums:** `FuelType` (PETROL, DIESEL, LPG, ELECTRIC, HYBRID, OTHER) and
 `OdometerSource` (MANUAL, EXPENSE).
 
 **Indexes:** `Car(userId)`, `Car(deletedAt)`, `Category(userId)`, `Expense(carId)`,
-`Expense(date)`, `Expense(categoryId)`, `OdometerReading(carId)`, `OdometerReading(date)`, plus the
-two partial unique indexes described below.
+`Expense(date)`, `Expense(categoryId)`, `OdometerReading(carId)`, `OdometerReading(date)`,
+`Attachment(carId)`, `Attachment(expenseId)`, `VignetteCheck(carId)`, `VignetteCheck(checkedAt)`,
+plus the two partial unique indexes described below and `Attachment`'s CHECK constraint.
 
 ### Design decisions behind this shape
 
@@ -119,12 +122,15 @@ so 7.x satisfies it. Compatibility was nonetheless verified functionally in
 
 ### Deferred entities
 
-| Entity       | Deferred to | Why                                                                                                                                                       |
-| ------------ | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Fine**     | Phase 5     | Its fields depend on what the КАТ/МВР research spike finds the service actually returns. Modelling it now would be speculation likely contradicted later. |
-| **Vignette** | Phase 5     | Same reason — the vignette check has no confirmed API either.                                                                                             |
+| Entity   | Deferred to | Why                                                                                                                                                                                                                                                                                            |
+| -------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Fine** | 05-02       | The field names are now known from a third party's recorded fixtures, but no fine has been observed live — and the currency is genuinely unresolved, since Bulgaria adopted the euro in 2026 while the only fixtures predate it. Modelling the amount before that is settled would be a guess. |
 
-Prisma migrations are additive, so adding these later is a normal migration rather than a rewrite.
+**Vignette** is no longer deferred: `VignetteCheck` landed in 05-01, after the research spike
+established what the service returns. It is a check _log_ rather than a `Vignette` entity, because
+the latest row is the current state and history costs nothing.
+
+Prisma migrations are additive, so adding `Fine` later is a normal migration rather than a rewrite.
 
 ### Data layer
 
@@ -282,6 +288,36 @@ Keys are `randomUUID` plus an extension from the **validated** MIME type — nev
 filename — and never leave the server. Exactly one of `carId`/`expenseId` is enforced by a
 hand-written `CHECK (num_nonnulls("carId", "expenseId") = 1)`, because Prisma cannot express a CHECK;
 the same reason the category partial unique indexes are raw SQL.
+
+### Bulgarian integrations
+
+**Vignette** — `GET check.bgtoll.bg/check/vignette/plate/BG/{PLATE}`, no credentials, keyed by plate.
+Called from a server action on `/cars`, never the browser: the endpoint returns no CORS headers.
+
+⚠️ **Unofficial and undocumented.** It is an internal endpoint of a public web app and may change
+without notice, which is why `lib/vignette.ts` parses defensively and every unrecognised response
+becomes `unavailable` rather than throwing.
+
+⚠️ **The body is the signal, never the HTTP status.** Every response is HTTP 200, including "no
+vignette", which carries an embedded `status.code: 500` while nothing is wrong. A malformed plate
+returns the same body as a valid plate with no vignette, so the two are indistinguishable.
+
+⚠️ **`none` and `unavailable` never collapse.** Reporting "no vignette" because the service was
+unreachable would tell a user their vignette expired when it had not. `UNAVAILABLE` rows are stored
+so a failure is visible, and the status shown comes from the latest _successful_ check — an outage
+cannot overwrite a known-good result.
+
+**The cooldown is the rate limit.** Six hours, derived from `VignetteCheck.checkedAt` rather than a
+counter table or an in-memory map that separate serverless invocations cannot share. Enforced in the
+action, not only by hiding the button.
+
+**`VIGNETTE_DRIVER`** selects the client — `live` (default) or `stub`. The default is deliberately
+_unsafe-by-omission_, unlike `STORAGE_DRIVER`: a stub default would show fabricated vignette dates in
+production. The test suites force `stub` in two places.
+
+**Fines** — `e-uslugi.mvr.bg`, keyed by ЕГН plus driving licence, arriving in 05-02 with encrypted
+opt-in identifier storage. Fines are **per person**, attributed to a car by the plate each fine
+carries. See `.paul/phases/05-bulgarian-integrations/DISCOVERY.md`.
 
 ### Auth
 

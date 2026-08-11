@@ -1,9 +1,10 @@
 // Gaspense data model.
 //
-// Scope: six entities. Attachment landed in 04-03 with expense photo upload.
-// Fine and Vignette remain deferred to Phase 5 — their fields depend on what the
-// КАТ/vignette research spike finds the services actually return, so modelling
-// them now would be speculation. See docs/ARCHITECTURE.md.
+// Scope: seven entities. Attachment landed in 04-03; VignetteCheck in 05-01,
+// after the research spike established what the service actually returns.
+// `Fine` follows in 05-02 — its shape depends on the МВР response, whose fine
+// object has been recorded from a third party's fixtures but not yet observed
+// live. See docs/ARCHITECTURE.md.
 //
 // Prisma 7 note: connection URLs live in prisma.config.ts, not here — the
 // datasource block no longer accepts `url` or `directUrl`.
@@ -125,6 +126,7 @@ model Car {
   expenses         Expense[]
   odometerReadings OdometerReading[]
   attachments      Attachment[]
+  vignetteChecks   VignetteCheck[]
 
   @@index([userId])
   @@index([deletedAt])
@@ -191,6 +193,53 @@ model Expense {
   @@index([carId])
   @@index([date])
   @@index([categoryId])
+}
+
+/// What a vignette check found, and when.
+enum VignetteOutcome {
+  /// An active Bulgarian vignette exists.
+  ACTIVE
+  /// A definite "no active vignette" from the service.
+  NONE
+  /// The service could not be read. ⚠️ NEVER display this as NONE.
+  UNAVAILABLE
+}
+
+/// One row per vignette check — a log, not columns on `Car`.
+///
+/// The same shape as `OdometerReading`, and for the same reason: the latest row
+/// *is* the current state, and it also answers "when did we last look", which
+/// five denormalised columns on `Car` would not. History costs nothing here.
+///
+/// **`UNAVAILABLE` rows are stored deliberately.** They make "we tried and could
+/// not reach the service" visible instead of indistinguishable from "never
+/// checked". The UI reads the latest **successful** check for the status and the
+/// latest row of any kind for "last tried" — conflating them would report an
+/// outage as an expired vignette.
+///
+/// `checkedAt` doubles as the rate limiter: see `vignetteCooldownRemaining` in
+/// `lib/vignette-checks.ts`. No separate counter table, and it survives a cold
+/// start because it lives here.
+model VignetteCheck {
+  id        String          @id @default(cuid())
+  carId     String
+  checkedAt DateTime        @default(now())
+  outcome   VignetteOutcome
+
+  /// Set only when `outcome` is ACTIVE. Naive datetimes, exactly as the service
+  /// reports them — it sends no timezone, so inventing one would be a guess.
+  validFrom      DateTime?
+  validUntil     DateTime?
+  vignetteNumber String?
+  exempt         Boolean?
+
+  /// Set only when `outcome` is UNAVAILABLE — why, for diagnosis.
+  failureReason String?
+
+  car Car @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@index([carId])
+  @@index([checkedAt])
 }
 
 /// A photo attached to a car or to an expense.

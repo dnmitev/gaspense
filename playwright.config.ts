@@ -31,6 +31,10 @@ process.env.DATABASE_URL = TEST_DATABASE_URL;
 // under test); both are needed, exactly as they were for DATABASE_URL in 08-01.
 process.env.STORAGE_DRIVER = "local";
 
+// ⚠️ And never the real vignette service — see tests/integration/setup.ts for the
+// reasoning. Two places again: the workers here, the server under test below.
+process.env.VIGNETTE_DRIVER = "stub";
+
 export default defineConfig({
   // Scoped so Playwright never picks up Vitest's specs in tests/unit.
   testDir: "tests/e2e",
@@ -80,6 +84,8 @@ export default defineConfig({
       AUTH_URL: BASE_URL,
       // Never the real object store. See the note above process.env.STORAGE_DRIVER.
       STORAGE_DRIVER: "local",
+      // Never the real check.bgtoll.bg. See the note above.
+      VIGNETTE_DRIVER: "stub",
     },
     // Never reuse a server this config did not start. A local `npm run dev` serves
     // the DEVELOPMENT database, while the helpers above write to the TEST one —

@@ -37,22 +37,23 @@ Personal project shared with trusted friends and family, each with their own acc
 
 Run `npm install` once, then these all work:
 
-| Purpose                  | Command                  |
-| ------------------------ | ------------------------ |
-| **All gates (this one)** | **`npm run check`**      |
-| Dev server               | `npm run dev`            |
-| Production build         | `npm run build`          |
-| Serve production build   | `npm start`              |
-| Unit + integration tests | `npm test`               |
-| End-to-end tests         | `npm run test:e2e`       |
-| Lint code                | `npm run lint`           |
-| Lint markdown            | `npm run lint:md`        |
-| Format                   | `npm run format`         |
-| Check formatting         | `npm run format:check`   |
-| Seed system categories   | `npm run db:seed`        |
-| Seed demo data (dev)     | `npm run db:seed:demo`   |
-| Create the test database | `npm run db:test:setup`  |
-| Regenerate the PWA icons | `npm run icons:generate` |
+| Purpose                    | Command                   |
+| -------------------------- | ------------------------- |
+| **All gates (this one)**   | **`npm run check`**       |
+| Dev server                 | `npm run dev`             |
+| Production build           | `npm run build`           |
+| Serve production build     | `npm start`               |
+| Unit + integration tests   | `npm test`                |
+| End-to-end tests           | `npm run test:e2e`        |
+| Lint code                  | `npm run lint`            |
+| Lint markdown              | `npm run lint:md`         |
+| Format                     | `npm run format`          |
+| Check formatting           | `npm run format:check`    |
+| Seed system categories     | `npm run db:seed`         |
+| Seed demo data (dev)       | `npm run db:seed:demo`    |
+| Create the test database   | `npm run db:test:setup`   |
+| Regenerate the PWA icons   | `npm run icons:generate`  |
+| Verify the vignette client | `npm run verify:vignette` |
 
 `npm run check` is the docs + style gate: it verifies the agent docs exist, then runs
 `format:check`, `lint`, and `lint:md`. Run it before committing — the pre-push hook runs it anyway.
@@ -226,6 +227,29 @@ length. Width/height are a hint for sizing the `<img>` only, and the e2e test po
 **⚠️ No EXIF stripping** — a canvas re-encode drops it as a side effect, not a guarantee, and the
 fallback path preserves it. Settle before any deployment carries real photos.
 
+## Bulgarian Vignette Check
+
+Per car on `/cars`, via `check.bgtoll.bg` — **no credentials**, keyed by licence plate.
+`lib/vignette.ts` (client + `VIGNETTE_DRIVER`), `lib/vignette-stub.ts` (test double),
+`lib/vignette-checks.ts` (scoped access + cooldown), `scripts/verify-vignette.ts`.
+
+- **⚠️ The body is the signal, never the HTTP status.** Every response is 200, including "no
+  vignette" — which carries an embedded `status.code: 500`. Use `statusBoolean`, not the Bulgarian
+  `status` string.
+- **⚠️ `none` and `unavailable` must never collapse.** An outage reported as "no vignette" tells
+  someone their vignette expired when it did not. `UNAVAILABLE` rows are stored; the UI reads the
+  latest _successful_ check for status and the latest row of any kind for "last tried".
+- A malformed plate returns the same body as a plate with no vignette. No plate regex here.
+- The country is hardcoded `BG`; a foreign plate reports "no active Bulgarian vignette", which is
+  true, and is labelled that way.
+- **The cooldown IS the rate limit** — six hours, derived from `checkedAt`. The page hides the
+  button; the action enforces it anyway, because a form post can be replayed.
+- **⚠️ `VIGNETTE_DRIVER` defaults to `live`**, unlike `STORAGE_DRIVER` — a stub default would show
+  fabricated dates in production. **The suites force `stub` in two places.**
+- `VignetteCheck` is a log, not columns on `Car`.
+- Fixtures are observed, not invented; one was corrected live (an exempt vignette has
+  `vignetteNumber: null`). Re-run `npm run verify:vignette` when the client changes.
+
 ## Accessibility
 
 `tests/e2e/accessibility.spec.ts` runs `@axe-core/playwright` over WCAG 2 A/AA on both viewports, as
@@ -233,9 +257,9 @@ part of `npm run test:e2e`.
 
 - **Gate: zero `serious` and zero `critical`.** Moderate/minor are printed and recorded, not gated —
   a gate that fails on an advisory gets switched off, and then nothing is gated.
-- **Audited:** `/signin`, `/`, `/expenses/new?type=fuel`, `/cars/[id]/expenses/new?type=fuel`.
-  **Not yet audited:** `/cars`, `/cars/new`, the edit pages, `/categories`, the report and odometer
-  pages.
+- **Audited:** `/signin`, `/`, both add forms, the expense edit page with a photo, `/cars`, and the
+  car edit page with a photo. **Not yet audited:** `/cars/new`, `/categories`, the report and
+  odometer pages.
 - **⚠️ Measured limits of the gate:** a `placeholder` satisfies the accessible-name rules, so a lost
   `htmlFor` on the amount field produces no axe violation (the Tab-order e2e test and
   `tests/unit/expense-form.test.tsx` cover it); and nested `<a>` is silently repaired by the HTML

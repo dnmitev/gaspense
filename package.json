@@ -26,6 +26,7 @@
     "test:integration": "vitest run --project integration",
     "test:e2e": "playwright test",
     "icons:generate": "tsx scripts/generate-icons.ts",
+    "verify:vignette": "tsx scripts/verify-vignette.ts",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:demo": "tsx prisma/seed-demo.ts",
     "db:test:setup": "tsx scripts/setup-test-db.ts",

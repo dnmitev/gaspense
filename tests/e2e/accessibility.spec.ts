@@ -28,13 +28,17 @@ import {
  *
  * ## Scope, stated honestly
  *
- * Four pages, on both the mobile and desktop projects. Contrast and target size
+ * Six pages, on both the mobile and desktop projects. Contrast and target size
  * are viewport-dependent, so a desktop-only audit would miss the mobile problems
  * — which are the ones that matter for a phone-first app.
  *
- * NOT yet audited: /cars, /cars/new, the edit pages, /categories, and the report
- * and odometer pages. Named here and in CLAUDE.md so the gap is visible rather
- * than implied by a file called "accessibility".
+ * Audited: /signin, / (populated), both add forms, the expense edit page with a
+ * photo, /cars, and the car edit page with a photo.
+ *
+ * NOT yet audited: /cars/new, /categories, and the report and odometer pages.
+ * Named here and in CLAUDE.md so the gap stays visible rather than being implied
+ * away by a file called "accessibility". Every plan that adds a page here should
+ * shorten this list.
  */
 
 const ANCHOR = new Date("2026-06-15T00:00:00.000Z");
@@ -171,6 +175,15 @@ test.describe("accessibility — signed in", () => {
     await expect(page.getByRole("region", { name: "Photos" }).getByRole("img")).toBeVisible();
 
     await expectAccessible(page, "/cars/[id]/expenses/[expenseId]/edit (with a photo)");
+  });
+
+  test("the cars page has no serious or critical violations", async ({ page }) => {
+    // Added in 05-01, which puts new controls on this page. /cars was one of the
+    // five routes 04-02 named as unaudited — auditing it now closes that gap
+    // rather than widening it.
+    await page.goto("/cars");
+    await expect(page.getByRole("heading", { level: 1, name: "Your cars" })).toBeVisible();
+    await expectAccessible(page, "/cars");
   });
 
   test("the car edit page with a photo has no serious or critical violations", async ({ page }) => {
