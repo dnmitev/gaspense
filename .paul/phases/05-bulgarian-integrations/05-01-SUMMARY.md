@@ -93,7 +93,7 @@ real service — which corrected a fixture I had invented.**
 | AC-4: Cannot touch another user's car | **Pass** | A forged `carId` through the real form writes nothing; the victim's car still reads "not checked yet" from their own session. **All four scope filters mutation-proven** |
 | AC-5: The suites never call the real service | **Pass** | `VIGNETTE_DRIVER=stub` forced in `tests/integration/setup.ts` and in `playwright.config.ts` — workers *and* the server under test |
 | AC-6: Verified against the real service | **Pass** | Both paths run live. **The active-path response corrected a fixture** — see Deviations |
-| AC-7: Nothing already green went red | **Pass** | Five gates exit 0, zero warnings. 285 unit, 176 integration, 166 e2e. `/cars` audited for the first time. CI confirmation pending push |
+| AC-7: Nothing already green went red | **Pass** | Five gates exit 0, zero warnings. 285 unit, 176 integration, 166 e2e. `/cars` audited for the first time. **Confirmed in CI on run 31507634624 — green, 166 passed, no flaky annotation** |
 
 ## Verification Results
 
