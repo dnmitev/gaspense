@@ -179,10 +179,30 @@ the one question discovery cannot answer on its own.
 | **B. Store encrypted, opt-in per user** | One-tap checks; scheduled checks become possible | Introduces key management, a real breach consequence, and a migration. The encryption key would live beside the data on the same host |
 | **C. Store in plaintext** | Trivial | A national identity number in a database with no compensating control. Not defensible even for a personal app |
 
-**Recommendation: (A) for the first plan**, with (B) as a deliberate, separately-approved follow-up
-if the friction proves real in use. Rationale: the project has no deployment yet, the vignette check
-— the more frequently useful of the two — needs no personal data at all, and the cost of choosing
-(A) now and (B) later is one migration, while the cost of the reverse is a leak.
+**Recommendation was (A)**; **the owner chose (B) — store encrypted, opt-in — on 2026-08-11**,
+on the grounds that this is a personal tool for himself and a small circle, not a product.
+
+The concern was raised and the decision reaffirmed, so (B) is what gets built. What it commits us to,
+recorded here so the plan cannot quietly skip any of it:
+
+- **AES-256-GCM via `node:crypto`**, key from a server-only env variable. GCM rather than CBC because
+  its authentication tag detects tampering; a silently-altered ciphertext would otherwise decrypt to
+  garbage and be sent to МВР as an identifier.
+- **Columns are nullable and opt-in.** No value is written unless the user explicitly saves one, and
+  a "forget these" action must exist and must actually clear the columns.
+- **Write-only in the UI.** Once stored, the plaintext is never rendered back — masked only. There is
+  no legitimate reason for the app to show an ЕГН it already holds.
+- **Never logged, never returned from a server action, never in an error message.** Decrypt at the
+  point of the outbound call and nowhere else.
+- **A key-version prefix in the stored ciphertext**, so rotation is possible later without guessing
+  which key encrypted which row.
+- **⚠️ The honest limit, stated in the plan and the docs:** this protects against a database dump
+  leaking. It does **not** protect against host compromise, because the key must live where the app
+  can read it — beside the database credentials. An ЕГН is permanent and cannot be rotated after a
+  breach the way a password can. That is the accepted trade, not an oversight.
+- Tests must prove: an encrypt/decrypt round trip; that a tampered ciphertext is **rejected** rather
+  than decrypted to nonsense; that what lands in Postgres is not the plaintext; and that one user
+  cannot read another's stored identifiers.
 
 ## Open Questions
 

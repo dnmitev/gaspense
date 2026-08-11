@@ -19,7 +19,7 @@ next and is **research-gated**: `/paul:discover` before it can be planned
 Milestone: v0.1 Initial Release (v0.1.0)
 Phase: 5 of 10 (Bulgarian Integrations) — Discovery complete, **awaiting one decision**
 Plan: Not started
-Status: DISCOVERY.md written; the ЕГН storage decision blocks planning
+Status: Discovery complete and the ЕГН decision made — ready to plan 05
 Last activity: 2026-08-11 — Discovery for Phase 5: both endpoints verified live
 
 Progress:
@@ -123,7 +123,7 @@ Only what constrains upcoming work. **Full log: `.paul/PROJECT.md` → Key Decis
 | Issue | Origin | Effort | Revisit |
 |-------|--------|--------|---------|
 | ~~Bulgarian fines/vignette lookup mechanism unconfirmed~~ | Ideation | M | **Resolved 2026-08-11** — both verified live; see `.paul/phases/05-bulgarian-integrations/DISCOVERY.md` |
-| **Where the ЕГН and driving licence live** — the fines lookup cannot run without them | 05 discovery | M | **Blocks 05 planning.** Recommended: never store, enter at check time |
+| ~~Where the ЕГН and driving licence live~~ | 05 discovery | M | **Decided 2026-08-11: store encrypted, opt-in (option B).** Owner's call, concern raised and reaffirmed. Requirements pinned in DISCOVERY.md |
 | Fines/vignette check cadence undecided | Ideation | S | After the Phase 5 spike |
 | Licence unsettled — `UNLICENSED` avoids npm's default ISC grant | Phase 0 | S | User's call, any time |
 | Non-provider secret-scanning patterns unavailable | Phase 1 | — | Only under org licensing |
@@ -169,8 +169,8 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 ## Session Continuity
 
 Last session: 2026-08-11 — Phase 5 discovery; both Bulgarian endpoints verified live
-Stopped at: Phase 5 DISCOVERY.md written, awaiting the ЕГН storage decision
-Next action: decide the ЕГН storage question, then `/paul:plan 05`. Phases 6 and 7 are unblocked
+Stopped at: Phase 5 discovery complete, ЕГН storage decided (encrypted, opt-in)
+Next action: `/paul:plan 05`. Phases 6 and 7 also unblocked
 Resume file: `.paul/ROADMAP.md`
 Git strategy: `main` (direct commits)
 Resume context:
@@ -179,8 +179,11 @@ Resume context:
   failures** — МВР returns a 429 KB HTML page when throttled. Parse the body, never the status.
 - **⚠️ Fines are per PERSON, not per car** — the roadmap said per-car and that is wrong. The request
   takes ЕГН + driving licence; each fine carries `additionalData.vehicleNumber` for attribution.
-- **⚠️ One decision blocks planning: where the ЕГН and driving licence live.** Recommended: never
-  store them, enter at check time. The vignette check needs no personal data at all.
+- **Decided: ЕГН and driving licence are stored ENCRYPTED and opt-in** (option B, owner's call
+  2026-08-11). AES-256-GCM, server-only key, nullable columns, write-only in the UI, a working
+  "forget" action, a key-version prefix, and never logged. **⚠️ This protects against a database
+  dump, not against host compromise — the key lives beside the DB credentials, and an ЕГН cannot be
+  rotated after a breach.** Full requirement list in DISCOVERY.md.
 - **⚠️ Three high-impact unknowns remain**: the currency of a fine amount (Bulgaria adopted EUR in
   2026; the only fixtures are from 2024 and carry no currency), the МВР rate-limit threshold and
   whether it is per-IP, and whether МВР is reachable from Vercel's egress at all.
