@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { attachPostedPhoto } from "@/lib/attach-posted-photo";
 import { createAttachmentForExpense, deleteAttachment } from "@/lib/attachments";
 import { createExpense, deleteExpense, updateExpense } from "@/lib/expenses";
 import { requireUserId } from "@/lib/session";
@@ -56,58 +57,6 @@ function fieldErrors(issues: { path: PropertyKey[]; message: string }[]) {
 /** The list the user came from. Also what `revalidatePath` must invalidate. */
 const expensesPath = (carId: string) => `/cars/${carId}/expenses`;
 
-/**
- * Stores the posted photo against an expense, if one was posted.
- *
- * Returns an error message or null. **Deliberately a second write rather than
- * part of the expense transaction:** `createExpense` opens its own interactive
- * transaction for the odometer pairing, and threading a client out through its
- * signature purely for this would put the tests' convenience into production
- * code — the reasoning 09-01 settled.
- *
- * The consequence, stated plainly: if the expense saves and the photo does not,
- * **the expense still exists**. That is the right way round for a receipt
- * photo — the money is the record, the photo is corroboration — and the user
- * can retry from the edit page.
- */
-async function attachPostedPhoto(
-  userId: string,
-  expenseId: string,
-  formData: FormData,
-): Promise<string | null> {
-  const file = formData.get("attachment");
-  if (!(file instanceof File) || file.size === 0) return null;
-
-  const bytes = new Uint8Array(await file.arrayBuffer());
-
-  // Dimensions are a hint from the browser, used only to size the <img> so it
-  // reserves its space rather than collapsing while it loads. They are not
-  // trusted for anything: the byte length and the MIME type are re-derived from
-  // the bytes themselves inside createAttachmentForExpense.
-  const dimension = (name: string): number | undefined => {
-    const raw = Number(formData.get(name));
-    return Number.isInteger(raw) && raw > 0 ? raw : undefined;
-  };
-
-  const result = await createAttachmentForExpense(
-    userId,
-    expenseId,
-    {
-      mimeType: file.type,
-      sizeBytes: bytes.byteLength,
-      width: dimension("attachmentWidth"),
-      height: dimension("attachmentHeight"),
-    },
-    bytes,
-  );
-
-  if (result.ok) return null;
-
-  return result.reason === "invalid"
-    ? "That photo could not be attached — use a JPEG, PNG or WebP under 2 MB."
-    : "That expense could not be found.";
-}
-
 export async function createExpenseAction(
   _prev: ActionResult | null,
   formData: FormData,
@@ -127,7 +76,9 @@ export async function createExpenseAction(
     return { ok: false, errors: {}, formError: "That car or category could not be found." };
   }
 
-  const attachmentError = await attachPostedPhoto(userId, created.id, formData);
+  const attachmentError = await attachPostedPhoto(formData, (input, bytes) =>
+    createAttachmentForExpense(userId, created.id, input, bytes),
+  );
   if (attachmentError) {
     // The expense IS saved. Say so, rather than reporting a bare failure that
     // invites the user to submit it a second time and end up with two.
@@ -160,7 +111,9 @@ export async function updateExpenseAction(
     return { ok: false, errors: {}, formError: "That expense could not be found." };
   }
 
-  const attachmentError = await attachPostedPhoto(userId, expenseId, formData);
+  const attachmentError = await attachPostedPhoto(formData, (input, bytes) =>
+    createAttachmentForExpense(userId, expenseId, input, bytes),
+  );
   if (attachmentError) {
     return { ok: false, errors: {}, formError: `${attachmentError} The changes were saved.` };
   }

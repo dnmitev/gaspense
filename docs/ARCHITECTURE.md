@@ -250,8 +250,24 @@ a CRUD write. There are no public endpoints — the app is authenticated end to 
 ### Attachment storage
 
 The bytes are never in the database. `Attachment.storageKey` names an object in whatever backend
-`lib/storage.ts` resolves — a gitignored `.storage/` directory today, Supabase Storage from 04-04.
-Nothing above the interface knows which.
+`lib/storage.ts` resolves, selected by **`STORAGE_DRIVER`**: a gitignored `.storage/` directory
+(`local`, the default) or Supabase Storage (`supabase`, added in 04-04). Nothing above the interface
+knows which.
+
+**A missing Supabase variable is a hard failure, never a fall back.** Reverting silently to local
+storage in production is the failure that loses every photo while each screen looks like it worked,
+because Vercel's filesystem is ephemeral — which is also why the local adapter cannot be deployed.
+
+**⚠️ The Supabase bucket must be PRIVATE**, and `SUPABASE_SERVICE_ROLE_KEY` is server-only. A public
+bucket serves every object at a guessable URL with no session check, bypassing the serving route
+entirely. `lib/storage-supabase.ts` is three `fetch` calls against the documented REST surface — no
+SDK, since three calls do not justify a runtime dependency.
+
+**Ownership is an OR over both paths.** An attachment belongs to a car or an expense, so the filter
+matches `expense → car → userId` **or** `car → userId`, each requiring `deletedAt: null`. Scoping
+only through `expense` — correct while car attachments could not exist — makes a null `expenseId`
+match nothing, and the owner's own car photo returns 404. Both halves and the `deletedAt` are
+mutation-proven load-bearing.
 
 **`.storage/` is deliberately not under `public/`**: anything there is served statically with no
 session check, which would make every photo world-readable at a guessable path.

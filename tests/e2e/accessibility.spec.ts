@@ -160,4 +160,18 @@ test.describe("accessibility — signed in", () => {
 
     await expectAccessible(page, "/cars/[id]/expenses/[expenseId]/edit (with a photo)");
   });
+
+  test("the car edit page with a photo has no serious or critical violations", async ({ page }) => {
+    // Added in 04-04. A second page with a user image on it, and a different
+    // alt text — a new UI that skips the gate is the gap reopening.
+    await page.goto("/cars");
+    await page.getByRole("link", { name: "Edit" }).first().click();
+    await page.getByLabel(/^Photo/).setInputFiles("public/icons/icon-192.png");
+    await page.getByRole("button", { name: "Save changes" }).click();
+
+    await page.getByRole("link", { name: "Edit" }).first().click();
+    await expect(page.getByRole("region", { name: "Photos" }).getByRole("img")).toBeVisible();
+
+    await expectAccessible(page, "/cars/[id]/edit (with a photo)");
+  });
 });

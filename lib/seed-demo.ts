@@ -3,6 +3,7 @@ import { buildDemoData, DEMO_PLATE } from "@/lib/demo-data";
 import { createExpense } from "@/lib/expenses";
 import { createReading } from "@/lib/odometer";
 import { prisma } from "@/lib/prisma";
+import { getStorage } from "@/lib/storage";
 import { seedDefaultCategories } from "@/lib/seed-categories";
 
 /**
@@ -86,9 +87,29 @@ async function requireUser(email: string): Promise<{ id: string }> {
  * asserts a second user's car survives.
  */
 async function removeDemoCars(userId: string): Promise<number> {
+  // ⚠️ This is the project's ONLY hard delete of a car, which makes it the only
+  // path where `Attachment`'s cascade fires on a car. The cascade removes the
+  // rows and the app never learns their storage keys, so every stored object
+  // would be orphaned invisibly — the same trap `deleteExpense` has, reached by
+  // a different route. Read the keys first, delete the objects after.
+  const attachments = await prisma.attachment.findMany({
+    where: {
+      OR: [
+        { car: { userId, licensePlate: DEMO_PLATE } },
+        { expense: { car: { userId, licensePlate: DEMO_PLATE } } },
+      ],
+    },
+    select: { storageKey: true },
+  });
+
   const result = await prisma.car.deleteMany({
     where: { userId, licensePlate: DEMO_PLATE },
   });
+
+  if (result.count > 0) {
+    const storage = getStorage();
+    await Promise.all(attachments.map((attachment) => storage.delete(attachment.storageKey)));
+  }
 
   return result.count;
 }

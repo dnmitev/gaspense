@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import type { ActionResult } from "@/app/cars/actions";
+import { AttachmentField } from "@/app/cars/[id]/expenses/attachment-field";
 import { FUEL_TYPES } from "@/lib/validation/car";
 
 type CarFormValues = {
@@ -125,6 +126,11 @@ export function CarForm({ action, submitLabel, car }: Props) {
         </select>
         <FieldError messages={errors.fuelType} />
       </div>
+
+      {/* The same field the expense form uses — one upload path, one
+          downscaler, one set of validations. A second copy would be a second
+          place to forget one of them. */}
+      <AttachmentField />
 
       <div className="mt-2 flex items-center gap-3">
         <button

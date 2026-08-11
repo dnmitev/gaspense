@@ -1,6 +1,7 @@
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
+import { createSupabaseStorage } from "@/lib/storage-supabase";
 
 /**
  * Where attachment bytes live.
@@ -110,21 +111,63 @@ export function createLocalStorage(root: string): ObjectStorage {
 const localRoot = () => process.env["STORAGE_LOCAL_ROOT"] ?? resolve(process.cwd(), ".storage");
 
 let cached: ObjectStorage | null = null;
-let cachedRoot: string | null = null;
+let cachedKey: string | null = null;
 
 /**
  * The configured storage backend.
  *
- * Cached per root rather than per process: the integration suite points
+ * `STORAGE_DRIVER` selects it: `"local"` (the default) or `"supabase"`.
+ *
+ * ⚠️ **A missing Supabase variable is a hard failure, not a fall back.** Quietly
+ * reverting to local storage in production is precisely the bug that loses
+ * photos while every screen looks like it worked — Vercel's filesystem is
+ * ephemeral, so the writes would appear to succeed and the files would be gone
+ * on the next request.
+ *
+ * Cached per *configuration*, not per process: the integration suite points
  * `STORAGE_LOCAL_ROOT` at a temporary directory, and a module-scope singleton
  * would hand it the developer's `.storage/` instead — the same shape of bug
- * Phase 8 found with module-scope Prisma clients.
+ * Phase 8 found with module-scope Prisma clients. The key includes the driver
+ * and bucket so switching either builds a new adapter.
  */
 export function getStorage(): ObjectStorage {
+  const driver = process.env["STORAGE_DRIVER"] ?? "local";
+
+  if (driver === "supabase") {
+    const url = process.env["SUPABASE_URL"];
+    const serviceKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+    const bucket = process.env["SUPABASE_STORAGE_BUCKET"];
+
+    const missing = [
+      ["SUPABASE_URL", url],
+      ["SUPABASE_SERVICE_ROLE_KEY", serviceKey],
+      ["SUPABASE_STORAGE_BUCKET", bucket],
+    ]
+      .filter(([, value]) => !value)
+      .map(([name]) => name);
+
+    if (missing.length > 0) {
+      throw new Error(
+        `STORAGE_DRIVER is "supabase" but ${missing.join(", ")} ${
+          missing.length === 1 ? "is" : "are"
+        } not set. Refusing to fall back to local storage: on an ephemeral ` +
+          `filesystem that silently loses every uploaded photo.`,
+      );
+    }
+
+    const key = `supabase:${url}:${bucket}`;
+    if (!cached || cachedKey !== key) {
+      cached = createSupabaseStorage({ url: url!, serviceKey: serviceKey!, bucket: bucket! });
+      cachedKey = key;
+    }
+    return cached;
+  }
+
   const root = localRoot();
-  if (!cached || cachedRoot !== root) {
+  const key = `local:${root}`;
+  if (!cached || cachedKey !== key) {
     cached = createLocalStorage(root);
-    cachedRoot = root;
+    cachedKey = key;
   }
   return cached;
 }

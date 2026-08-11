@@ -198,6 +198,27 @@ A photo can be attached to an expense as it is recorded or afterwards. Four piec
 | `app/cars/[id]/expenses/attachment-field.tsx` | Client component: downscales via canvas before upload           |
 | `app/api/attachments/[id]/route.ts`           | Ownership-checked serving                                       |
 
+- **Attachments belong to a car OR an expense**, and the ownership filter in `lib/attachments.ts`
+  is an **OR over both paths**, each carrying `deletedAt: null`. 04-03 scoped only through
+  `expense`, which was right when car attachments could not exist and became a bug the moment they
+  could: a row with a null `expenseId` matched nothing, so the owner's own car photo returned 404.
+  **All three parts are mutation-proven load-bearing** — both halves of the OR and the `deletedAt`
+  on the car side (a soft-deleted car must stop serving its photos, as its expenses stop being
+  reachable; the objects survive, because soft delete preserves history).
+- **`STORAGE_DRIVER`** selects the backend: `"local"` (default) or `"supabase"`.
+  **A missing Supabase variable is a hard failure, never a fall back** — quietly reverting to local
+  storage in production is the bug that loses every photo while each screen looks like it worked,
+  because Vercel's filesystem is ephemeral.
+- **⚠️ The Supabase bucket must be PRIVATE.** A public bucket serves every object at a guessable URL
+  with no session check, bypassing `/api/attachments/[id]` and undoing the whole ownership design.
+  `SUPABASE_SERVICE_ROLE_KEY` is server-only and must never reach a `NEXT_PUBLIC_*` variable.
+- **No `@supabase/supabase-js`** — `lib/storage-supabase.ts` is three `fetch` calls against the
+  documented REST surface. ⚠️ **Its unit tests use a stubbed transport, which cannot tell you the
+  API is right.** Check `.paul/phases/04-pwa-mobile-ux/04-04-SUMMARY.md` for whether it has ever
+  been run against real Supabase.
+- **`db:seed:demo --clear` is the only hard delete of a car**, so it is the only path where the
+  cascade orphans objects. It reads the storage keys before deleting, exactly as `deleteExpense`
+  does.
 - **⚠️ `.storage/` is gitignored and must NEVER live under `public/`.** Anything in `public/` is
   served statically with no session check, which would make every photo world-readable at a
   guessable path. Override the location with `STORAGE_LOCAL_ROOT` (the suites point it at a

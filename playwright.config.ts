@@ -24,6 +24,13 @@ const TEST_DATABASE_URL = resolveTestDatabaseUrl(process.env);
 // Playwright loads this config in each worker, so assigning here reaches them.
 process.env.DATABASE_URL = TEST_DATABASE_URL;
 
+// ⚠️ Same reasoning for attachment storage. A developer's .env may set
+// STORAGE_DRIVER=supabase, and `dotenv/config` above puts it in this process —
+// which would make every e2e photo upload write real objects into a real bucket.
+// Forced local here (for the workers) and in webServer.env below (for the server
+// under test); both are needed, exactly as they were for DATABASE_URL in 08-01.
+process.env.STORAGE_DRIVER = "local";
+
 export default defineConfig({
   // Scoped so Playwright never picks up Vitest's specs in tests/unit.
   testDir: "tests/e2e",
@@ -71,6 +78,8 @@ export default defineConfig({
       // trusts localhost automatically, which is why this only shows up against a
       // production build. Narrower than setting trustHost: true globally.
       AUTH_URL: BASE_URL,
+      // Never the real object store. See the note above process.env.STORAGE_DRIVER.
+      STORAGE_DRIVER: "local",
     },
     // Never reuse a server this config did not start. A local `npm run dev` serves
     // the DEVELOPMENT database, while the helpers above write to the TEST one —

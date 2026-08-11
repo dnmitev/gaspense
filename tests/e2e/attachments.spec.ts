@@ -244,3 +244,84 @@ test.describe("attachment isolation", () => {
     }
   });
 });
+
+test.describe("car photos", () => {
+  test("attaches, renders and removes a photo on the car", async ({ page }) => {
+    // AC-3. The car path is a different owner and a different scope branch —
+    // before 04-04 the serving route returned 404 for the owner's own car photo.
+    await page.goto("/cars/new");
+    await page.getByLabel("Licence plate").fill("CARPIC-01");
+    await page.getByLabel(/^Photo/).setInputFiles(FIXTURE);
+    await page.getByRole("button", { name: /Add car|Save/ }).click();
+    await expect(page).toHaveURL(/\/cars$/);
+
+    await page.getByRole("link", { name: "Edit" }).first().click();
+
+    const photo = page.getByRole("region", { name: "Photos" }).getByRole("img");
+    await expect(photo).toBeVisible();
+    await expect
+      .poll(() => photo.evaluate((el: HTMLImageElement) => el.naturalWidth))
+      .toBeGreaterThan(0);
+
+    const src = await photo.getAttribute("src");
+    const response = await page.request.get(src!);
+    expect(response.status()).toBe(200);
+    expect(response.headers()["content-type"]).toContain("image/");
+
+    await page.getByRole("button", { name: "Remove photo" }).click();
+    await expect(page.getByRole("region", { name: "Photos" })).toHaveCount(0);
+    expect((await page.request.get(src!)).status()).toBe(404);
+  });
+
+  test("another user gets 404 for a car photo", async ({ page, browser, baseURL }) => {
+    // AC-1's negative half, on the branch the OR added.
+    await page.goto("/cars/new");
+    await page.getByLabel("Licence plate").fill("CARPIC-02");
+    await page.getByLabel(/^Photo/).setInputFiles(FIXTURE);
+    await page.getByRole("button", { name: /Add car|Save/ }).click();
+
+    await page.getByRole("link", { name: "Edit" }).first().click();
+    const src = await page
+      .getByRole("region", { name: "Photos" })
+      .getByRole("img")
+      .getAttribute("src");
+
+    const intruder = await seedUserWithSession();
+    const context = await browser.newContext();
+    try {
+      await applySessionCookie(context, intruder.sessionToken, baseURL ?? "http://localhost:3000");
+      const response = await context.request.get(src!);
+      expect(response.status()).toBe(404);
+      expect((await response.body()).byteLength).toBe(0);
+    } finally {
+      await context.close();
+      await deleteSeededUser(intruder.userId);
+    }
+  });
+
+  test("a soft-deleted car stops serving its photo", async ({ page }) => {
+    // Soft delete preserves history, so the object survives — but nothing may
+    // still fetch it, exactly as the car's expenses become unreachable.
+    await page.goto("/cars/new");
+    await page.getByLabel("Licence plate").fill("CARPIC-03");
+    await page.getByLabel(/^Photo/).setInputFiles(FIXTURE);
+    await page.getByRole("button", { name: /Add car|Save/ }).click();
+
+    await page.getByRole("link", { name: "Edit" }).first().click();
+    const src = await page
+      .getByRole("region", { name: "Photos" })
+      .getByRole("img")
+      .getAttribute("src");
+    expect((await page.request.get(src!)).status()).toBe(200);
+
+    await page.goto("/cars");
+    page.once("dialog", (dialog) => dialog.accept());
+    await page
+      .getByRole("button", { name: /Delete/i })
+      .first()
+      .click();
+    await expect(page.getByText("CARPIC-03")).toHaveCount(0);
+
+    expect((await page.request.get(src!)).status()).toBe(404);
+  });
+});

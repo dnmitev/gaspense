@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { attachPostedPhoto } from "@/lib/attach-posted-photo";
+import { createAttachmentForCar, deleteAttachment } from "@/lib/attachments";
 import { createCar, softDeleteCar, updateCar } from "@/lib/cars";
 import { requireUserId } from "@/lib/session";
 import { carInputSchema } from "@/lib/validation/car";
@@ -54,7 +56,17 @@ export async function createCarAction(
     return { ok: false, errors: fieldErrors(parsed.error.issues) };
   }
 
-  await createCar(userId, parsed.data);
+  const created = await createCar(userId, parsed.data);
+
+  // Two writes, not one transaction — the same trade as the expense form. If the
+  // photo fails the car still exists, which is the right way round: the car is
+  // the record, the photo is decoration. The message says so.
+  const attachmentError = await attachPostedPhoto(formData, (input, bytes) =>
+    createAttachmentForCar(userId, created.id, input, bytes),
+  );
+  if (attachmentError) {
+    return { ok: false, errors: {}, formError: `${attachmentError} The car itself was saved.` };
+  }
 
   revalidatePath("/cars");
   redirect("/cars");
@@ -80,8 +92,30 @@ export async function updateCarAction(
     return { ok: false, errors: {}, formError: "That car could not be found." };
   }
 
+  const attachmentError = await attachPostedPhoto(formData, (input, bytes) =>
+    createAttachmentForCar(userId, carId, input, bytes),
+  );
+  if (attachmentError) {
+    return { ok: false, errors: {}, formError: `${attachmentError} The changes were saved.` };
+  }
+
   revalidatePath("/cars");
   redirect("/cars");
+}
+
+/**
+ * Removes a car photo. Scoped in `lib/attachments.ts`, where the id lands in the
+ * same query as the ownership filter — someone else's matches zero rows.
+ */
+export async function deleteCarAttachmentAction(formData: FormData): Promise<void> {
+  const userId = await requireUserId();
+  const attachmentId = String(formData.get("attachmentId") ?? "");
+  const carId = String(formData.get("carId") ?? "");
+
+  if (attachmentId) await deleteAttachment(userId, attachmentId);
+
+  revalidatePath("/cars");
+  if (carId) revalidatePath(`/cars/${carId}/edit`);
 }
 
 export async function deleteCarAction(formData: FormData): Promise<void> {

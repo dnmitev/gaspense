@@ -185,6 +185,16 @@ interface plus a local filesystem adapter), `lib/attachments.ts` (scoped data ac
 runs `expense → car → userId`), `app/cars/[id]/expenses/attachment-field.tsx` (client component,
 downscales via canvas), and `app/api/attachments/[id]/route.ts` (ownership-checked serving).
 
+- **Attachments belong to a car OR an expense**; the filter in `lib/attachments.ts` is an **OR over
+  both paths**, each with `deletedAt: null`. 04-03 scoped only through `expense`, which made a car
+  photo return 404 to its own owner. All three parts are mutation-proven load-bearing.
+- **`STORAGE_DRIVER`** picks the backend (`local` default, `supabase` opt-in). **A missing Supabase
+  variable is a hard failure, never a fall back** — Vercel's filesystem is ephemeral, so a silent
+  fall back loses every photo while appearing to work.
+- **⚠️ The Supabase bucket must be PRIVATE**, and `SUPABASE_SERVICE_ROLE_KEY` is server-only.
+- **No `@supabase/supabase-js`** — three `fetch` calls. ⚠️ Unit-tested against a **stub**, which
+  cannot confirm the real API. See 04-04's summary for whether it has been verified for real.
+- **`db:seed:demo --clear`** is the only hard delete of a car and deletes objects before the row.
 - **⚠️ `.storage/` is gitignored and must NEVER be under `public/`.** Anything there is served
   statically with no session check — every photo world-readable at a guessable path. Override with
   `STORAGE_LOCAL_ROOT`. Supabase Storage replaces the adapter in 04-04.
