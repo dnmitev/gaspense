@@ -21,7 +21,7 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 | Type | Application |
 | Version | 0.0.0 |
 | Status | Prototype — **Phases 0-4, 8 and 9 complete.** Log in, add a car, record expenses and mileage, and see what it all costs: by month, by year, by category, per kilometre, and litres per 100 km — with a dashboard on opening the app. It installs to a phone home screen, logging a fill-up is one tap, a photo can be attached to any car or expense, and it says so honestly when the network is gone. The test suites run against a database and an object store of their own, and refuse to touch any other |
-| Last Updated | 2026-08-10 |
+| Last Updated | 2026-08-11 |
 
 **Production URLs:** none yet.
 
@@ -76,12 +76,10 @@ Track the real total cost of vehicle ownership in one place with actual reportin
 - ✓ **Phase 4 complete** — 4 plans, ~275 minutes, 170 tests added (581 total). The app installs to a phone, logging a fill-up costs one tap instead of three, four pages are gated against WCAG A/AA, and photos attach to cars and expenses with storage that can actually be deployed
 
 ### Active (In Progress)
-- Nothing in progress — Phase 4 closed 2026-08-10. **Phase 5 (Bulgarian Integrations) is next, and
-  is gated on a `/paul:discover` research spike**: no confirmed public API exists for either the
-  КАТ/МВР fines lookup or the vignette check
+- **Phase 5: Bulgarian Integrations** — discovery complete 2026-08-11 (both endpoints verified live)
+  and the ЕГН storage question decided (encrypted, opt-in). Ready to plan
 
 ### Planned (Next)
-- Phase 5: Bulgarian Integrations — research spike, then fines/vignette checks (**research-gated**)
 - Phase 6: Google Drive Export — OAuth consent, export/backup
 - Phase 7: Maintenance Reminders — service intervals per car with due/overdue indicators
 
@@ -115,7 +113,7 @@ Greenfield build. No existing systems to integrate against beyond Google OAuth/D
 ### Technical Constraints
 - Stack fixed: Next.js (TypeScript) + Supabase (Postgres + Storage) + Vercel
 - Auth: Google OAuth only (NextAuth)
-- No confirmed public API yet for the Bulgarian fines/vignette checks — Phase 5 blocked on a `/paul:discover` research spike
+- Bulgarian fines/vignette endpoints are confirmed callable but **undocumented and unofficial** — they may change without notice, and the МВР one is throttled
 - EUR only — no multi-currency logic
 
 ### Business Constraints

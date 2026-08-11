@@ -11,27 +11,27 @@ about: "gaspense"
 See: .paul/PROJECT.md (updated 2026-08-10)
 
 **Core value:** Track the real total cost of vehicle ownership in one place with actual reporting, instead of scattered receipts and memory.
-**Current focus:** v0.1 Initial Release — **Phase 4 complete**. Phase 5 (Bulgarian Integrations) is
-next and is **research-gated**: `/paul:discover` before it can be planned
+**Current focus:** v0.1 Initial Release — Phase 4 complete; **Phase 5 discovery done and its one
+blocking decision made**. Ready to plan 05
 
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 5 of 10 (Bulgarian Integrations) — Discovery complete, **awaiting one decision**
+Phase: 5 of 10 (Bulgarian Integrations) — Discovery complete, decision made
 Plan: Not started
 Status: Discovery complete and the ЕГН decision made — ready to plan 05
-Last activity: 2026-08-11 — Discovery for Phase 5: both endpoints verified live
+Last activity: 2026-08-11 — 05 discovery + ЕГН storage decision (encrypted, opt-in)
 
 Progress:
 - Milestone: [███████░░░] 70% (7 of 10 phases complete)
 - Phase 4: [██████████] 100% (4 of 4 plans) ✅
-- Phase 5: [░░░░░░░░░░] 0% (blocked on a research spike)
+- Phase 5: [░░░░░░░░░░] 0% (unblocked — discovery done, ЕГН storage decided)
 
 ## Loop Position
 
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete — Phase 4 closed, ready for /paul:discover]
+  ✓        ✓        ✓     [Loop complete — Phase 4 closed; 05 discovery done, ready to PLAN]
 ```
 
 ## Performance Metrics
