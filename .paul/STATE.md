@@ -17,10 +17,10 @@ next and is **research-gated**: `/paul:discover` before it can be planned
 ## Current Position
 
 Milestone: v0.1 Initial Release (v0.1.0)
-Phase: 5 of 10 (Bulgarian Integrations) — Not started, **research-gated**
+Phase: 5 of 10 (Bulgarian Integrations) — Discovery complete, **awaiting one decision**
 Plan: Not started
-Status: Ready to research, then plan
-Last activity: 2026-08-10 — **Phase 4 complete** (4 plans, 170 tests); transitioned to Phase 5
+Status: DISCOVERY.md written; the ЕГН storage decision blocks planning
+Last activity: 2026-08-11 — Discovery for Phase 5: both endpoints verified live
 
 Progress:
 - Milestone: [███████░░░] 70% (7 of 10 phases complete)
@@ -122,7 +122,8 @@ Only what constrains upcoming work. **Full log: `.paul/PROJECT.md` → Key Decis
 
 | Issue | Origin | Effort | Revisit |
 |-------|--------|--------|---------|
-| Bulgarian fines/vignette lookup mechanism unconfirmed | Ideation | M | Before Phase 5 — `/paul:discover` |
+| ~~Bulgarian fines/vignette lookup mechanism unconfirmed~~ | Ideation | M | **Resolved 2026-08-11** — both verified live; see `.paul/phases/05-bulgarian-integrations/DISCOVERY.md` |
+| **Where the ЕГН and driving licence live** — the fines lookup cannot run without them | 05 discovery | M | **Blocks 05 planning.** Recommended: never store, enter at check time |
 | Fines/vignette check cadence undecided | Ideation | S | After the Phase 5 spike |
 | Licence unsettled — `UNLICENSED` avoids npm's default ISC grant | Phase 0 | S | User's call, any time |
 | Non-provider secret-scanning patterns unavailable | Phase 1 | — | Only under org licensing |
@@ -167,16 +168,22 @@ Branch: `main` · Feature branches: none (direct-to-`main` workflow)
 
 ## Session Continuity
 
-Last session: 2026-08-10 — Phase 4 planned, applied and closed across four loops
-Stopped at: **Phase 4 complete**, committed and pushed
-Next action: `/paul:discover` for **Phase 5 — Bulgarian Integrations** (research-gated), or
-`/paul:plan` for Phase 6 or 7, which depend only on Phase 2
+Last session: 2026-08-11 — Phase 5 discovery; both Bulgarian endpoints verified live
+Stopped at: Phase 5 DISCOVERY.md written, awaiting the ЕГН storage decision
+Next action: decide the ЕГН storage question, then `/paul:plan 05`. Phases 6 and 7 are unblocked
 Resume file: `.paul/ROADMAP.md`
 Git strategy: `main` (direct commits)
 Resume context:
-- **⚠️ Phase 5 cannot be planned yet.** Neither the КАТ/МВР fines lookup nor the vignette check has
-  a confirmed public API. Do not invent endpoint URLs or request shapes — run the spike first.
-  Phases 6 (Drive export) and 7 (maintenance reminders) depend only on Phase 2 and are unblocked.
+- **Phase 5 discovery is done** (`.paul/phases/05-bulgarian-integrations/DISCOVERY.md`). Both
+  endpoints verified live: no auth, server-side only, and **both answer HTTP 200 for logical
+  failures** — МВР returns a 429 KB HTML page when throttled. Parse the body, never the status.
+- **⚠️ Fines are per PERSON, not per car** — the roadmap said per-car and that is wrong. The request
+  takes ЕГН + driving licence; each fine carries `additionalData.vehicleNumber` for attribution.
+- **⚠️ One decision blocks planning: where the ЕГН and driving licence live.** Recommended: never
+  store them, enter at check time. The vignette check needs no personal data at all.
+- **⚠️ Three high-impact unknowns remain**: the currency of a fine amount (Bulgaria adopted EUR in
+  2026; the only fixtures are from 2024 and carry no currency), the МВР rate-limit threshold and
+  whether it is per-IP, and whether МВР is reachable from Vercel's egress at all.
 - **⚠️ `.env` now holds REAL Supabase credentials** (gitignored). First time real credentials for a
   hosted service exist here. `.env.example` carries placeholders only, and the repo is public.
 - **⚠️ No EXIF/GPS stripping on uploaded photos** — the open item with a privacy dimension, and
